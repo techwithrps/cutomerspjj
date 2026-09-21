@@ -9,11 +9,11 @@ export const CUSTOMER_ACCOUNTS = {
     tagline: 'India\'s #1 Frozen Meat & Multimodal Cold Chain Exporter',
     rank: '#1 Key Enterprise Account',
     share: '8.17% of SPJ Total Enterprise Billing',
-    gstin: '09AABCH3451P1Z9',
+    gstin: '09AACCH0450J1ZQ',
     iec: '0508012489',
-    pan: 'AABCH3451P',
+    pan: 'AACCH0450J',
     category: 'Tier-1 Enterprise Exporter',
-    registeredAddress: 'HMA Tower, 2/220, GL Complex, Delhi Gate, Agra, Uttar Pradesh - 282002',
+    registeredAddress: '2/220, GL Complex, Delhi Gate, Agra, Uttar Pradesh - 282002',
     primaryHub: 'DADRI-ALLCARGO / TRANSWORLD-DADRI',
     activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CMA-CGM', 'TRANSWORLD-DADRI', 'MUNDRA SEAPORT', 'NHAVA SHEVA (JNPT)'],
     contactPerson: 'Gulzar Ahmed / Shahnawaz Qureshi',
@@ -30,7 +30,7 @@ export const CUSTOMER_ACCOUNTS = {
     },
     // Exact figures from SPJ Oracle Database Leaderboard
     exactStats: {
-      invoiceCount: 4636,
+      invoiceCount: 4647,
       netBilledAmount: 5139501005.03, // ₹ 513.95 Cr
       taxAmount: 925110180.91,       // ₹ 92.51 Cr
       grossRevenue: 6064611185.94,    // ₹ 606.46 Cr
@@ -40,16 +40,16 @@ export const CUSTOMER_ACCOUNTS = {
     }
   },
   'INTL': {
-    id: 'CUST-1824',
+    id: 'CUST-1845',
     code: 'INTL',
     name: 'INTERNATIONAL AGRO FOODS',
     legalName: 'International Agro Foods Pvt Ltd',
     tagline: 'Global Agro Export & Livestock Supply Chain',
     rank: '#2 Key Enterprise Account',
     share: '7.85% of SPJ Total Enterprise Billing',
-    gstin: '09AAACI2291F1Z8',
+    gstin: '09AACFI2693D1ZF',
     iec: '0599001422',
-    pan: 'AAACI2291F',
+    pan: 'AACFI2693D',
     category: 'Tier-1 Enterprise Exporter',
     registeredAddress: 'Industrial Area, Ghaziabad, Uttar Pradesh - 201001',
     primaryHub: 'DADRI-ALLCARGO',
@@ -67,71 +67,71 @@ export const CUSTOMER_ACCOUNTS = {
       office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
     },
     exactStats: {
-      invoiceCount: 6629,
-      netBilledAmount: 4938519885.65, // ₹ 493.85 Cr
-      taxAmount: 888933579.42,       // ₹ 88.89 Cr
-      grossRevenue: 5827453465.07,    // ₹ 582.75 Cr
-      contribution: '7.85%',
+      invoiceCount: 6650,
+      netBilledAmount: 4957130521.90, // ₹ 495.71 Cr
+      taxAmount: 892283493.94,
+      grossRevenue: 5849414015.84,
+      contribution: '7.88%',
       activeContainersCount: 182,
       onTimeDeliveryRate: '99.2%'
     }
   },
   'RUSTAM': {
-    id: 'CUST-1835',
+    id: 'CUST-1847',
     code: 'RUSTAM',
-    name: 'RUSTAM FOODS PVT. LTD.',
+    name: 'RUSTAM FOODS PVT LTD',
     legalName: 'Rustam Foods Private Limited',
-    tagline: 'Leading Agro Exporters & Cold Logistics Conglomerate',
+    tagline: 'Premium Quality Frozen Meat & Cold Storage Exporters',
     rank: '#3 Key Enterprise Account',
     share: '7.16% of SPJ Total Enterprise Billing',
-    gstin: '09AAACR3391K1Z2',
-    iec: '0502018890',
-    pan: 'AAACR3391K',
+    gstin: '09AADCR4401N1Z8',
+    iec: '0505008812',
+    pan: 'AADCR4401N',
     category: 'Tier-1 Enterprise Exporter',
-    registeredAddress: 'Agra-Kanpur Highway, Unnao, Uttar Pradesh - 209801',
-    primaryHub: 'DADRI-ALLCARGO / KANPUR ICD',
-    activeTerminals: ['DADRI-ALLCARGO', 'KANPUR ICD', 'MUNDRA SEAPORT'],
-    contactPerson: 'Rustam Ali',
-    designation: 'Managing Director - Operations',
-    email: 'freight@rustamfoods.com',
-    phone: '+91 515 282 0400',
+    registeredAddress: 'Industrial Area, Site-2, Unnao, Uttar Pradesh - 209801',
+    primaryHub: 'KANPUR-ALLCARGO / DADRI',
+    activeTerminals: ['KANPUR-ALLCARGO', 'DADRI-ALLCARGO', 'MUNDRA SEAPORT'],
+    contactPerson: 'Rustam Qureshi / Saleem Akhtar',
+    designation: 'Managing Director & Supply Head',
+    email: 'contact@rustamfoods.com',
+    phone: '+91 515 282 0451',
     relationshipManager: {
-      name: 'Pooja Kashyap',
-      role: 'Enterprise Accounts Lead — SPJ Group',
-      phone: '+91 98711 22334',
-      email: 'p.kashyap@spjcargo.com',
-      whatsapp: '+919871122334',
-      office: 'SPJ Delhi Regional Hub'
+      name: 'Rohit Verma',
+      role: 'Key Account Manager — UP Central',
+      phone: '+91 98110 44292',
+      email: 'r.verma@spjcargo.com',
+      whatsapp: '+919811044292',
+      office: 'SPJ Hub, Panki, Kanpur'
     },
     exactStats: {
-      invoiceCount: 6887,
+      invoiceCount: 6890,
       netBilledAmount: 4506574085.37, // ₹ 450.66 Cr
-      taxAmount: 811183335.37,       // ₹ 81.12 Cr
-      grossRevenue: 5317757420.74,    // ₹ 531.78 Cr
+      taxAmount: 811183335.37,
+      grossRevenue: 5317757420.74,
       contribution: '7.16%',
-      activeContainersCount: 165,
-      onTimeDeliveryRate: '99.5%'
+      activeContainersCount: 124,
+      onTimeDeliveryRate: '98.9%'
     }
   },
   'ALAMMAR': {
     id: 'CUST-1840',
     code: 'ALAMMAR',
-    name: 'AL AMMAR FROZEN FOOD EXPORTS PVT LTD',
-    legalName: 'Al Ammar Frozen Food Exports Private Limited',
-    tagline: 'Frozen Foods & Global Reefer Supply Chain Leader',
+    name: 'AL AMMAR FROZEN FOODS',
+    legalName: 'Al Ammar Frozen Foods Exports Pvt Ltd',
+    tagline: 'Leading Agro Exporters & Temperature Controlled Logistics',
     rank: '#4 Key Enterprise Account',
-    share: '7.15% of SPJ Total Enterprise Billing',
-    gstin: '09AAACA4491M1Z5',
-    iec: '0501009921',
-    pan: 'AAACA4491M',
+    share: '7.16% of SPJ Total Enterprise Billing',
+    gstin: '09AAMCA6593K1ZX',
+    iec: '0597003112',
+    pan: 'AAMCA6593K',
     category: 'Tier-1 Enterprise Exporter',
-    registeredAddress: 'Aligarh Industrial Estate, Aligarh, UP - 202001',
-    primaryHub: 'DADRI-ALLCARGO',
-    activeTerminals: ['DADRI-ALLCARGO', 'TRANSWORLD-DADRI', 'PIPAVAV PORT'],
-    contactPerson: 'Ammar Khan',
-    designation: 'Director - Supply Chain',
-    email: 'operations@alammar.com',
-    phone: '+91 571 240 1900',
+    registeredAddress: 'Gate No 38-40, Al Ammar Village, Amarpur Kondla, Aligarh, Uttar Pradesh - 202001',
+    primaryHub: 'DADRI-ALLCARGO / ALIGARH',
+    activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CONCOR', 'NHAVA SHEVA (JNPT)'],
+    contactPerson: 'Harish Ahmed / Zubair Khan',
+    designation: 'Director of Logistics & Cold Chain',
+    email: 'alammar@alammarfoods.com',
+    phone: '+91 98714 88001',
     relationshipManager: {
       name: 'Vikramaditya Chauhan',
       role: 'Sr. Key Account Director — SPJ Group',
@@ -141,50 +141,50 @@ export const CUSTOMER_ACCOUNTS = {
       office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
     },
     exactStats: {
-      invoiceCount: 7712,
-      netBilledAmount: 4495707713.97, // ₹ 449.57 Cr
-      taxAmount: 809227388.51,       // ₹ 80.92 Cr
-      grossRevenue: 5304935102.48,    // ₹ 530.49 Cr
-      contribution: '7.15%',
-      activeContainersCount: 190,
-      onTimeDeliveryRate: '99.6%'
+      invoiceCount: 7725,
+      netBilledAmount: 4505083965.13, // ₹ 450.51 Cr
+      taxAmount: 810915113.72,
+      grossRevenue: 5315999078.85,
+      contribution: '7.16%',
+      activeContainersCount: 165,
+      onTimeDeliveryRate: '99.5%'
     }
   },
   'FAIR': {
-    id: 'CUST-1852',
+    id: 'CUST-1827',
     code: 'FAIR',
-    name: 'FAIR EXPORTS (INDIA) PVT LTD-(UP)',
+    name: 'FAIR EXPORTS (INDIA) PVT LTD',
     legalName: 'Fair Exports (India) Private Limited',
-    tagline: 'Global Commodities & Container Shipping Enterprise',
+    tagline: 'Lulu Group International Flagship Export Partner',
     rank: '#5 Key Enterprise Account',
     share: '7.11% of SPJ Total Enterprise Billing',
-    gstin: '09AAACF5591R1Z1',
-    iec: '0594002819',
-    pan: 'AAACF5591R',
-    category: 'Fortune Global Conglomerate Exporter',
-    registeredAddress: 'Sector 62, Noida, Uttar Pradesh - 201309',
-    primaryHub: 'DADRI-ALLCARGO / DADRI-CONCOR',
-    activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CONCOR', 'NHAVA SHEVA (JNPT)', 'MUNDRA SEAPORT'],
-    contactPerson: 'Najmuddin E. Khorakiwala',
-    designation: 'VP - Global Freight Contracting',
-    email: 'shipping@fairexports.com',
-    phone: '+91 120 450 6700',
+    gstin: '09AAACF3799A1ZN',
+    iec: '0588004521',
+    pan: 'AAACF3799A',
+    category: 'Tier-1 Enterprise Exporter',
+    registeredAddress: 'National Highway 24, Rampur / Bareilly Road, Uttar Pradesh',
+    primaryHub: 'DADRI-ALLCARGO / MUMBAI',
+    activeTerminals: ['DADRI-ALLCARGO', 'MUNDRA SEAPORT', 'NHAVA SHEVA (JNPT)'],
+    contactPerson: 'M. K. Yousuf / Rajesh Pillai',
+    designation: 'General Manager - Shipping & Marine Freight',
+    email: 'shipping@fairexports.net',
+    phone: '+91 22 2683 8800',
     relationshipManager: {
-      name: 'Pooja Kashyap',
-      role: 'Enterprise Accounts Lead — SPJ Group',
-      phone: '+91 98711 22334',
-      email: 'p.kashyap@spjcargo.com',
-      whatsapp: '+919871122334',
-      office: 'SPJ Delhi Regional Hub'
+      name: 'Pooja Nair',
+      role: 'Key Account Lead — Western & Northern Corridor',
+      phone: '+91 98110 44295',
+      email: 'p.nair@spjcargo.com',
+      whatsapp: '+919811044295',
+      office: 'SPJ Seaport Wing, Nhava Sheva, Navi Mumbai'
     },
     exactStats: {
-      invoiceCount: 17557,
+      invoiceCount: 17558,
       netBilledAmount: 4474045779.43, // ₹ 447.40 Cr
-      taxAmount: 805328240.30,       // ₹ 80.53 Cr
-      grossRevenue: 5279374019.73,    // ₹ 527.94 Cr
+      taxAmount: 805328240.30,
+      grossRevenue: 5279374019.73,
       contribution: '7.11%',
-      activeContainersCount: 310,
-      onTimeDeliveryRate: '99.8%'
+      activeContainersCount: 210,
+      onTimeDeliveryRate: '99.6%'
     }
   }
 };
