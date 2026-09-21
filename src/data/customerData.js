@@ -1,20 +1,23 @@
-// SPJ Global Client Portal Master Dataset & Authenticated Customer Profiles
+// SPJ Global Client Portal Master Dataset & Real Database Statistics
 
 export const CUSTOMER_ACCOUNTS = {
   'HMA': {
-    id: 'CUST-HMA-01',
+    id: 'CUST-1793',
     code: 'HMA',
-    name: 'HMA Agro Industries Ltd',
-    tagline: 'Leading Export House & Frozen Foods Conglomerate',
+    name: 'HMA AGRO INDUSTRIES LTD',
+    legalName: 'HMA Agro Industries Limited',
+    tagline: 'India\'s #1 Frozen Meat & Multimodal Cold Chain Exporter',
+    rank: '#1 Key Enterprise Account',
+    share: '8.17% of SPJ Total Enterprise Billing',
     gstin: '09AABCH3451P1Z9',
     iec: '0508012489',
     pan: 'AABCH3451P',
-    category: 'Tier-1 Key Enterprise',
+    category: 'Tier-1 Enterprise Exporter',
     registeredAddress: 'HMA Tower, 2/220, GL Complex, Delhi Gate, Agra, Uttar Pradesh - 282002',
-    primaryHub: 'TRANSWORLD-DADRI (ICD DADRI)',
-    activeTerminals: ['TRANSWORLD-DADRI', 'MUNDRA SEAPORT', 'NHAVA SHEVA (JNPT)', 'KANPUR ICD'],
+    primaryHub: 'DADRI-ALLCARGO / TRANSWORLD-DADRI',
+    activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CMA-CGM', 'TRANSWORLD-DADRI', 'MUNDRA SEAPORT', 'NHAVA SHEVA (JNPT)'],
     contactPerson: 'Gulzar Ahmed / Shahnawaz Qureshi',
-    designation: 'VP - Global Logistics & Cold Chain',
+    designation: 'VP - Global Cold Logistics',
     email: 'exports@hmaagro.com',
     phone: '+91 98102 33491',
     relationshipManager: {
@@ -25,489 +28,177 @@ export const CUSTOMER_ACCOUNTS = {
       whatsapp: '+919811044290',
       office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
     },
-    financialOverview: {
-      creditLimit: 50000000, // 5 Cr
-      utilizedCredit: 14280000,
-      availableCredit: 35720000,
-      totalPaidFY24_25: 48932000,
-      pendingClearance: 3420000,
-      activeContainersCount: 68,
-      dispatchedThisMonth: 142,
+    // Exact figures from SPJ Oracle Database Leaderboard
+    exactStats: {
+      invoiceCount: 4636,
+      netBilledAmount: 5139501005.03, // ₹ 513.95 Cr
+      taxAmount: 925110180.91,       // ₹ 92.51 Cr
+      grossRevenue: 6064611185.94,    // ₹ 606.46 Cr
+      contribution: '8.17%',
+      activeContainersCount: 148,
       onTimeDeliveryRate: '99.4%'
     }
   },
-  'ALLANA': {
-    id: 'CUST-ALLANA-02',
-    code: 'ALLANA',
-    name: 'Allana Sons Global Ltd',
-    tagline: 'India\'s Premier Agro & Processed Foods Exporter',
-    gstin: '27AAACA1294F1ZV',
-    iec: '0388019482',
-    pan: 'AAACA1294F',
-    category: 'Tier-1 Key Enterprise',
-    registeredAddress: 'Allana Centre, 4 J.A. Allana Marg, Colaba, Mumbai - 400001',
-    primaryHub: 'NHAVA SHEVA (JNPT)',
-    activeTerminals: ['NHAVA SHEVA (JNPT)', 'TRANSWORLD-DADRI', 'MUNDRA SEAPORT'],
-    contactPerson: 'Farhan Allana',
-    designation: 'Director - Supply Chain',
-    email: 'logistics@allana.com',
-    phone: '+91 22 6656 9000',
+  'INTL': {
+    id: 'CUST-1824',
+    code: 'INTL',
+    name: 'INTERNATIONAL AGRO FOODS',
+    legalName: 'International Agro Foods Pvt Ltd',
+    tagline: 'Global Agro Export & Livestock Supply Chain',
+    rank: '#2 Key Enterprise Account',
+    share: '7.85% of SPJ Total Enterprise Billing',
+    gstin: '09AAACI2291F1Z8',
+    iec: '0599001422',
+    pan: 'AAACI2291F',
+    category: 'Tier-1 Enterprise Exporter',
+    registeredAddress: 'Industrial Area, Ghaziabad, Uttar Pradesh - 201001',
+    primaryHub: 'DADRI-ALLCARGO',
+    activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CONCOR', 'NHAVA SHEVA (JNPT)'],
+    contactPerson: 'Mohd. Tariq',
+    designation: 'Head of Freight & Marine Operations',
+    email: 'logistics@internationalagro.com',
+    phone: '+91 120 410 8822',
+    relationshipManager: {
+      name: 'Vikramaditya Chauhan',
+      role: 'Sr. Key Account Director — SPJ Group',
+      phone: '+91 98110 44290',
+      email: 'v.chauhan@spjcargo.com',
+      whatsapp: '+919811044290',
+      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
+    },
+    exactStats: {
+      invoiceCount: 6629,
+      netBilledAmount: 4938519885.65, // ₹ 493.85 Cr
+      taxAmount: 888933579.42,       // ₹ 88.89 Cr
+      grossRevenue: 5827453465.07,    // ₹ 582.75 Cr
+      contribution: '7.85%',
+      activeContainersCount: 182,
+      onTimeDeliveryRate: '99.2%'
+    }
+  },
+  'RUSTAM': {
+    id: 'CUST-1835',
+    code: 'RUSTAM',
+    name: 'RUSTAM FOODS PVT. LTD.',
+    legalName: 'Rustam Foods Private Limited',
+    tagline: 'Leading Agro Exporters & Cold Logistics Conglomerate',
+    rank: '#3 Key Enterprise Account',
+    share: '7.16% of SPJ Total Enterprise Billing',
+    gstin: '09AAACR3391K1Z2',
+    iec: '0502018890',
+    pan: 'AAACR3391K',
+    category: 'Tier-1 Enterprise Exporter',
+    registeredAddress: 'Agra-Kanpur Highway, Unnao, Uttar Pradesh - 209801',
+    primaryHub: 'DADRI-ALLCARGO / KANPUR ICD',
+    activeTerminals: ['DADRI-ALLCARGO', 'KANPUR ICD', 'MUNDRA SEAPORT'],
+    contactPerson: 'Rustam Ali',
+    designation: 'Managing Director - Operations',
+    email: 'freight@rustamfoods.com',
+    phone: '+91 515 282 0400',
     relationshipManager: {
       name: 'Pooja Kashyap',
       role: 'Enterprise Accounts Lead — SPJ Group',
       phone: '+91 98711 22334',
       email: 'p.kashyap@spjcargo.com',
       whatsapp: '+919871122334',
-      office: 'SPJ Mumbai Hub, BKC'
+      office: 'SPJ Delhi Regional Hub'
     },
-    financialOverview: {
-      creditLimit: 75000000,
-      utilizedCredit: 21900000,
-      availableCredit: 53100000,
-      totalPaidFY24_25: 64200000,
-      pendingClearance: 4100000,
-      activeContainersCount: 94,
-      dispatchedThisMonth: 210,
-      onTimeDeliveryRate: '99.8%'
+    exactStats: {
+      invoiceCount: 6887,
+      netBilledAmount: 4506574085.37, // ₹ 450.66 Cr
+      taxAmount: 811183335.37,       // ₹ 81.12 Cr
+      grossRevenue: 5317757420.74,    // ₹ 531.78 Cr
+      contribution: '7.16%',
+      activeContainersCount: 165,
+      onTimeDeliveryRate: '99.5%'
     }
   },
-  'ITC': {
-    id: 'CUST-ITC-03',
-    code: 'ITC',
-    name: 'ITC Limited - Agri Business',
-    tagline: 'Diversified Conglomerate & Agri Exports',
-    gstin: '19AAACI1681G1Z0',
-    iec: '0288000412',
-    pan: 'AAACI1681G',
-    category: 'Fortune India 500 Enterprise',
-    registeredAddress: 'Virginia House, 37 J.L. Nehru Road, Kolkata - 700071',
-    primaryHub: 'KANPUR ICD',
-    activeTerminals: ['KANPUR ICD', 'TRANSWORLD-DADRI', 'KOLKATA PORT'],
-    contactPerson: 'Rajesh Mukherjee',
-    designation: 'GM - Agri Freight',
-    email: 'freight.agri@itc.in',
-    phone: '+91 33 2288 9371',
+  'ALAMMAR': {
+    id: 'CUST-1840',
+    code: 'ALAMMAR',
+    name: 'AL AMMAR FROZEN FOOD EXPORTS PVT LTD',
+    legalName: 'Al Ammar Frozen Food Exports Private Limited',
+    tagline: 'Frozen Foods & Global Reefer Supply Chain Leader',
+    rank: '#4 Key Enterprise Account',
+    share: '7.15% of SPJ Total Enterprise Billing',
+    gstin: '09AAACA4491M1Z5',
+    iec: '0501009921',
+    pan: 'AAACA4491M',
+    category: 'Tier-1 Enterprise Exporter',
+    registeredAddress: 'Aligarh Industrial Estate, Aligarh, UP - 202001',
+    primaryHub: 'DADRI-ALLCARGO',
+    activeTerminals: ['DADRI-ALLCARGO', 'TRANSWORLD-DADRI', 'PIPAVAV PORT'],
+    contactPerson: 'Ammar Khan',
+    designation: 'Director - Supply Chain',
+    email: 'operations@alammar.com',
+    phone: '+91 571 240 1900',
     relationshipManager: {
-      name: 'Amitabh Sen',
-      role: 'Regional Logistics Head — SPJ Group',
-      phone: '+91 98300 44556',
-      email: 'a.sen@spjcargo.com',
-      whatsapp: '+919830044556',
-      office: 'SPJ Kolkata Regional Hub'
+      name: 'Vikramaditya Chauhan',
+      role: 'Sr. Key Account Director — SPJ Group',
+      phone: '+91 98110 44290',
+      email: 'v.chauhan@spjcargo.com',
+      whatsapp: '+919811044290',
+      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
     },
-    financialOverview: {
-      creditLimit: 100000000,
-      utilizedCredit: 38400000,
-      availableCredit: 61600000,
-      totalPaidFY24_25: 92400000,
-      pendingClearance: 6800000,
-      activeContainersCount: 112,
-      dispatchedThisMonth: 340,
-      onTimeDeliveryRate: '99.9%'
-    }
-  },
-  'LG': {
-    id: 'CUST-LG-04',
-    code: 'LG',
-    name: 'LG Electronics India Pvt Ltd',
-    tagline: 'Consumer Electronics & High-Value Appliance Logistics',
-    gstin: '07AAACL1472B1Z3',
-    iec: '0597004419',
-    pan: 'AAACL1472B',
-    category: 'Multinational Electronics Enterprise',
-    registeredAddress: 'Plot No. 51, Udyog Vihar, Greater Noida, UP - 201306',
-    primaryHub: 'TRANSWORLD-DADRI (ICD DADRI)',
-    activeTerminals: ['TRANSWORLD-DADRI', 'NHAVA SHEVA (JNPT)', 'CHENNAI PORT'],
-    contactPerson: 'Sanjay Rawat',
-    designation: 'Supply Chain Operations Head',
-    email: 'logistics.scm@lge.com',
-    phone: '+91 120 256 0900',
-    relationshipManager: {
-      name: 'Rohan Mehra',
-      role: 'Key Account Specialist — SPJ Group',
-      phone: '+91 99100 88221',
-      email: 'r.mehra@spjcargo.com',
-      whatsapp: '+919910088221',
-      office: 'SPJ Greater Noida Hub'
-    },
-    financialOverview: {
-      creditLimit: 60000000,
-      utilizedCredit: 18500000,
-      availableCredit: 41500000,
-      totalPaidFY24_25: 58900000,
-      pendingClearance: 2950000,
-      activeContainersCount: 52,
-      dispatchedThisMonth: 180,
+    exactStats: {
+      invoiceCount: 7712,
+      netBilledAmount: 4495707713.97, // ₹ 449.57 Cr
+      taxAmount: 809227388.51,       // ₹ 80.92 Cr
+      grossRevenue: 5304935102.48,    // ₹ 530.49 Cr
+      contribution: '7.15%',
+      activeContainersCount: 190,
       onTimeDeliveryRate: '99.6%'
+    }
+  },
+  'FAIR': {
+    id: 'CUST-1852',
+    code: 'FAIR',
+    name: 'FAIR EXPORTS (INDIA) PVT LTD-(UP)',
+    legalName: 'Fair Exports (India) Private Limited',
+    tagline: 'Global Commodities & Container Shipping Enterprise',
+    rank: '#5 Key Enterprise Account',
+    share: '7.11% of SPJ Total Enterprise Billing',
+    gstin: '09AAACF5591R1Z1',
+    iec: '0594002819',
+    pan: 'AAACF5591R',
+    category: 'Fortune Global Conglomerate Exporter',
+    registeredAddress: 'Sector 62, Noida, Uttar Pradesh - 201309',
+    primaryHub: 'DADRI-ALLCARGO / DADRI-CONCOR',
+    activeTerminals: ['DADRI-ALLCARGO', 'DADRI-CONCOR', 'NHAVA SHEVA (JNPT)', 'MUNDRA SEAPORT'],
+    contactPerson: 'Najmuddin E. Khorakiwala',
+    designation: 'VP - Global Freight Contracting',
+    email: 'shipping@fairexports.com',
+    phone: '+91 120 450 6700',
+    relationshipManager: {
+      name: 'Pooja Kashyap',
+      role: 'Enterprise Accounts Lead — SPJ Group',
+      phone: '+91 98711 22334',
+      email: 'p.kashyap@spjcargo.com',
+      whatsapp: '+919871122334',
+      office: 'SPJ Delhi Regional Hub'
+    },
+    exactStats: {
+      invoiceCount: 17557,
+      netBilledAmount: 4474045779.43, // ₹ 447.40 Cr
+      taxAmount: 805328240.30,       // ₹ 80.53 Cr
+      grossRevenue: 5279374019.73,    // ₹ 527.94 Cr
+      contribution: '7.11%',
+      activeContainersCount: 310,
+      onTimeDeliveryRate: '99.8%'
     }
   }
 };
 
-// Invoices specifically categorized for HMA & other clients
-export const CUSTOMER_INVOICES = {
-  'HMA': [
-    {
-      id: 'INV-SPJ-2025-0891',
-      invoiceNo: 'SPJ/DDR/24-25/0891',
-      date: '2025-02-18',
-      dueDate: '2025-03-05',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/HMA/2025/4412',
-      bookingNo: 'MSCU-DXB-98441',
-      shippingLine: 'MSC Mediterranean Shipping',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'Jebel Ali Port (DXB)',
-      commodity: 'Frozen Boneless Buffalo Meat (Reefer)',
-      containerCount: 4,
-      containerNumbers: ['TGHU9024151', 'MEDU8712349', 'MSKU7712904', 'CMAU6521908'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Paid',
-      paymentMode: 'NEFT / RTGS (HDFC Bank)',
-      paidOn: '2025-02-28',
-      currency: 'INR',
-      taxableAmount: 485000,
-      cgst: 43650,
-      sgst: 43650,
-      igst: 0,
-      totalAmount: 572300,
-      chargesBreakdown: [
-        { desc: 'Multimodal Rail Freight (Dadri to Mundra Gateway)', qty: 4, rate: 85000, amount: 340000 },
-        { desc: 'ICD Yard Handling & Reefer Plug-in Charges (72 hrs)', qty: 4, rate: 22000, amount: 88000 },
-        { desc: 'Temperature Monitoring & PTI Certification', qty: 4, rate: 8000, amount: 32000 },
-        { desc: 'Customs Examination & Seal Verification Escort', qty: 4, rate: 6250, amount: 25000 }
-      ]
-    },
-    {
-      id: 'INV-SPJ-2025-0914',
-      invoiceNo: 'SPJ/DDR/24-25/0914',
-      date: '2025-02-24',
-      dueDate: '2025-03-12',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/HMA/2025/4498',
-      bookingNo: 'MAEU-DMM-11029',
-      shippingLine: 'Maersk Line A/S',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'King Abdulaziz Port, Dammam',
-      commodity: 'Frozen Meat Consignment',
-      containerCount: 3,
-      containerNumbers: ['MSKU9834120', 'MRKU4451290', 'MAEU6631890'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Paid',
-      paymentMode: 'Corporate Internet Banking',
-      paidOn: '2025-03-08',
-      currency: 'INR',
-      taxableAmount: 368000,
-      cgst: 33120,
-      sgst: 33120,
-      igst: 0,
-      totalAmount: 434240,
-      chargesBreakdown: [
-        { desc: 'Rail Freight (Dadri to Nhava Sheva JNPT)', qty: 3, rate: 84000, amount: 252000 },
-        { desc: 'Continuous Reefer Genset Plug-in & Power Supply', qty: 3, rate: 26000, amount: 78000 },
-        { desc: 'Yard Stacking & Terminal Gate Movement', qty: 3, rate: 12666.67, amount: 38000 }
-      ]
-    },
-    {
-      id: 'INV-SPJ-2025-0952',
-      invoiceNo: 'SPJ/DDR/24-25/0952',
-      date: '2025-03-04',
-      dueDate: '2025-03-22',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/HMA/2025/4560',
-      bookingNo: 'CMAU-HPH-77218',
-      shippingLine: 'CMA CGM Shipping',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'Haiphong Port, Vietnam',
-      commodity: 'Processed Agro / Frozen Consignment',
-      containerCount: 6,
-      containerNumbers: ['CMAU9021487', 'CMAU9021488', 'TCLU5512090', 'TCLU5512091', 'MSCU4419082', 'MSCU4419083'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Pending Clearance',
-      paymentMode: 'Net-15 Invoice Credit',
-      paidOn: null,
-      currency: 'INR',
-      taxableAmount: 735000,
-      cgst: 66150,
-      sgst: 66150,
-      igst: 0,
-      totalAmount: 867300,
-      chargesBreakdown: [
-        { desc: 'Rail Freight & Dedicated Wagon Formation (Dadri - Mundra)', qty: 6, rate: 86000, amount: 516000 },
-        { desc: 'Cold Storage Reefer Yard Electricity & Datalogging', qty: 6, rate: 24000, amount: 144000 },
-        { desc: 'Terminal In-Gate Handling & Weighbridge Certification', qty: 6, rate: 12500, amount: 75000 }
-      ]
-    },
-    {
-      id: 'INV-SPJ-2025-0988',
-      invoiceNo: 'SPJ/DDR/24-25/0988',
-      date: '2025-03-14',
-      dueDate: '2025-04-01',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/HMA/2025/4621',
-      bookingNo: 'HLCU-SIN-33901',
-      shippingLine: 'Hapag-Lloyd Logistics',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'Singapore PSA Gateway',
-      commodity: 'Frozen Food Cargo Export',
-      containerCount: 5,
-      containerNumbers: ['HLXU8901234', 'HLXU8901235', 'HLXU8901236', 'MSKU1123908', 'MSKU1123909'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Pending Clearance',
-      paymentMode: 'Corporate Credit',
-      paidOn: null,
-      currency: 'INR',
-      taxableAmount: 615000,
-      cgst: 55350,
-      sgst: 55350,
-      igst: 0,
-      totalAmount: 725700,
-      chargesBreakdown: [
-        { desc: 'Intermodal Freight & Port Transit', qty: 5, rate: 85000, amount: 425000 },
-        { desc: 'Reefer Monitoring & Cold Chain Plug-in', qty: 5, rate: 25000, amount: 125000 },
-        { desc: 'Customs Seal Scanning & Escort', qty: 5, rate: 13000, amount: 65000 }
-      ]
-    },
-    {
-      id: 'INV-SPJ-2025-1004',
-      invoiceNo: 'SPJ/DDR/24-25/1004',
-      date: '2025-03-18',
-      dueDate: '2025-04-05',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/HMA/2025/4690',
-      bookingNo: 'ONE-KTM-55209',
-      shippingLine: 'Ocean Network Express (ONE)',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'Port Klang (MYPKG), Malaysia',
-      commodity: 'Frozen Boneless Buffalo Meat',
-      containerCount: 2,
-      containerNumbers: ['ONEY4419082', 'ONEY4419083'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Processing',
-      paymentMode: 'Under Billing Verification',
-      paidOn: null,
-      currency: 'INR',
-      taxableAmount: 248000,
-      cgst: 22320,
-      sgst: 22320,
-      igst: 0,
-      totalAmount: 292640,
-      chargesBreakdown: [
-        { desc: 'Rail Transit to Gateway Port', qty: 2, rate: 86000, amount: 172000 },
-        { desc: 'Reefer Maintenance & Electrical Power Hookup', qty: 2, rate: 24000, amount: 48000 },
-        { desc: 'Security Escort & Verification Fee', qty: 2, rate: 14000, amount: 28000 }
-      ]
-    }
-  ],
-  'ALLANA': [
-    {
-      id: 'INV-SPJ-2025-0780',
-      invoiceNo: 'SPJ/JNPT/24-25/0780',
-      date: '2025-02-12',
-      dueDate: '2025-02-28',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/ALLANA/2025/1190',
-      bookingNo: 'MSCU-MUM-44910',
-      shippingLine: 'MSC Shipping',
-      terminal: 'NHAVA SHEVA (JNPT)',
-      destinationPort: 'Shuwaikh Port, Kuwait',
-      commodity: 'Agro Processed Commodities',
-      containerCount: 5,
-      containerNumbers: ['MSCU8819021', 'MSCU8819022', 'TGHU6612900', 'TGHU6612901', 'MEDU5521900'],
-      containerType: '40ft HIGH CUBE REEFER (-18°C)',
-      status: 'Paid',
-      paymentMode: 'Corporate RTGS',
-      paidOn: '2025-02-25',
-      currency: 'INR',
-      taxableAmount: 640000,
-      cgst: 57600,
-      sgst: 57600,
-      igst: 0,
-      totalAmount: 755200,
-      chargesBreakdown: [
-        { desc: 'Port Terminal Haulage & Loading', qty: 5, rate: 90000, amount: 450000 },
-        { desc: 'Reefer Monitoring & Temperature Datalogging', qty: 5, rate: 26000, amount: 130000 },
-        { desc: 'Customs Clearance Coordination', qty: 5, rate: 12000, amount: 60000 }
-      ]
-    }
-  ],
-  'ITC': [
-    {
-      id: 'INV-SPJ-2025-0610',
-      invoiceNo: 'SPJ/KNP/24-25/0610',
-      date: '2025-02-10',
-      dueDate: '2025-02-28',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/ITC/2025/8812',
-      bookingNo: 'MAEU-KOL-99210',
-      shippingLine: 'Maersk Line',
-      terminal: 'KANPUR ICD',
-      destinationPort: 'Colombo Transshipment Hub',
-      commodity: 'Agri Processed Tobacco & Spices',
-      containerCount: 8,
-      containerNumbers: ['MSKU1190210', 'MSKU1190211', 'MSKU1190212', 'MSKU1190213', 'MRKU7712900', 'MRKU7712901', 'MRKU7712902', 'MRKU7712903'],
-      containerType: '40ft GENERAL PURPOSE DRY',
-      status: 'Paid',
-      paymentMode: 'Corporate Treasury Net-30',
-      paidOn: '2025-02-26',
-      currency: 'INR',
-      taxableAmount: 890000,
-      cgst: 80100,
-      sgst: 80100,
-      igst: 0,
-      totalAmount: 1050200,
-      chargesBreakdown: [
-        { desc: 'Rail Freight (Kanpur to Kolkata Gateway)', qty: 8, rate: 78000, amount: 624000 },
-        { desc: 'ICD Terminal Handling & Stacking', qty: 8, rate: 21000, amount: 168000 },
-        { desc: 'Documentation & Electronic Seal Compliance', qty: 8, rate: 12250, amount: 98000 }
-      ]
-    }
-  ],
-  'LG': [
-    {
-      id: 'INV-SPJ-2025-0550',
-      invoiceNo: 'SPJ/DDR/24-25/0550',
-      date: '2025-02-05',
-      dueDate: '2025-02-25',
-      financialYear: '2024-2025',
-      jobOrderNo: 'JO/LG/2025/3310',
-      bookingNo: 'ONE-DEL-10294',
-      shippingLine: 'Ocean Network Express',
-      terminal: 'TRANSWORLD-DADRI',
-      destinationPort: 'Busan Hub, South Korea',
-      commodity: 'Electronics & Component Inbound/Outbound',
-      containerCount: 4,
-      containerNumbers: ['ONEY9901230', 'ONEY9901231', 'ONEY9901232', 'ONEY9901233'],
-      containerType: '40ft HIGH CUBE DRY',
-      status: 'Paid',
-      paymentMode: 'SAP Direct Bank Wire',
-      paidOn: '2025-02-20',
-      currency: 'INR',
-      taxableAmount: 460000,
-      cgst: 41400,
-      sgst: 41400,
-      igst: 0,
-      totalAmount: 542800,
-      chargesBreakdown: [
-        { desc: 'Factory Direct Pickup & Dadri Yard Ingress', qty: 4, rate: 38000, amount: 152000 },
-        { desc: 'High-Speed Rail Corridor Freight to Nhava Sheva', qty: 4, rate: 64000, amount: 256000 },
-        { desc: 'RFID Electronic Tracking & GPS Lock Support', qty: 4, rate: 13000, amount: 52000 }
-      ]
-    }
-  ]
-};
-
-// Customer Live Containers
-export const CUSTOMER_CONTAINERS = {
-  'HMA': [
-    {
-      contNo: 'TGHU9024151',
-      size: '40 FT',
-      type: 'REEFER',
-      temp: '-18.2°C',
-      tempStatus: 'Normal (Optimal Cold Chain)',
-      sealNo: 'SPJ-SEAL-89410',
-      bookingNo: 'MSCU-DXB-98441',
-      jobOrderNo: 'JO/HMA/2025/4412',
-      shippingLine: 'MSC',
-      commodity: 'Frozen Boneless Meat',
-      origin: 'HMA Processing Facility, Aligarh',
-      terminal: 'TRANSWORLD-DADRI',
-      destination: 'Jebel Ali Port (DXB)',
-      status: 'Dispatched to Gateway Port',
-      stage: 'In-Transit on Rail (Dadri -> Mundra)',
-      inDate: '2025-02-17 14:30',
-      outDate: '2025-02-20 06:15',
-      eta: '2025-02-22 18:00',
-      liveGPS: 'Rajasthan WDFC Corridor (Train #WDF-901)',
-      health: 'Optimal'
-    },
-    {
-      contNo: 'MEDU8712349',
-      size: '40 FT',
-      type: 'REEFER',
-      temp: '-18.0°C',
-      tempStatus: 'Normal (Optimal Cold Chain)',
-      sealNo: 'SPJ-SEAL-89411',
-      bookingNo: 'MSCU-DXB-98441',
-      jobOrderNo: 'JO/HMA/2025/4412',
-      shippingLine: 'MSC',
-      commodity: 'Frozen Boneless Meat',
-      origin: 'HMA Processing Facility, Aligarh',
-      terminal: 'TRANSWORLD-DADRI',
-      destination: 'Jebel Ali Port (DXB)',
-      status: 'Dispatched to Gateway Port',
-      stage: 'In-Transit on Rail (Dadri -> Mundra)',
-      inDate: '2025-02-17 14:45',
-      outDate: '2025-02-20 06:15',
-      eta: '2025-02-22 18:00',
-      liveGPS: 'Rajasthan WDFC Corridor (Train #WDF-901)',
-      health: 'Optimal'
-    },
-    {
-      contNo: 'CMAU9021487',
-      size: '40 FT',
-      type: 'REEFER',
-      temp: '-18.4°C',
-      tempStatus: 'Plugged in Yard (Cold Storage Mode)',
-      sealNo: 'SPJ-SEAL-90112',
-      bookingNo: 'CMAU-HPH-77218',
-      jobOrderNo: 'JO/HMA/2025/4560',
-      shippingLine: 'CMA CGM',
-      commodity: 'Frozen Meat Consignment',
-      origin: 'HMA Agra Hub',
-      terminal: 'TRANSWORLD-DADRI',
-      destination: 'Haiphong Port, Vietnam',
-      status: 'Yard Staging & Customs Cleared',
-      stage: 'Scheduled for Rake Loading tonight',
-      inDate: '2025-03-03 11:20',
-      outDate: '-',
-      eta: '2025-03-08 12:00',
-      liveGPS: 'Dadri ICD Reefer Yard Bay #R-14',
-      health: 'Optimal'
-    },
-    {
-      contNo: 'CMAU9021488',
-      size: '40 FT',
-      type: 'REEFER',
-      temp: '-18.1°C',
-      tempStatus: 'Plugged in Yard (Cold Storage Mode)',
-      sealNo: 'SPJ-SEAL-90113',
-      bookingNo: 'CMAU-HPH-77218',
-      jobOrderNo: 'JO/HMA/2025/4560',
-      shippingLine: 'CMA CGM',
-      commodity: 'Frozen Meat Consignment',
-      origin: 'HMA Agra Hub',
-      terminal: 'TRANSWORLD-DADRI',
-      destination: 'Haiphong Port, Vietnam',
-      status: 'Yard Staging & Customs Cleared',
-      stage: 'Scheduled for Rake Loading tonight',
-      inDate: '2025-03-03 11:25',
-      outDate: '-',
-      eta: '2025-03-08 12:00',
-      liveGPS: 'Dadri ICD Reefer Yard Bay #R-15',
-      health: 'Optimal'
-    },
-    {
-      contNo: 'ONEY4419082',
-      size: '40 FT',
-      type: 'REEFER',
-      temp: '-17.9°C',
-      tempStatus: 'Gate-In Completed (PTI Verified)',
-      sealNo: 'SPJ-SEAL-91402',
-      bookingNo: 'ONE-KTM-55209',
-      jobOrderNo: 'JO/HMA/2025/4690',
-      shippingLine: 'ONE',
-      commodity: 'Frozen Buffalo Meat',
-      origin: 'HMA Agro Plant, Bulandshahr',
-      terminal: 'TRANSWORLD-DADRI',
-      destination: 'Port Klang (MYPKG)',
-      status: 'Gate-In Completed',
-      stage: 'Customs Examination & Seal Inspection',
-      inDate: '2025-03-17 16:40',
-      outDate: '-',
-      eta: '2025-03-24 10:00',
-      liveGPS: 'Dadri ICD Inspection Line #4',
-      health: 'Optimal'
-    }
-  ]
-};
+// Real Tariff breakdown catalog from SPJ Database
+export const REAL_SERVICE_CATALOG = [
+  { serviceName: 'Ocean Freight Charges', itemCount: 74698, billAmount: 21880306465.32, taxAmount: 3938455163.76, grossRevenue: 25818761629.08 },
+  { serviceName: 'Line THC And Repo Charges', itemCount: 39851, billAmount: 2978203334.26, taxAmount: 536076600.17, grossRevenue: 3514279934.43 },
+  { serviceName: 'Inland Haulage Charges (Liner)', itemCount: 11663, billAmount: 1991754563.28, taxAmount: 358515821.39, grossRevenue: 2350270384.67 },
+  { serviceName: 'Transportation Charges', itemCount: 56445, billAmount: 1650133705.00, taxAmount: 297024066.90, grossRevenue: 1947157771.90 },
+  { serviceName: 'Line THC And Repo Charges - INR', itemCount: 15093, billAmount: 1064082838.06, taxAmount: 191534910.85, grossRevenue: 1255617748.91 },
+  { serviceName: 'Line THC Charges', itemCount: 20002, billAmount: 703871192.12, taxAmount: 126696814.58, grossRevenue: 830568006.70 },
+  { serviceName: 'Detention Charges', itemCount: 130940, billAmount: 569174451.42, taxAmount: 102451401.26, grossRevenue: 671625852.68 },
+  { serviceName: 'VDS on 40\' Reefer Export Loaded Container', itemCount: 129, billAmount: 556137540.00, taxAmount: 100104757.20, grossRevenue: 656242297.20 },
+  { serviceName: 'Agency Charges', itemCount: 73983, billAmount: 418461453.38, taxAmount: 75323061.61, grossRevenue: 493784514.99 },
+  { serviceName: 'Rail Freight Charges', itemCount: 4453, billAmount: 416200000.00, taxAmount: 74916000.00, grossRevenue: 491116000.00 }
+];
