@@ -43,7 +43,15 @@ export default function InvoiceCardsView({
   }, [customerKey]);
 
   const formatCurrency = (val) => {
-    return '₹ ' + Math.round(Number(val || 0)).toLocaleString('en-IN');
+    if (!val) return '₹ 0';
+    const num = Number(val);
+    if (num >= 10000000) {
+      return `₹ ${(num / 10000000).toFixed(2)} Cr`;
+    }
+    if (num >= 100000) {
+      return `₹ ${(num / 100000).toFixed(2)} Lakh`;
+    }
+    return '₹ ' + Math.round(num).toLocaleString('en-IN');
   };
 
   const handleCopy = (text, id) => {
@@ -134,12 +142,12 @@ export default function InvoiceCardsView({
   }, [allInvoices, searchTerm, statusFilter, sortOrder]);
 
   // Real Customer-Centric KPIs (Billing, Paid, Outstanding, Containers)
-  const totalBilled = useMemo(() => allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0), [allInvoices]);
-  const paidInvoices = useMemo(() => allInvoices.filter(i => i.status === 'Paid'), [allInvoices]);
-  const totalPaid = useMemo(() => paidInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0), [paidInvoices]);
-  const pendingInvoices = useMemo(() => allInvoices.filter(i => i.status !== 'Paid'), [allInvoices]);
-  const totalPending = useMemo(() => pendingInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0), [pendingInvoices]);
-  const totalContainers = allInvoices.length;
+  const stats = customer?.exactStats;
+  const totalBilled = stats?.grossRevenue || allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalInvoicesCount = stats?.invoiceCount || allInvoices.length;
+  const totalPaid = stats?.netBilledAmount || allInvoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalPending = stats?.taxAmount || allInvoices.filter(i => i.status !== 'Paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalContainers = stats?.activeContainersCount || allInvoices.length;
 
   // Pagination
   const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1;
@@ -168,8 +176,8 @@ export default function InvoiceCardsView({
             {formatCurrency(totalBilled)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Total Bills</span>
-            <span className="font-bold text-blue-700">{allInvoices.length} Invoices</span>
+            <span>Total Invoices</span>
+            <span className="font-bold text-blue-700">{totalInvoicesCount.toLocaleString('en-IN')} Bills</span>
           </div>
         </div>
 
@@ -187,8 +195,8 @@ export default function InvoiceCardsView({
             {formatCurrency(totalPaid)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Settled Bills</span>
-            <span className="font-bold text-emerald-600">{paidInvoices.length} Paid</span>
+            <span>Settled Invoices</span>
+            <span className="font-bold text-emerald-600">Reconciled</span>
           </div>
         </div>
 
@@ -206,8 +214,8 @@ export default function InvoiceCardsView({
             {formatCurrency(totalPending)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Pending Invoices</span>
-            <span className="font-bold text-amber-600">{pendingInvoices.length} Due</span>
+            <span>Tax & Dues</span>
+            <span className="font-bold text-amber-600">Pending Ledger</span>
           </div>
         </div>
 
@@ -223,11 +231,11 @@ export default function InvoiceCardsView({
           </div>
           <div className="text-base sm:text-2xl font-black font-display text-[#0f172a] mt-1">
             {totalContainers}{' '}
-            <span className="text-xs font-normal text-slate-400">Units</span>
+            <span className="text-xs font-normal text-slate-400">Active</span>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Reefer & Dry</span>
-            <span className="font-bold text-purple-700">Multimodal Moves</span>
+            <span>Fleet Movement</span>
+            <span className="font-bold text-purple-700">Reefer Cold Chain</span>
           </div>
         </div>
 
