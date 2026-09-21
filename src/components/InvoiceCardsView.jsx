@@ -143,10 +143,13 @@ export default function InvoiceCardsView({
 
   // Real Customer-Centric KPIs (Billing, Paid, Outstanding, Containers)
   const stats = customer?.exactStats;
+  const paidInvoices = useMemo(() => allInvoices.filter(i => i.status === 'Paid'), [allInvoices]);
+  const pendingInvoices = useMemo(() => allInvoices.filter(i => i.status !== 'Paid'), [allInvoices]);
+
   const totalBilled = stats?.grossRevenue || allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
   const totalInvoicesCount = stats?.invoiceCount || allInvoices.length;
-  const totalPaid = stats?.netBilledAmount || allInvoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-  const totalPending = stats?.taxAmount || allInvoices.filter(i => i.status !== 'Paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalPaid = stats?.netBilledAmount || paidInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalPending = stats?.taxAmount || pendingInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
   const totalContainers = stats?.activeContainersCount || allInvoices.length;
 
   // Pagination
