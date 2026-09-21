@@ -52,9 +52,49 @@ export default function InvoiceCardsView({
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  // Filter invoices
+  const [sortOrder, setSortOrder] = useState('LATEST'); // 'LATEST', 'OLDEST', 'HIGHEST_AMOUNT', 'LOWEST_AMOUNT'
+
+  // Helper to parse invoice date and time timestamp
+  const parseInvoiceTimestamp = (inv) => {
+    let dateMs = 0;
+    if (inv.createdOn) {
+      const t = new Date(inv.createdOn).getTime();
+      if (!isNaN(t)) dateMs = t;
+    }
+    if (!dateMs && inv.date) {
+      const parts = String(inv.date).trim().split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD/MM/YYYY
+          const d = parts[0].padStart(2, '0');
+          const m = parts[1].padStart(2, '0');
+          const y = parts[2];
+          const t = new Date(`${y}-${m}-${d}T12:00:00Z`).getTime();
+          if (!isNaN(t)) dateMs = t;
+        } else if (parts[0].length === 4) {
+          // YYYY/MM/DD
+          const t = new Date(inv.date).getTime();
+          if (!isNaN(t)) dateMs = t;
+        }
+      }
+    }
+    
+    // Extract sequence number from partyInvNo or invoiceNo or invoiceRefNo
+    let seq = 0;
+    const seqMatch = (inv.partyInvNo || '').match(/\/(\d+)\//) || (inv.invoiceNo || '').match(/\d+/) || (inv.invoiceRefNo || '').match(/\d+$/);
+    if (seqMatch) {
+      seq = parseInt(seqMatch[1] || seqMatch[0], 10) || 0;
+    }
+
+    return {
+      time: dateMs || 0,
+      seq: seq
+    };
+  };
+
+  // Filter & sort invoices (Latest first by default - sabse upar by time)
   const filteredInvoices = useMemo(() => {
-    return allInvoices.filter((inv) => {
+    const list = allInvoices.filter((inv) => {
       const s = searchTerm.toLowerCase().trim();
       const matchesSearch = !s || (
         (inv.partyInvNo || '').toLowerCase().includes(s) ||
@@ -69,7 +109,29 @@ export default function InvoiceCardsView({
 
       return matchesSearch && matchesStatus;
     });
-  }, [allInvoices, searchTerm, statusFilter]);
+
+    return list.sort((a, b) => {
+      const tA = parseInvoiceTimestamp(a);
+      const tB = parseInvoiceTimestamp(b);
+
+      if (sortOrder === 'LATEST') {
+        if (tB.time !== tA.time) return tB.time - tA.time;
+        return tB.seq - tA.seq;
+      }
+      if (sortOrder === 'OLDEST') {
+        if (tA.time !== tB.time) return tA.time - tB.time;
+        return tA.seq - tB.seq;
+      }
+      if (sortOrder === 'HIGHEST_AMOUNT') {
+        return (b.totalAmount || 0) - (a.totalAmount || 0);
+      }
+      if (sortOrder === 'LOWEST_AMOUNT') {
+        return (a.totalAmount || 0) - (b.totalAmount || 0);
+      }
+      if (tB.time !== tA.time) return tB.time - tA.time;
+      return tB.seq - tA.seq;
+    });
+  }, [allInvoices, searchTerm, statusFilter, sortOrder]);
 
   // Real Customer-Centric KPIs (Billing, Paid, Outstanding, Containers)
   const totalBilled = useMemo(() => allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0), [allInvoices]);
@@ -189,32 +251,53 @@ export default function InvoiceCardsView({
           />
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {[
-            { id: 'ALL', label: `All (${allInvoices.length})` },
-            { id: 'PAID', label: `Paid (${paidInvoices.length})` },
-            { id: 'PENDING', label: `Pending (${pendingInvoices.length})` },
-            { id: 'CREDIT', label: 'Credit Notes' },
-          ].map((tab) => {
-            const isActive = statusFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setStatusFilter(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? 'bg-[#0f172a] text-white'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Status Filter Tabs & Sort Selector */}
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            {[
+              { id: 'ALL', label: `All (${allInvoices.length})` },
+              { id: 'PAID', label: `Paid (${paidInvoices.length})` },
+              { id: 'PENDING', label: `Pending (${pendingInvoices.length})` },
+              { id: 'CREDIT', label: 'Credit Notes' },
+            ].map((tab) => {
+              const isActive = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setStatusFilter(tab.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0f172a] text-white'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sort Selector */}
+          <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/80 text-[11px] font-bold text-slate-700">
+            <span className="text-slate-400 text-[10px]">Sort:</span>
+            <select
+              value={sortOrder}
+              onChange={(e) => {
+                setSortOrder(e.target.value);
+                setCurrentPage(1);
+              }}
+              aria-label="Sort Invoices"
+              className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer text-[11px]"
+            >
+              <option value="LATEST">⚡ Latest First (Date/Time)</option>
+              <option value="OLDEST">⏳ Oldest First</option>
+              <option value="HIGHEST_AMOUNT">💰 Highest Value</option>
+              <option value="LOWEST_AMOUNT">📉 Lowest Value</option>
+            </select>
+          </div>
         </div>
 
       </div>
