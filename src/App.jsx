@@ -10,16 +10,16 @@ import { CUSTOMER_ACCOUNTS } from './data/customerData';
 import REAL_INVOICES_DATA from './data/realInvoices.json';
 
 export default function App() {
-  // Try restoring saved customer session or default to HMA
+  // Try restoring saved customer session or show login page
   const [currentCustomer, setCurrentCustomer] = useState(() => {
     try {
       const saved = localStorage.getItem('spj_customer_session');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return CUSTOMER_ACCOUNTS[parsed.code] || CUSTOMER_ACCOUNTS['HMA'];
+        return CUSTOMER_ACCOUNTS[parsed.code] || Object.values(CUSTOMER_ACCOUNTS).find(c => c.name === parsed.name || c.id === parsed.code) || null;
       }
     } catch (e) {}
-    return CUSTOMER_ACCOUNTS['HMA']; // Default initial demo client (HMA Agro Industries)
+    return null;
   });
 
   const [activeTab, setActiveTab] = useState('invoices');
