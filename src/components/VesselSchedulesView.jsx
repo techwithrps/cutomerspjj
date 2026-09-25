@@ -39,6 +39,7 @@ export default function VesselSchedulesView({ customer }) {
   const [selectedPOD, setSelectedPOD] = useState('ALL');
   const [selectedPOL, setSelectedPOL] = useState('ALL');
   const [viewLayout, setViewLayout] = useState('grid'); // 'grid' | 'list'
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [activeVesselModal, setActiveVesselModal] = useState(null);
   const [schedules, setSchedules] = useState(INITIAL_VESSEL_SCHEDULES);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -285,28 +286,45 @@ export default function VesselSchedulesView({ customer }) {
         </div>
       </div>
 
-      {/* 4. Dropdown Filters & Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-soft space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      {/* 4. Dropdown Filters & Search Bar with Mobile Filter Toggle */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-soft space-y-3">
+        {/* Search Bar & Mobile Filter Button */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search vessel or voyage..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-xs"
+              className="w-full pl-8 sm:pl-9 pr-4 py-1.5 sm:py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-xs"
             />
           </div>
 
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(p => !p)}
+            className={`flex sm:hidden items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ${
+              showMobileFilters || isFiltered
+                ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            }`}
+          >
+            <Filter className="w-3 h-3" />
+            <span>Filter</span>
+            {isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-cyan-300"></span>}
+          </button>
+        </div>
+
+        {/* Dropdown Filters (Always on desktop, collapsible on mobile) */}
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 ${showMobileFilters ? 'block' : 'hidden sm:grid'}`}>
           {/* Shipping Lines Dropdown */}
           <div className="relative">
             <select
               value={selectedLine}
               onChange={(e) => setSelectedLine(e.target.value)}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
+              aria-label="Filter by Shipping Line"
+              className="w-full pl-3 pr-8 py-1.5 sm:py-2 bg-slate-50 border border-slate-300 rounded-xl text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
             >
               {SHIPPING_LINES.map(line => (
                 <option key={line.id} value={line.id}>
@@ -321,7 +339,8 @@ export default function VesselSchedulesView({ customer }) {
             <select
               value={selectedPOD}
               onChange={(e) => setSelectedPOD(e.target.value)}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
+              aria-label="Filter by Port of Discharge"
+              className="w-full pl-3 pr-8 py-1.5 sm:py-2 bg-slate-50 border border-slate-300 rounded-xl text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
             >
               {PORTS_OF_DISCHARGE.map(pod => (
                 <option key={pod.code} value={pod.code}>
@@ -336,7 +355,8 @@ export default function VesselSchedulesView({ customer }) {
             <select
               value={selectedPOL}
               onChange={(e) => setSelectedPOL(e.target.value)}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
+              aria-label="Filter by Port of Loading"
+              className="w-full pl-3 pr-8 py-1.5 sm:py-2 bg-slate-50 border border-slate-300 rounded-xl text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs truncate"
             >
               {PORTS_OF_LOADING.map(pol => (
                 <option key={pol.code} value={pol.code}>
@@ -345,7 +365,6 @@ export default function VesselSchedulesView({ customer }) {
               ))}
             </select>
           </div>
-
         </div>
 
         {/* Active Filter Chips */}
@@ -466,111 +485,95 @@ export default function VesselSchedulesView({ customer }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
             {filteredSchedules.map((item) => {
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-xl transition-all duration-200 p-4 sm:p-5 flex flex-col justify-between space-y-4 hover:border-slate-300"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 p-2 sm:p-5 flex flex-col justify-between space-y-2 sm:space-y-4 hover-lift"
                 >
                   
                   {/* Card Header: Line Badge & Status */}
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-xs text-blue-900 shrink-0 shadow-xs">
+                  <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1.5 sm:pb-3">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-[9px] sm:text-xs text-blue-900 shrink-0 shadow-2xs">
                         {item.lineCode.slice(0, 3)}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-extrabold text-xs text-slate-900 truncate">
+                        <h4 className="font-extrabold text-[10px] sm:text-xs text-slate-900 truncate">
                           {item.lineName}
                         </h4>
-                        <span className="text-[10px] text-slate-400 font-semibold block truncate">
-                          {item.lineSub}
-                        </span>
                       </div>
                     </div>
 
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="px-1.5 py-0.2 sm:px-2.5 sm:py-0.5 rounded-full text-[7px] sm:text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-0.5 shrink-0 whitespace-nowrap">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                       {item.status}
                     </span>
                   </div>
 
                   {/* Vessel Name & Voyage */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Ship className="w-4 h-4 text-[#e11d48] shrink-0" />
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1">
+                      <Ship className="w-3 h-3 sm:w-4 sm:h-4 text-[#e11d48] shrink-0" />
+                      <h3 className="text-[11px] sm:text-base font-black text-slate-900 tracking-tight truncate">
                         {item.vesselName}
                       </h3>
                     </div>
-                    <p className="text-[11px] font-semibold text-slate-500 pl-6">
-                      Voyage: <strong className="text-slate-800">{item.voyage}</strong> • IMO/Code: <strong className="text-slate-800">{item.imoCode}</strong>
+                    <p className="text-[8px] sm:text-[11px] font-medium text-slate-500 truncate pl-4 sm:pl-5">
+                      Voy: <strong className="text-slate-800">{item.voyage}</strong>
                     </p>
                   </div>
 
                   {/* Route Corridor Box (POL -> POD) */}
-                  <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200 grid grid-cols-[1fr,auto,1fr] items-center gap-2 sm:gap-3">
+                  <div className="bg-slate-50 rounded-lg sm:rounded-xl p-1.5 sm:p-3 border border-slate-100 grid grid-cols-[1fr,auto,1fr] items-center gap-1 sm:gap-2 text-[8px] sm:text-xs">
                     
                     {/* POL */}
                     <div className="min-w-0">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                        PORT OF LOADING
-                      </span>
-                      <h5 className="font-black text-xs text-slate-900 truncate mt-0.5" title={item.pol}>
-                        {item.pol}
-                      </h5>
-                      <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white text-slate-700 border border-slate-200 mt-1">
+                      <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase block">POL</span>
+                      <h5 className="font-black text-[9px] sm:text-xs text-slate-900 truncate" title={item.pol}>
                         {item.polCode}
-                      </span>
+                      </h5>
+                      <span className="text-[7px] sm:text-[9px] text-slate-500 truncate block">{item.pol}</span>
                     </div>
 
                     {/* Arrow */}
-                    <div className="flex items-center justify-center px-1">
-                      <ArrowRight className="w-4 h-4 text-rose-500 shrink-0" />
+                    <div className="flex items-center justify-center px-0.5">
+                      <ArrowRight className="w-3 h-3 text-rose-500 shrink-0" />
                     </div>
 
                     {/* POD */}
                     <div className="min-w-0 text-right">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                        PORT OF DISCHARGE
-                      </span>
-                      <h5 className="font-black text-xs text-slate-900 truncate mt-0.5" title={item.pod}>
-                        {item.pod}
-                      </h5>
-                      <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white text-rose-700 border border-slate-200 mt-1">
+                      <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase block">POD</span>
+                      <h5 className="font-black text-[9px] sm:text-xs text-rose-700 truncate" title={item.pod}>
                         {item.podCode}
-                      </span>
+                      </h5>
+                      <span className="text-[7px] sm:text-[9px] text-slate-500 truncate block">{item.pod}</span>
                     </div>
 
                   </div>
 
-                  {/* Dates Strip (ETD, ETA, Cut-off) */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                  {/* Dates Strip (ETD, ETA) */}
+                  <div className="grid grid-cols-2 gap-1 pt-1 border-t border-slate-100 text-[8px] sm:text-xs">
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block">ETD</span>
-                      <strong className="text-slate-900 font-extrabold text-[11px] sm:text-xs">{item.etd}</strong>
+                      <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase block">ETD</span>
+                      <strong className="text-slate-900 font-extrabold text-[8px] sm:text-xs block truncate">{item.etd}</strong>
                     </div>
 
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block">ETA</span>
-                      <strong className="text-slate-900 font-extrabold text-[11px] sm:text-xs">{item.eta}</strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block">CUT-OFF</span>
-                      <span className="text-slate-600 font-semibold text-[11px]">{item.cutOff || '—'}</span>
+                    <div className="text-right">
+                      <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase block">ETA</span>
+                      <strong className="text-slate-900 font-extrabold text-[8px] sm:text-xs block truncate">{item.eta}</strong>
                     </div>
                   </div>
 
                   {/* Card Actions (Live AIS Track Radar) */}
-                  <div className="pt-2 flex items-center justify-between gap-2">
+                  <div className="pt-1">
                     <button
                       onClick={() => setActiveVesselModal(item)}
-                      className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#0b1329] to-[#1e293b] hover:from-[#1e293b] hover:to-[#0b1329] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 group"
+                      className="w-full py-1 sm:py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#0b1329] to-[#1e293b] hover:from-[#1e293b] hover:to-[#0b1329] text-white text-[8px] sm:text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1 group active:scale-95 cursor-pointer"
                     >
-                      <Radio className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-120 transition-transform animate-pulse" />
-                      Track Live Vessel Radar
+                      <Radio className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-cyan-400 group-hover:scale-110 transition-transform animate-pulse" />
+                      <span>Live Radar</span>
                     </button>
                   </div>
 
