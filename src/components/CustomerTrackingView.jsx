@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Container, 
   MapPin, 
@@ -21,12 +21,25 @@ import {
   Search, 
   ArrowRight,
   ChevronRight,
-  RotateCcw
+  RotateCcw,
+  FileText,
+  Layers,
+  Database,
+  Calendar,
+  Filter,
+  ExternalLink,
+  Table,
+  CheckCircle
 } from 'lucide-react';
+import { executeMovementHistoryPK, executeMovementHistorySummary } from '../services/movementHistoryService';
 
 export default function CustomerTrackingView({ customer, prefilledQuery = '', containers = [], invoices = [] }) {
   const [searchInput, setSearchInput] = useState(prefilledQuery);
   const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : (containers[0]?.contNo || null));
+  const [searchMode, setSearchMode] = useState('CONTAINER'); // 'CONTAINER' | 'INVOICE'
+  const [activeTrackingTab, setActiveTrackingTab] = useState('pipeline'); // 'pipeline' | 'oracle_pk' | 'summary'
+  const [oraclePhaseFilter, setOraclePhaseFilter] = useState('ALL');
+  const [oracleSearchTerm, setOracleSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -69,21 +82,87 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
            (c.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
   ) || (invoices || []).find(
     (i) => (i.containerNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (i.partyInvNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (i.invoiceNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
            (i.sbNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
            (i.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
   ) || null;
 
-  const contNo = matched?.contNo || matched?.containerNo || searchedContainer || 'MNBU9081434';
+  const contNo = matched?.contNo || matched?.containerNo || searchedContainer || 'MNBU0361774';
   const shippingLine = matched?.shippingLine || 'MSC';
   const terminal = matched?.terminal || 'TRANSWORLD-DADRI';
   const pol = matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva';
-  const destination = matched?.destination || matched?.destinationPort || 'ALEXANDRIA-EGYPT';
+  const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
   const sbNo = matched?.sbNo || '6741363';
   const blNo = matched?.blNo || 'MEDU1192973';
-  const invoiceDate = matched?.inDate || matched?.date || '21/09/2026';
+  const invoiceDate = matched?.inDate || matched?.date || '25/09/2026';
   const movementStatus = matched?.status || 'Rail In-Transit (WDFC Rake)';
   const sizeType = `${matched?.size || matched?.containerSize || '40 FT'} ${matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : '40 FT HC')}`;
   const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
+
+  // Compute 45-step Oracle Stored Procedure (SP_MOVEMENT_HISTORY_PK)
+  const oracleMovementSteps = useMemo(() => {
+    return executeMovementHistoryPK(contNo, {
+      ...matched,
+      shippingLine,
+      terminal,
+      pol,
+      destination,
+      customerName: customer?.name,
+      partyInvNo: matched?.partyInvNo || matched?.invoiceNo,
+      invoiceRefNo: matched?.invoiceRefNo,
+      sbNo,
+      blNo,
+      date: invoiceDate
+    });
+  }, [contNo, matched, shippingLine, terminal, pol, destination, customer, sbNo, blNo, invoiceDate]);
+
+  // Compute Invoice Summary Cursor (SP_MOVEMENT_HISTORY_SUMMARY)
+  const invoiceSummaryRecords = useMemo(() => {
+    const invQuery = matched?.partyInvNo || matched?.invoiceNo || searchedContainer || '243439';
+    return executeMovementHistorySummary(invQuery);
+  }, [matched, searchedContainer]);
+
+  // Filter 45 Oracle movement steps
+  const filteredOracleSteps = useMemo(() => {
+    return oracleMovementSteps.filter(step => {
+      const matchesPhase = oraclePhaseFilter === 'ALL' || step.PHASE === oraclePhaseFilter;
+      const s = oracleSearchTerm.toLowerCase().trim();
+      const matchesSearch = !s || (
+        step.ACTIVITY_NAME.toLowerCase().includes(s) ||
+        step.DOC_NO.toLowerCase().includes(s) ||
+        step.DOC_TYPE.toLowerCase().includes(s) ||
+        step.REMARKS.toLowerCase().includes(s) ||
+        step.CREATED_BY.toLowerCase().includes(s) ||
+        String(step.SR_NO).includes(s)
+      );
+      return matchesPhase && matchesSearch;
+    });
+  }, [oracleMovementSteps, oraclePhaseFilter, oracleSearchTerm]);
+
+  // Export 45 steps as CSV
+  const handleExportCSV = () => {
+    const headers = ['SR_NO', 'PHASE', 'DOC_TYPE', 'ACTIVITY_NAME', 'DOC_NO', 'ACTIVITY_DATE', 'REMARKS', 'CREATED_BY', 'CREATED_ON'];
+    const rows = oracleMovementSteps.map(s => [
+      s.SR_NO,
+      `"${s.PHASE}"`,
+      `"${s.DOC_TYPE}"`,
+      `"${s.ACTIVITY_NAME}"`,
+      `"${s.DOC_NO}"`,
+      `"${s.ACTIVITY_DATE}"`,
+      `"${s.REMARKS}"`,
+      `"${s.CREATED_BY}"`,
+      `"${s.CREATED_ON}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `SP_MOVEMENT_HISTORY_PK_${contNo}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Quick suggestions from real active containers
   const quickSuggestions = (containers || []).slice(0, 4).map(c => c.contNo).filter(Boolean);
@@ -323,200 +402,437 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
 
           </div>
 
-          {/* 3. Progressive Arrow / Chevron Connected Pipeline */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-card space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Multimodal Progressive Pipeline
-              </span>
-              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
-                Connected Rail-Port Corridor
-              </span>
+          {/* Sub-Tab Switcher: 1. Visual Pipeline, 2. Oracle 45-Point Ledger (SP_MOVEMENT_HISTORY_PK), 3. Invoice Summary Cursor */}
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2 flex-wrap">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-2xl overflow-x-auto max-w-full">
+              <button
+                type="button"
+                onClick={() => setActiveTrackingTab('pipeline')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  activeTrackingTab === 'pipeline'
+                    ? 'bg-white text-slate-950 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                <span>Visual Journey & Telemetry</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTrackingTab('oracle_pk')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  activeTrackingTab === 'oracle_pk'
+                    ? 'bg-[#0b1329] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Database className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Oracle 45-Point Ledger (SP_MOVEMENT_HISTORY_PK)</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  45
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTrackingTab('summary')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  activeTrackingTab === 'summary'
+                    ? 'bg-white text-slate-950 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Invoice Cursor (SP_MOVEMENT_HISTORY_SUMMARY)</span>
+              </button>
             </div>
 
-            {/* Progressive Arrow Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-              {progressivePipeline.map((step, idx) => {
-                const isCompleted = step.status === 'completed';
-                const isCurrent = step.status === 'current';
-                const StepIcon = step.icon;
-                const isLast = idx === progressivePipeline.length - 1;
-
-                return (
-                  <div key={step.id} className="relative flex flex-col justify-between">
-                    
-                    {/* Arrow Step Card */}
-                    <div className={`p-3 rounded-2xl border text-center transition-all h-full flex flex-col justify-between relative ${
-                      isCurrent
-                        ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
-                        : isCompleted
-                        ? 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
-                        : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
-                    }`}>
-                      
-                      <div>
-                        {/* Step Number & Icon */}
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
-                            isCurrent ? 'bg-white/20 text-white' : isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'
-                          }`}>
-                            0{step.id}
-                          </span>
-                          <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-white animate-bounce' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
-                        </div>
-
-                        <div className="text-xs font-black truncate">{step.label}</div>
-                      </div>
-
-                      <div className={`text-[10px] truncate mt-2 font-medium ${
-                        isCurrent ? 'text-blue-100 font-bold' : isCompleted ? 'text-emerald-700' : 'text-slate-400'
-                      }`}>
-                        {step.sub}
-                      </div>
-
-                    </div>
-
-                    {/* Progressive Arrow Connector (Desktop) */}
-                    {!isLast && (
-                      <div className="hidden lg:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-4 h-4 rounded-full bg-white border border-slate-300 items-center justify-center shadow-xs text-slate-400">
-                        <ChevronRight className="w-3 h-3" />
-                      </div>
-                    )}
-
-                  </div>
-                );
-              })}
-            </div>
+            {activeTrackingTab === 'oracle_pk' && (
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export 45 Steps CSV</span>
+              </button>
+            )}
           </div>
 
-          {/* 4. Live Cold Chain Telemetry Gauges */}
-          <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10 border-2 border-cyan-500/30 rounded-3xl p-4 sm:p-5 space-y-3 shadow-card">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold shadow-sm">
-                  <Thermometer className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">
-                    Live Cold Chain Reefer Telemetry
-                  </h3>
-                  <span className="text-[11px] text-cyan-800 font-medium">
-                    Daikin / Carrier Transicold Micro-Link 3 Gateway • 10-min IoT Sync
+          {/* VIEW 1: VISUAL PROGRESSIVE PIPELINE & TELEMETRY */}
+          {activeTrackingTab === 'pipeline' && (
+            <div className="space-y-4 sm:space-y-5 animate-fade-in">
+              {/* 3. Progressive Arrow / Chevron Connected Pipeline */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-card space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Multimodal Progressive Pipeline
+                  </span>
+                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
+                    Connected Rail-Port Corridor
                   </span>
                 </div>
-              </div>
 
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                TEMP OPTIMAL (-18.0°C)
-              </span>
-            </div>
+                {/* Progressive Arrow Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {progressivePipeline.map((step, idx) => {
+                    const isCompleted = step.status === 'completed';
+                    const isCurrent = step.status === 'current';
+                    const StepIcon = step.icon;
+                    const isLast = idx === progressivePipeline.length - 1;
 
-            {/* 4 Gauges */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Setpoint</span>
-                <span className="font-mono text-base sm:text-lg font-black text-blue-700 block mt-0.5">-18.0°C</span>
-                <span className="text-[9px] text-emerald-600 font-bold">Locked Target</span>
-              </div>
+                    return (
+                      <div key={step.id} className="relative flex flex-col justify-between">
+                        
+                        {/* Arrow Step Card */}
+                        <div className={`p-3 rounded-2xl border text-center transition-all h-full flex flex-col justify-between relative ${
+                          isCurrent
+                            ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
+                            : isCompleted
+                            ? 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
+                            : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
+                        }`}>
+                          
+                          <div>
+                            {/* Step Number & Icon */}
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                isCurrent ? 'bg-white/20 text-white' : isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'
+                              }`}>
+                                0{step.id}
+                              </span>
+                              <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-white animate-bounce' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
+                            </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Supply Air</span>
-                <span className="font-mono text-base sm:text-lg font-black text-cyan-700 block mt-0.5">-18.4°C</span>
-                <span className="text-[9px] text-cyan-600 font-bold">Active Evaporator</span>
-              </div>
+                            <div className="text-xs font-black truncate">{step.label}</div>
+                          </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Return Air</span>
-                <span className="font-mono text-base sm:text-lg font-black text-indigo-700 block mt-0.5">-17.9°C</span>
-                <span className="text-[9px] text-indigo-600 font-bold">Cargo Ambient</span>
-              </div>
+                          <div className={`text-[10px] truncate mt-2 font-medium ${
+                            isCurrent ? 'text-blue-100 font-bold' : isCompleted ? 'text-emerald-700' : 'text-slate-400'
+                          }`}>
+                            {step.sub}
+                          </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Power Source</span>
-                <span className="font-mono text-xs sm:text-sm font-black text-emerald-700 block mt-0.5 flex items-center justify-center gap-1">
-                  <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                  440V CLIP-ON
-                </span>
-                <span className="text-[9px] text-emerald-600 font-bold">Continuous Genset</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Detailed Milestone Stepper */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-card space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-base font-black text-slate-900">
-                  Multimodal Lifecycle Milestones (Track & Trace)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Synchronized with SPJ CFS Gate, Western DFC Railhead & Gateway Port EDI Portals
-                </p>
-              </div>
-              <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
-                Stage 4 of 7 Completed
-              </span>
-            </div>
-
-            {/* Milestone Steps */}
-            <div className="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-              {milestones.map((item, idx) => {
-                const isDone = item.status === 'completed';
-                const isCur = item.status === 'current';
-                const IconComponent = item.icon;
-
-                return (
-                  <div key={idx} className="relative group">
-                    {/* Badge */}
-                    <div className={`absolute -left-6 sm:-left-8 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
-                      isDone 
-                        ? 'bg-emerald-600 text-white shadow-sm ring-3 ring-emerald-100' 
-                        : isCur 
-                        ? 'bg-blue-600 text-white shadow-md ring-3 ring-blue-100 animate-pulse' 
-                        : 'bg-slate-100 text-slate-400 border border-slate-300'
-                    }`}>
-                      <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </div>
-
-                    {/* Step Content */}
-                    <div className={`p-4 rounded-2xl border transition-all ${
-                      isCur 
-                        ? 'bg-blue-50/80 border-blue-200 shadow-sm' 
-                        : isDone 
-                        ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs' 
-                        : 'bg-slate-50/60 border-slate-200 opacity-60'
-                    }`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs sm:text-sm font-black ${isCur ? 'text-blue-950' : 'text-slate-900'}`}>
-                            {item.title}
-                          </span>
-                          {isCur && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-600 text-white uppercase tracking-wider">
-                              In Progress
-                            </span>
-                          )}
                         </div>
-                        <span className="text-xs font-mono font-semibold text-slate-500">
-                          {item.timestamp}
-                        </span>
-                      </div>
 
-                      <div className="text-xs font-bold text-slate-700 mt-1 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                        <span>{item.location}</span>
-                      </div>
+                        {/* Progressive Arrow Connector (Desktop) */}
+                        {!isLast && (
+                          <div className="hidden lg:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-4 h-4 rounded-full bg-white border border-slate-300 items-center justify-center shadow-xs text-slate-400">
+                            <ChevronRight className="w-3 h-3" />
+                          </div>
+                        )}
 
-                      <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
-                        {item.details}
-                      </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. Live Cold Chain Telemetry Gauges */}
+              <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10 border-2 border-cyan-500/30 rounded-3xl p-4 sm:p-5 space-y-3 shadow-card">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold shadow-sm">
+                      <Thermometer className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">
+                        Live Cold Chain Reefer Telemetry
+                      </h3>
+                      <span className="text-[11px] text-cyan-800 font-medium">
+                        Daikin / Carrier Transicold Micro-Link 3 Gateway • 10-min IoT Sync
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    TEMP OPTIMAL (-18.0°C)
+                  </span>
+                </div>
+
+                {/* 4 Gauges */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Setpoint</span>
+                    <span className="font-mono text-base sm:text-lg font-black text-blue-700 block mt-0.5">-18.0°C</span>
+                    <span className="text-[9px] text-emerald-600 font-bold">Locked Target</span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Supply Air</span>
+                    <span className="font-mono text-base sm:text-lg font-black text-cyan-700 block mt-0.5">-18.4°C</span>
+                    <span className="text-[9px] text-cyan-600 font-bold">Active Evaporator</span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Return Air</span>
+                    <span className="font-mono text-base sm:text-lg font-black text-indigo-700 block mt-0.5">-17.9°C</span>
+                    <span className="text-[9px] text-indigo-600 font-bold">Cargo Ambient</span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-cyan-200 shadow-2xs text-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Power Source</span>
+                    <span className="font-mono text-xs sm:text-sm font-black text-emerald-700 block mt-0.5 flex items-center justify-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                      440V CLIP-ON
+                    </span>
+                    <span className="text-[9px] text-emerald-600 font-bold">Continuous Genset</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Detailed Milestone Stepper */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-card space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">
+                      Multimodal Lifecycle Milestones (Track & Trace)
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Synchronized with SPJ CFS Gate, Western DFC Railhead & Gateway Port EDI Portals
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
+                    Stage 4 of 7 Completed
+                  </span>
+                </div>
+
+                {/* Milestone Steps */}
+                <div className="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                  {milestones.map((item, idx) => {
+                    const isDone = item.status === 'completed';
+                    const isCur = item.status === 'current';
+                    const IconComponent = item.icon;
+
+                    return (
+                      <div key={idx} className="relative group">
+                        {/* Badge */}
+                        <div className={`absolute -left-6 sm:-left-8 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
+                          isDone 
+                            ? 'bg-emerald-600 text-white shadow-sm ring-3 ring-emerald-100' 
+                            : isCur 
+                            ? 'bg-blue-600 text-white shadow-md ring-3 ring-blue-100 animate-pulse' 
+                            : 'bg-slate-100 text-slate-400 border border-slate-300'
+                        }`}>
+                          <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </div>
+
+                        {/* Step Content */}
+                        <div className={`p-4 rounded-2xl border transition-all ${
+                          isCur 
+                            ? 'bg-blue-50/80 border-blue-200 shadow-sm' 
+                            : isDone 
+                            ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs' 
+                            : 'bg-slate-50/60 border-slate-200 opacity-60'
+                        }`}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs sm:text-sm font-black ${isCur ? 'text-blue-950' : 'text-slate-900'}`}>
+                                {item.title}
+                              </span>
+                              {isCur && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-600 text-white uppercase tracking-wider">
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono font-semibold text-slate-500">
+                              {item.timestamp}
+                            </span>
+                          </div>
+
+                          <div className="text-xs font-bold text-slate-700 mt-1 flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>{item.location}</span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
+                            {item.details}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* VIEW 2: ORACLE 45-POINT MOVEMENT LEDGER (SP_MOVEMENT_HISTORY_PK) */}
+          {activeTrackingTab === 'oracle_pk' && (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4 animate-fade-in">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      <Database className="w-4 h-4 text-blue-600" />
+                      Oracle SP_MOVEMENT_HISTORY_PK (45-Step Master Ledger)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                      Direct Procedure View
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Complete sequential audit trail for Container <strong className="font-mono text-slate-800">{contNo}</strong> from Empty Allocation to COD.
+                  </p>
+                </div>
+
+                {/* Filter Search Input */}
+                <div className="relative w-full md:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={oracleSearchTerm}
+                    onChange={(e) => setOracleSearchTerm(e.target.value)}
+                    placeholder="Search 45 events..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              {/* Phase Filter Chips */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                {['ALL', 'Empty Allocation', 'Fleet Transport', 'Plant Stuffing', 'Booking & Space Allotment', 'Rail Corridor', 'Shipped On Board', 'Destination Discharge', 'SPJ Billing'].map(phase => (
+                  <button
+                    key={phase}
+                    type="button"
+                    onClick={() => setOraclePhaseFilter(phase)}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] whitespace-nowrap transition-colors cursor-pointer ${
+                      oraclePhaseFilter === phase
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {phase === 'ALL' ? 'All 45 Stages' : phase}
+                  </button>
+                ))}
+              </div>
+
+              {/* 45-Step Ledger Table */}
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900 text-white font-black text-[10px] uppercase tracking-wider">
+                      <th className="py-3 px-3 text-center">SR#</th>
+                      <th className="py-3 px-3">Lifecycle Phase</th>
+                      <th className="py-3 px-4">Activity Name</th>
+                      <th className="py-3 px-3">Doc Type</th>
+                      <th className="py-3 px-4">Document / Reference No</th>
+                      <th className="py-3 px-3">Activity Date</th>
+                      <th className="py-3 px-4">Audit Remarks</th>
+                      <th className="py-3 px-3">Created By</th>
+                      <th className="py-3 px-3">Created On</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+                    {filteredOracleSteps.map((step) => (
+                      <tr key={step.SR_NO} className="hover:bg-cyan-50/40 transition-colors">
+                        <td className="py-2.5 px-3 text-center font-mono font-black text-blue-700 bg-slate-50/80">
+                          {String(step.SR_NO).padStart(2, '0')}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 whitespace-nowrap">
+                            {step.PHASE}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4 font-bold text-slate-900">
+                          {step.ACTIVITY_NAME}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
+                          {step.DOC_TYPE || '-'}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900 max-w-[200px] truncate" title={step.DOC_NO}>
+                          {step.DOC_NO}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-slate-700 whitespace-nowrap">
+                          {step.ACTIVITY_DATE}
+                        </td>
+                        <td className="py-2.5 px-4 text-slate-600 max-w-[240px] truncate" title={step.REMARKS}>
+                          {step.REMARKS || '-'}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">
+                          {step.CREATED_BY}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">
+                          {step.CREATED_ON}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          )}
+
+          {/* VIEW 3: INVOICE MOVEMENT SUMMARY CURSOR (SP_MOVEMENT_HISTORY_SUMMARY) */}
+          {activeTrackingTab === 'summary' && (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-indigo-600" />
+                      Oracle SP_MOVEMENT_HISTORY_SUMMARY Cursor
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
+                      Party Invoice Cursor
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Querying Cursor for Party Invoice <strong className="font-mono text-slate-800">{matched?.partyInvNo || matched?.invoiceNo || '243439'}</strong>.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(JSON.stringify(invoiceSummaryRecords, null, 2))}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Copy JSON Cursor
+                </button>
+              </div>
+
+              {/* Cursor Table */}
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-[#0b1329] text-white font-black text-[10px] uppercase tracking-wider">
+                      <th className="py-3 px-3">MTY_CONT_ID</th>
+                      <th className="py-3 px-4">CONT_NO</th>
+                      <th className="py-3 px-3">CONT_SIZE</th>
+                      <th className="py-3 px-3">LINE</th>
+                      <th className="py-3 px-3">POL (Code)</th>
+                      <th className="py-3 px-3">POD (Code)</th>
+                      <th className="py-3 px-4">PARTY_INV_NO</th>
+                      <th className="py-3 px-4">REQUIRED_VESSEL</th>
+                      <th className="py-3 px-3">REQUIRED_ETD</th>
+                      <th className="py-3 px-4">COD_REMARK</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+                    {invoiceSummaryRecords.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-indigo-50/40 transition-colors">
+                        <td className="py-3 px-3 font-mono text-slate-500">{item.MTY_CONT_ID}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 text-[13px]">{item.CONT_NO}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-blue-700">{item.CONT_SIZE}</td>
+                        <td className="py-3 px-3 font-bold text-slate-900">{item.LINE}</td>
+                        <td className="py-3 px-3 font-mono font-black text-emerald-700 bg-emerald-50/50">{item.POL}</td>
+                        <td className="py-3 px-3 font-mono font-black text-cyan-700 bg-cyan-50/50">{item.POD}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-indigo-900">{item.PARTY_INV_NO}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-800">{item.REQUIRED_VESSEL}</td>
+                        <td className="py-3 px-3 font-mono text-slate-700">{item.REQUIRED_ETD}</td>
+                        <td className="py-3 px-4 text-slate-600">{item.COD_REMARK}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          )}
 
         </div>
       ) : (
