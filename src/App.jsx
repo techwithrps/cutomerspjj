@@ -25,7 +25,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('invoices');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [trackingQuery, setTrackingQuery] = useState('TRIU8629477');
+  const [trackingQuery, setTrackingQuery] = useState('');
 
   const handleLogout = () => {
     localStorage.removeItem('spj_customer_session');
@@ -39,8 +39,21 @@ export default function App() {
   const customerCode = currentCustomer.code || 'HMA';
   const customerInvoices = REAL_INVOICES_DATA[customerCode] || REAL_INVOICES_DATA['HMA'] || [];
 
-  // Generate live containers from real database records
-  const customerContainers = customerInvoices.slice(0, 12).map((inv, idx) => ({
+  // Helper to sort real database invoices latest first
+  const sortedCustomerInvoices = [...customerInvoices].sort((a, b) => {
+    const parseD = (inv) => {
+      const raw = inv.createdOn || inv.date;
+      if (!raw) return 0;
+      const dmy = String(raw).trim().match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (dmy) return new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10)).getTime() || 0;
+      const t = new Date(raw).getTime();
+      return isNaN(t) ? 0 : t;
+    };
+    return parseD(b) - parseD(a);
+  });
+
+  // Generate live containers from latest real database records
+  const customerContainers = sortedCustomerInvoices.slice(0, 16).map((inv, idx) => ({
     contNo: inv.containerNo || `TEMU${500100 + idx}`,
     size: inv.containerSize || '40 FT',
     type: inv.containerType || 'REEFER (-18°C)',
@@ -55,8 +68,8 @@ export default function App() {
     terminal: inv.terminal || 'DADRI-ALLCARGO',
     destination: inv.destinationPort || 'Jebel Ali Port',
     status: inv.status === 'Paid' ? 'Dispatched to Gateway Port' : 'Yard Staging & Verification',
-    inDate: inv.date,
-    outDate: inv.status === 'Paid' ? inv.date : '-',
+    inDate: inv.date || 'N/A',
+    outDate: inv.status === 'Paid' ? (inv.date || 'N/A') : '-',
     eta: '2026-03-28 14:00',
     liveGPS: `${inv.terminal} Line #Bay-${(idx % 8) + 1}`,
     health: 'Optimal'
