@@ -225,7 +225,7 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
                   setCustomerCode(e.target.value);
                   setError('');
                 }}
-                placeholder="e.g. FAIR, IFF, MARHABA, RUSTAM, HMA"
+                placeholder="Enter Client ID / Customer Code"
                 className="w-full h-11 sm:h-12 px-4 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
                 required
                 autoFocus
