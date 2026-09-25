@@ -9,6 +9,7 @@ import CustomerSupportView from './components/CustomerSupportView';
 import VesselSchedulesView from './components/VesselSchedulesView';
 import LiveScheduleFetcher from './components/LiveScheduleFetcher';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
+import CustomerWelcomeModal from './components/CustomerWelcomeModal';
 import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices } from './services/dataService';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('invoices');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [trackingQuery, setTrackingQuery] = useState('');
   const [customerInvoices, setCustomerInvoices] = useState(() => {
     if (currentCustomer) {
@@ -50,10 +52,16 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('spj_customer_session');
     setCurrentCustomer(null);
+    setShowWelcomeModal(false);
+  };
+
+  const handleLoginSuccess = (customerObj) => {
+    setCurrentCustomer(customerObj);
+    setShowWelcomeModal(true);
   };
 
   if (!currentCustomer) {
-    return <CustomerLoginPage onLoginSuccess={(c) => setCurrentCustomer(c)} />;
+    return <CustomerLoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
   const customerCode = currentCustomer.code || 'MARHABA_FROZEN_FOODS';
@@ -134,6 +142,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         customer={currentCustomer}
         onLogout={handleLogout}
+        onOpenWelcome={() => setShowWelcomeModal(true)}
       />
 
       {/* Main View Container */}
@@ -240,6 +249,14 @@ export default function App() {
         customer={currentCustomer}
         onClose={() => setSelectedInvoice(null)}
       />
+
+      {/* Customer Welcome & Quick Hub Modal */}
+      {showWelcomeModal && (
+        <CustomerWelcomeModal
+          customer={currentCustomer}
+          onClose={() => setShowWelcomeModal(false)}
+        />
+      )}
 
     </div>
   );

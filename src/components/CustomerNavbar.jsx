@@ -13,14 +13,16 @@ import {
   CheckCircle2,
   Navigation,
   Ship,
-  Cpu
+  Cpu,
+  Sparkles
 } from 'lucide-react';
 
 export default function CustomerNavbar({ 
   activeTab, 
   setActiveTab, 
   customer, 
-  onLogout 
+  onLogout,
+  onOpenWelcome 
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -106,21 +108,27 @@ export default function CustomerNavbar({
           {/* Right Action Items: Customer Pill + Big Red LOGOUT BUTTON */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            {/* Customer Pill (Desktop) */}
+            {/* Customer Pill (Desktop) - Clickable to open Welcome overview */}
             {customer && (
-              <div className="hidden md:flex items-center bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 gap-2 max-w-[200px] lg:max-w-[240px]">
-                <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-black text-[10px] shrink-0">
+              <button
+                type="button"
+                onClick={onOpenWelcome}
+                title="View Client Company Profile & Quick Stats"
+                className="hidden md:flex items-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 rounded-xl px-2.5 py-1 gap-2 max-w-[200px] lg:max-w-[240px] text-left cursor-pointer transition-all active:scale-95 group"
+              >
+                <div className="w-6 h-6 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 text-cyan-300 flex items-center justify-center font-black text-[10px] shrink-0">
                   <Building2 className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0 truncate">
-                  <p className="text-[11px] font-black text-white truncate leading-tight">
+                  <p className="text-[11px] font-black text-white truncate leading-tight group-hover:text-cyan-200">
                     {customer.name}
                   </p>
-                  <p className="text-[9px] text-cyan-400 font-mono leading-tight">
-                    {customer.code} CLIENT
+                  <p className="text-[9px] text-cyan-400 font-mono leading-tight flex items-center gap-1">
+                    <span>{customer.code} CLIENT</span>
+                    <Sparkles className="w-2.5 h-2.5 text-cyan-300 inline" />
                   </p>
                 </div>
-              </div>
+              </button>
             )}
 
             {/* 🔴 ALWAYS-VISIBLE HIGH-CONTRAST LOGOUT BUTTON */}
@@ -155,12 +163,16 @@ export default function CustomerNavbar({
           <div className="max-w-[1700px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             
             {/* Customer Title & Status */}
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <div 
+              onClick={onOpenWelcome}
+              className="flex items-center gap-2 min-w-0 cursor-pointer group"
+              title="Click to view Welcome Modal"
+            >
+              <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
               </div>
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="text-xs sm:text-sm font-extrabold text-white font-display truncate max-w-[280px] sm:max-w-none">
+                <span className="text-xs sm:text-sm font-extrabold text-white group-hover:text-cyan-200 font-display truncate max-w-[280px] sm:max-w-none transition-colors">
                   {customer.name}
                 </span>
                 <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
@@ -200,16 +212,23 @@ export default function CustomerNavbar({
             onClick={(e) => e.stopPropagation()}
             className="fixed top-16 right-3 left-3 sm:left-auto sm:right-6 sm:w-96 bg-[#0f172a] text-white rounded-3xl shadow-2xl border border-slate-700 p-4 z-[101] animate-scale-in space-y-3.5 max-h-[calc(100vh-80px)] overflow-y-auto"
           >
-            {/* Customer Account Header Card in Menu */}
+            {/* Customer Account Header Card in Menu (Clickable for Welcome Overview) */}
             {customer && (
-              <div className="p-3.5 bg-gradient-to-r from-slate-900 to-[#1e293b] rounded-2xl border border-slate-700 shadow-md space-y-2">
+              <div 
+                onClick={() => {
+                  if (onOpenWelcome) onOpenWelcome();
+                  setMobileMenuOpen(false);
+                }}
+                className="p-3.5 bg-gradient-to-r from-slate-900 to-[#1e293b] hover:border-cyan-500/60 rounded-2xl border border-slate-700 shadow-md space-y-2 cursor-pointer transition-all group active:scale-98"
+                title="View Company Welcome Overview"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center font-black text-cyan-300 shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/20 group-hover:bg-cyan-500/30 border border-cyan-500/30 flex items-center justify-center font-black text-cyan-300 shrink-0">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-extrabold text-white block truncate">
+                      <span className="text-xs font-extrabold text-white block truncate group-hover:text-cyan-200">
                         {customer.name}
                       </span>
                       <span className="text-[10px] text-cyan-300 block font-mono">
@@ -218,7 +237,10 @@ export default function CustomerNavbar({
                     </div>
                   </div>
                   <button 
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMobileMenuOpen(false);
+                    }}
                     className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
                   >
                     <X className="w-4 h-4" />

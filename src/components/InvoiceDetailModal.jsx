@@ -133,9 +133,9 @@ export default function InvoiceDetailModal({ invoice, customer, onClose }) {
                   <td className="p-2.5 font-medium text-slate-800 text-[11px]">
                     {invoice.serviceName || 'Multimodal Cargo Freight & Yard Handling'}
                   </td>
-                  <td className="p-2.5 text-center text-slate-600 text-[11px]">{invoice.tripType}</td>
-                  <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.taxableAmount)}</td>
-                  <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.tax)}</td>
+                  <td className="p-2.5 text-center text-slate-600 text-[11px]">{invoice.containerType || '40 FT RF'}</td>
+                  <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.taxableAmount || invoice.billAmount || (invoice.totalAmount / 1.18))}</td>
+                  <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.tax || invoice.taxAmount || (invoice.totalAmount - (invoice.totalAmount / 1.18)))}</td>
                   <td className="p-2.5 text-right font-mono font-bold text-slate-900 text-[11px]">{formatCurrency(invoice.totalAmount)}</td>
                 </tr>
               </tbody>
@@ -147,11 +147,11 @@ export default function InvoiceDetailModal({ invoice, customer, onClose }) {
             <div className="w-full sm:w-64 bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5 text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Taxable Value:</span>
-                <span className="font-mono font-bold">{formatCurrency(invoice.taxableAmount)}</span>
+                <span className="font-mono font-bold">{formatCurrency(invoice.taxableAmount || invoice.billAmount || (invoice.totalAmount / 1.18))}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Total GST / Tax:</span>
-                <span className="font-mono">{formatCurrency(invoice.tax)}</span>
+                <span className="font-mono">{formatCurrency(invoice.tax || invoice.taxAmount || (invoice.totalAmount - (invoice.totalAmount / 1.18)))}</span>
               </div>
               <div className="pt-1.5 border-t border-slate-200 flex justify-between text-xs font-black text-[#0f172a]">
                 <span>Grand Total:</span>

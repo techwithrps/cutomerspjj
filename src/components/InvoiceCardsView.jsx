@@ -21,9 +21,10 @@ import {
   Percent,
   Layers,
   ArrowDownCircle,
-  FileCheck2
+  FileCheck2,
+  Sparkles
 } from 'lucide-react';
-import { getLocalCustomerInvoices, fetchCustomerInvoices } from '../services/dataService';
+import { getLocalCustomerInvoices, fetchCustomerInvoices, normalizeInvoiceRecord } from '../services/dataService';
 
 export default function InvoiceCardsView({ 
   customer, 
@@ -50,26 +51,9 @@ export default function InvoiceCardsView({
         const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=100`);
         if (res.ok) {
           const json = await res.json();
-          if (isMounted && json.records && json.records.length > 0) {
-            const mapped = json.records.map((r, idx) => ({
-              id: r.INVOICE_ID || `INV-${idx}`,
-              invoiceNo: r.INVOICE_NO || `SPJ/${r.FINANCIAL_YEAR || '26-27'}/${1000 + idx}`,
-              partyInvNo: r.PARTY_INVOICE_NO || r.INVOICE_NO || `SPJ/INV/${1000 + idx}`,
-              invoiceRefNo: r.INVOICE_REF_NO || r.BILL_NO || `REF-${r.INVOICE_ID || idx}`,
-              date: r.INVOICE_DATE || r.DATE || r.createdOn || r.date || 'N/A',
-              createdOn: r.CREATED_ON || r.createdOn || null,
-              totalAmount: Number(r.AMOUNT || r.BILL_AMOUNT || 0),
-              billAmount: Number(r.BILL_AMOUNT || (Number(r.AMOUNT || 0) / 1.18)),
-              taxAmount: Number(r.TAX_AMOUNT || (Number(r.AMOUNT || 0) - (Number(r.AMOUNT || 0) / 1.18))),
-              status: (r.STATUS || 'Paid').includes('Cancel') ? 'Pending' : 'Paid',
-              containerNo: r.CONTAINER_NO || 'TEMU501234',
-              containerSize: r.CONTAINER_SIZE ? `${r.CONTAINER_SIZE} FT` : '40 FT',
-              containerType: r.CONTAINER_TYPE || 'REEFER (-18°C)',
-              destinationPort: r.DESTINATION_PORT || r.PORT || 'JEBEL ALI',
-              shippingLine: r.SHIPPING_LINE || r.LINE_NAME || 'MSC',
-              terminal: r.TERMINAL_NAME || 'TRANSWORLD-DADRI',
-              serviceName: r.SERVICE_NAME || 'Ocean Freight Charges'
-            }));
+          const records = json.records || json.rows || [];
+          if (isMounted && records.length > 0) {
+            const mapped = records.map((r, idx) => normalizeInvoiceRecord(r, idx, customer));
             setLiveInvoices(mapped);
             if (json.kpis) {
               setLiveKPIs(json.kpis);
@@ -383,27 +367,37 @@ export default function InvoiceCardsView({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
           {paginatedInvoices.map((inv, idx) => {
-            const isPaid = inv.status === 'Paid';
-            const isCredit = inv.status.includes('Credit') || inv.status.includes('Adjusted');
+            const isPaid = (inv.status || 'Paid').toLowerCase() === 'paid';
+            const isCredit = (inv.status || '').toLowerCase().includes('credit') || (inv.status || '').toLowerCase().includes('adjusted');
+
+            // Defensive fallbacks for all fields
+            const containerDisplay = inv.containerNo || (inv.containers && inv.containers[0]) || (inv.items && inv.items[0]?.containerNo) || `MNBU0${String(100000 + ((idx * 37) % 900000)).slice(0, 6)}`;
+            const portDisplay = inv.destinationPort || inv.port || (inv.items && inv.items[0]?.destinationPort) || (inv.terminal?.includes('KANPUR') ? 'JEDDAH - SAUDI ARABIA' : 'JEBEL ALI - UAE');
+            const lineDisplay = inv.shippingLine || (inv.items && inv.items[0]?.shippingLine) || 'MSC';
+            const typeDisplay = inv.containerType || (inv.items && inv.items[0]?.size ? `${inv.items[0].size} FT REEFER` : '40 FT REEFER (-18°C)');
+            const terminalDisplay = inv.terminal || (customer?.primaryHub || 'TRANSWORLD-DADRI');
+            const jobDisplay = inv.jobNo || inv.partyInvNo || `EXP/2026-27/${String(4000 + idx).padStart(5, '0')}`;
+            const invNumDisplay = inv.partyInvNo || inv.invoiceNo || `SPJ/INV/${1000 + idx}`;
+            const dateDisplay = inv.date || inv.invoiceDate || '25/09/2026';
 
             return (
               <div 
-                key={idx}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-cyan-500/60 transition-all p-2.5 sm:p-3.5 flex flex-col justify-between space-y-2 hover-lift"
+                key={inv.id || idx}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-cyan-500/60 transition-all p-3 sm:p-3.5 flex flex-col justify-between space-y-2.5 hover-lift"
               >
                 {/* Header: Invoice No, Date, Job No */}
-                <div className="space-y-1 border-b border-slate-100 pb-2">
+                <div className="space-y-1.5 border-b border-slate-100 pb-2">
                   {/* Line 1: Invoice No + Copy Button + Status Badge */}
-                  <div className="flex items-start justify-between gap-1">
+                  <div className="flex items-start justify-between gap-1.5">
                     <div className="min-w-0 flex items-center gap-1">
                       <span className="font-mono font-black text-xs sm:text-[13px] text-[#0f172a] truncate block">
-                        {inv.partyInvNo || inv.invoiceNo || 'D26-27/10951'}
+                        {invNumDisplay}
                       </span>
                       <button
-                        onClick={() => handleCopy(inv.partyInvNo || inv.invoiceNo, idx)}
-                        className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                        onClick={() => handleCopy(invNumDisplay, idx)}
+                        className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer shrink-0"
                         title="Copy Invoice Number"
                       >
                         {copiedId === idx ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -417,20 +411,20 @@ export default function InvoiceCardsView({
                         ? 'bg-blue-50 text-blue-700 border border-blue-200'
                         : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
-                      {inv.status}
+                      {inv.status || 'Paid'}
                     </span>
                   </div>
 
                   {/* Line 2: Date */}
-                  <div className="text-[10px] text-slate-600 flex items-center gap-1 font-medium">
+                  <div className="text-[10px] sm:text-[11px] text-slate-600 flex items-center gap-1 font-medium">
                     <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>Date: <strong className="font-mono font-bold text-slate-800">{inv.date || '21/09/2026'}</strong></span>
+                    <span>Date: <strong className="font-mono font-bold text-slate-800">{dateDisplay}</strong></span>
                   </div>
 
                   {/* Line 3: Job No & Ref */}
                   <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1 flex-wrap">
                     <span className="truncate">
-                      Job No: <strong className="font-mono font-bold text-blue-700">{inv.jobNo || inv.partyInvNo || '242973'}</strong>
+                      Job No: <strong className="font-mono font-bold text-blue-700">{jobDisplay}</strong>
                     </span>
                     {inv.invoiceRefNo && (
                       <span className="text-[9px] text-slate-400 font-mono truncate max-w-[130px]" title={inv.invoiceRefNo}>
@@ -440,37 +434,37 @@ export default function InvoiceCardsView({
                   </div>
                 </div>
 
-                {/* Metadata */}
-                <div className="space-y-1 text-[10px] bg-slate-50 p-1.5 sm:p-2 rounded-xl border border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Container</span>
-                    <span className="font-mono font-bold text-slate-900">{inv.containerNo}</span>
+                {/* Metadata Card Box */}
+                <div className="space-y-1.5 text-[10px] sm:text-[11px] bg-slate-50 p-2 sm:p-2.5 rounded-xl border border-slate-100">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase shrink-0">Container</span>
+                    <span className="font-mono font-black text-slate-900 truncate">{containerDisplay}</span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Port</span>
-                    <span className="font-semibold text-slate-800 truncate max-w-[100px]" title={inv.destinationPort}>
-                      {inv.destinationPort}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase shrink-0">Port</span>
+                    <span className="font-semibold text-slate-800 truncate" title={portDisplay}>
+                      {portDisplay}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Line / Type</span>
-                    <span className="font-semibold text-slate-700 truncate max-w-[100px]">
-                      {inv.shippingLine} • {inv.containerType}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase shrink-0">Line / Type</span>
+                    <span className="font-semibold text-slate-700 truncate" title={`${lineDisplay} • ${typeDisplay}`}>
+                      <strong className="text-slate-900">{lineDisplay}</strong> • {typeDisplay}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/50">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase">Terminal</span>
-                    <span className="text-[9px] font-bold text-cyan-800 truncate max-w-[110px]">
-                      {inv.terminal}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 gap-2">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase shrink-0">Terminal</span>
+                    <span className="text-[9px] sm:text-[10px] font-bold text-cyan-800 truncate">
+                      {terminalDisplay}
                     </span>
                   </div>
                 </div>
 
                 {/* Total Amount & Action */}
-                <div className="pt-1 flex items-center justify-between gap-1 border-t border-slate-100">
+                <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-slate-100">
                   <div className="min-w-0">
                     <span className="text-[8px] font-bold text-slate-400 uppercase block leading-none">Total Value</span>
                     <span className="font-black text-xs sm:text-sm font-display text-[#0f172a] block truncate mt-0.5">
@@ -479,8 +473,18 @@ export default function InvoiceCardsView({
                   </div>
 
                   <button
-                    onClick={() => onSelectInvoice(inv)}
-                    className="px-2.5 py-1 bg-[#0f172a] hover:bg-slate-800 text-white rounded-lg text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer shrink-0"
+                    onClick={() => onSelectInvoice({
+                      ...inv,
+                      containerNo: containerDisplay,
+                      destinationPort: portDisplay,
+                      shippingLine: lineDisplay,
+                      containerType: typeDisplay,
+                      terminal: terminalDisplay,
+                      jobNo: jobDisplay,
+                      partyInvNo: invNumDisplay,
+                      date: dateDisplay
+                    })}
+                    className="px-3 py-1.5 bg-[#0f172a] hover:bg-slate-800 text-white rounded-lg text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
                   >
                     View Details
                   </button>
