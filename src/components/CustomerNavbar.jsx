@@ -11,7 +11,8 @@ import {
   MapPin, 
   ChevronRight,
   CheckCircle2,
-  Navigation
+  Navigation,
+  Ship
 } from 'lucide-react';
 
 export default function CustomerNavbar({ 
@@ -25,7 +26,8 @@ export default function CustomerNavbar({
   const navItems = [
     { id: 'invoices', label: 'My Invoices', fullLabel: 'My Invoices (Cards)', icon: Receipt },
     { id: 'containers', label: 'Containers', fullLabel: 'Containers & Fleet Management', icon: Container },
-    { id: 'tracking', label: 'Track Container', fullLabel: 'Live Container Tracking', icon: Navigation, isHighlight: true },
+    { id: 'schedules', label: 'Vessel Schedules', fullLabel: 'Public Vessel Schedules & Radar', icon: Ship, isHighlight: true },
+    { id: 'tracking', label: 'Track Container', fullLabel: 'Live Container Tracking', icon: Navigation },
     { id: 'profile', label: 'Account Profile', fullLabel: 'Company Account & Profile', icon: Building2 },
     { id: 'support', label: 'RM Support', fullLabel: 'RM Desk & Support', icon: Headphones },
   ];

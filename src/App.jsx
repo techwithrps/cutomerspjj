@@ -6,6 +6,7 @@ import CustomerContainersView from './components/CustomerContainersView';
 import CustomerTrackingView from './components/CustomerTrackingView';
 import CustomerProfileView from './components/CustomerProfileView';
 import CustomerSupportView from './components/CustomerSupportView';
+import VesselSchedulesView from './components/VesselSchedulesView';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices } from './services/dataService';
 
@@ -154,6 +155,12 @@ export default function App() {
               setTrackingQuery(contNo);
               setActiveTab('tracking');
             }}
+          />
+        )}
+
+        {activeTab === 'schedules' && (
+          <VesselSchedulesView
+            customer={currentCustomer}
           />
         )}
 
