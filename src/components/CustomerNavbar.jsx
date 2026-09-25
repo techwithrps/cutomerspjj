@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   MapPin, 
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Navigation
 } from 'lucide-react';
 
 export default function CustomerNavbar({ 
@@ -23,7 +24,8 @@ export default function CustomerNavbar({
 
   const navItems = [
     { id: 'invoices', label: 'My Invoices', fullLabel: 'My Invoices (Cards)', icon: Receipt },
-    { id: 'containers', label: 'Live Containers', fullLabel: 'Live Containers', icon: Container },
+    { id: 'containers', label: 'Live Containers', fullLabel: 'Live Fleet Containers', icon: Container },
+    { id: 'tracking', label: 'Track Container', fullLabel: 'Live Container Tracking', icon: Navigation, isHighlight: true },
     { id: 'profile', label: 'Account Profile', fullLabel: 'Company Account & Profile', icon: Building2 },
     { id: 'support', label: 'RM Support', fullLabel: 'RM Desk & Support', icon: Headphones },
   ];
@@ -70,11 +72,11 @@ export default function CustomerNavbar({
           </div>
 
           {/* 💻 Navigation Tabs (Visible on md screens and above) */}
-          <nav className="hidden md:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 shrink-0">
+          <nav className="hidden lg:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
-              const isContainers = item.id === 'containers';
+              const isTracking = item.id === 'tracking';
               return (
                 <button
                   key={item.id}
@@ -87,9 +89,9 @@ export default function CustomerNavbar({
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span>{item.label}</span>
-                  {isContainers && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-cyan-500 text-slate-950 uppercase animate-pulse">
-                      TRACK
+                  {isTracking && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-cyan-400 text-slate-950 uppercase animate-pulse">
+                      LIVE
                     </span>
                   )}
                 </button>

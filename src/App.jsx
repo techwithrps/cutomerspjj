@@ -3,6 +3,7 @@ import CustomerLoginPage from './components/CustomerLoginPage';
 import CustomerNavbar from './components/CustomerNavbar';
 import InvoiceCardsView from './components/InvoiceCardsView';
 import CustomerContainersView from './components/CustomerContainersView';
+import CustomerTrackingView from './components/CustomerTrackingView';
 import CustomerProfileView from './components/CustomerProfileView';
 import CustomerSupportView from './components/CustomerSupportView';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
@@ -24,6 +25,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('invoices');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [trackingQuery, setTrackingQuery] = useState('TRIU8629477');
 
   const handleLogout = () => {
     localStorage.removeItem('spj_customer_session');
@@ -86,6 +88,17 @@ export default function App() {
           <CustomerContainersView
             containers={customerContainers}
             customer={currentCustomer}
+            onNavigateTrack={(contNo) => {
+              setTrackingQuery(contNo);
+              setActiveTab('tracking');
+            }}
+          />
+        )}
+
+        {activeTab === 'tracking' && (
+          <CustomerTrackingView
+            customer={currentCustomer}
+            prefilledQuery={trackingQuery}
           />
         )}
 

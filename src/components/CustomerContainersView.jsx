@@ -13,16 +13,12 @@ import {
   Copy,
   Check,
   Navigation,
-  ArrowRight,
-  Radio
+  ArrowRight
 } from 'lucide-react';
-import CustomerTrackingModal from './CustomerTrackingModal';
 
-export default function CustomerContainersView({ containers = [], customer }) {
+export default function CustomerContainersView({ containers = [], customer, onNavigateTrack }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState(null);
-  const [trackedContainer, setTrackedContainer] = useState(null);
-  const [directQuery, setDirectQuery] = useState('');
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -30,33 +26,7 @@ export default function CustomerContainersView({ containers = [], customer }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Ensure standard containers list includes TRIU8629477 if not present
-  const allContainers = [...containers];
-  if (!allContainers.some(c => c.contNo === 'TRIU8629477')) {
-    allContainers.unshift({
-      contNo: 'TRIU8629477',
-      size: '40 FT',
-      type: 'REEFER (-18°C)',
-      temp: '-18.2°C',
-      tempStatus: 'Active Cold Chain Plugged',
-      sealNo: 'SPJ-SEAL-99824',
-      bookingNo: 'BK-EVER-88192',
-      jobOrderNo: `JO/${customer?.code || 'EXP'}/2026-9812`,
-      shippingLine: 'EVERGREEN LINE',
-      commodity: 'Frozen Export Cargo (Halal)',
-      origin: `${customer?.name || 'Enterprise Client'} Plant`,
-      terminal: 'TRANSWORLD-DADRI / ALLCARGO',
-      destination: 'Jebel Ali Port (AEJEA)',
-      status: 'Rail In-Transit (WDFC to Nhava Sheva)',
-      inDate: '2026-03-24',
-      outDate: '-',
-      eta: '2026-03-28 14:00',
-      liveGPS: 'WDFC Dadri Yard Bay-4',
-      health: 'Optimal'
-    });
-  }
-
-  const filtered = allContainers.filter((c) => {
+  const filtered = (containers || []).filter((c) => {
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
     return (
@@ -69,69 +39,30 @@ export default function CustomerContainersView({ containers = [], customer }) {
     );
   });
 
-  const handleTrackSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (!searchTerm.trim()) return;
-    const found = allContainers.find(c => c.contNo.toUpperCase() === searchTerm.trim().toUpperCase());
-    if (found) {
-      setTrackedContainer(found);
-    } else {
-      setTrackedContainer({
-        contNo: searchTerm.trim().toUpperCase(),
-        size: '40 FT',
-        type: 'REEFER (-18°C)',
-        temp: '-18.0°C',
-        tempStatus: 'Cold Chain Verified',
-        sealNo: 'SPJ-SEAL-88219',
-        shippingLine: 'EVERGREEN / HAPAG-LLOYD',
-        origin: 'ICD Dadri / Allcargo Hub',
-        terminal: 'TRANSWORLD-DADRI',
-        destination: 'Jebel Ali Port (AEJEA)',
-        status: 'Rail In-Transit (WDFC to Port)',
-        eta: '2026-03-28 14:00',
-        liveGPS: 'In-Transit WDFC Rake-04'
-      });
-    }
-  };
-
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* Search & Direct Live Tracking Hero Header */}
-      <div className="bg-gradient-to-r from-[#0b1329] via-[#0284c7] to-[#1e40af] p-5 sm:p-7 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
-        <div className="space-y-1.5 text-center md:text-left">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-cyan-200 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            SPJ Live Multimodal Fleet Tracker
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-white">
-            Container Tracking & Telemetry Hub
+      {/* Search Header */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base sm:text-lg font-black font-display text-slate-900">
+            Live Container & Yard Fleet Tracking
           </h2>
-          <p className="text-xs sm:text-sm text-cyan-100/80 font-normal max-w-xl">
-            Track real-time container movements, railhead rakes, ocean schedules, and cold chain sensors booked for <strong className="text-white">{customer?.name}</strong>.
+          <p className="text-xs text-slate-500 font-medium">
+            Real-time status for containers booked under {customer?.name}
           </p>
         </div>
 
-        {/* Search & Direct Track Form */}
-        <form onSubmit={handleTrackSubmit} className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-2">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="e.g. TRIU8629477 / Seal #"
-              className="w-full pl-10 pr-4 py-2.5 bg-white text-slate-900 border-2 border-white/30 focus:border-cyan-400 rounded-2xl text-xs sm:text-sm font-bold placeholder-slate-400 focus:outline-none shadow-md uppercase"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-          >
-            <Navigation className="w-4 h-4" />
-            <span>Track Live</span>
-          </button>
-        </form>
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search Container / Seal #..."
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
+          />
+        </div>
       </div>
 
       {/* Containers Grid */}
@@ -232,7 +163,11 @@ export default function CustomerContainersView({ containers = [], customer }) {
                   </div>
 
                   <button
-                    onClick={() => setTrackedContainer(item)}
+                    onClick={() => {
+                      if (onNavigateTrack) {
+                        onNavigateTrack(item.contNo);
+                      }
+                    }}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0b1329] to-[#0284c7] hover:opacity-95 text-white font-extrabold text-xs shadow-md flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
                   >
                     <Navigation className="w-3.5 h-3.5" />
@@ -247,16 +182,6 @@ export default function CustomerContainersView({ containers = [], customer }) {
         </div>
       )}
 
-      {/* SPJ Multimodal Container Live Tracker Modal */}
-      {trackedContainer && (
-        <CustomerTrackingModal
-          container={trackedContainer}
-          customer={customer}
-          onClose={() => setTrackedContainer(null)}
-        />
-      )}
-
     </div>
   );
 }
-
