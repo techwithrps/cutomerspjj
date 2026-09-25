@@ -46,6 +46,8 @@ export default function CustomerTrackingView({
   const [activeTrackingTab, setActiveTrackingTab] = useState(initialSubTab || 'pipeline'); // 'pipeline' | 'oracle_pk' | 'gr_fleet' | 'summary'
   const [oraclePhaseFilter, setOraclePhaseFilter] = useState('ALL');
   const [oracleSearchTerm, setOracleSearchTerm] = useState('');
+  const [showOracleFilters, setShowOracleFilters] = useState(false);
+  const [showGRFilters, setShowGRFilters] = useState(false);
   const [selectedGRIndex, setSelectedGRIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -718,11 +720,11 @@ export default function CustomerTrackingView({
 
           {/* VIEW 2: ORACLE 45-POINT MOVEMENT LEDGER (SP_MOVEMENT_HISTORY_PK) */}
           {activeTrackingTab === 'oracle_pk' && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4 animate-fade-in">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-3 sm:space-y-4 animate-fade-in">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                       <Database className="w-4 h-4 text-blue-600" />
                       Oracle SP_MOVEMENT_HISTORY_PK (45-Step Master Ledger)
                     </h3>
@@ -735,27 +737,38 @@ export default function CustomerTrackingView({
                   </p>
                 </div>
 
-                {/* Filter Search Input */}
-                <div className="relative w-full md:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={oracleSearchTerm}
-                    onChange={(e) => setOracleSearchTerm(e.target.value)}
-                    placeholder="Search 45 events..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"
-                  />
+                {/* Filter Search Input & Mobile Filter Toggle */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative flex-1 md:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={oracleSearchTerm}
+                      onChange={(e) => setOracleSearchTerm(e.target.value)}
+                      placeholder="Search 45 events..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOracleFilters(!showOracleFilters)}
+                    className="md:hidden p-2 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                    title="Toggle Phase Filter"
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Phase Filter Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              {/* Phase Filter Chips (Visible on desktop or when toggled on mobile) */}
+              <div className={`flex items-center gap-1.5 overflow-x-auto pb-1 text-xs ${showOracleFilters ? 'flex' : 'hidden md:flex'}`}>
                 {['ALL', 'Empty Allocation', 'Fleet Transport', 'Plant Stuffing', 'Booking & Space Allotment', 'Rail Corridor', 'Shipped On Board', 'Destination Discharge', 'SPJ Billing'].map(phase => (
                   <button
                     key={phase}
                     type="button"
                     onClick={() => setOraclePhaseFilter(phase)}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] whitespace-nowrap transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-[11px] whitespace-nowrap transition-colors cursor-pointer ${
                       oraclePhaseFilter === phase
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -766,8 +779,58 @@ export default function CustomerTrackingView({
                 ))}
               </div>
 
-              {/* 45-Step Ledger Table */}
-              <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+              {/* Mobile Minimal 2-Column Grid (< md screens) */}
+              <div className="grid grid-cols-2 md:hidden gap-2">
+                {filteredOracleSteps.map((step) => (
+                  <div
+                    key={step.SR_NO}
+                    className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-sm hover:border-cyan-400 p-2 flex flex-col justify-between space-y-1.5 transition-all duration-200"
+                  >
+                    <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
+                      <span className="font-mono font-black text-[9px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                        #{String(step.SR_NO).padStart(2, '0')}
+                      </span>
+                      <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-slate-100 text-slate-600 truncate max-w-[75px]">
+                        {step.PHASE}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-[10px] text-slate-900 leading-snug line-clamp-2">
+                        {step.ACTIVITY_NAME}
+                      </h4>
+                      <div className="mt-1 space-y-0.5 text-[8px] text-slate-500 bg-slate-50 p-1 rounded border border-slate-100">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">DOC:</span>
+                          <span className="font-mono font-bold text-slate-800 truncate max-w-[70px]">{step.DOC_NO || '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">DATE:</span>
+                          <span className="font-mono text-slate-700">{step.ACTIVITY_DATE}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {step.SR_NO === 12 ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTrackingTab('gr_fleet')}
+                        className="w-full py-1 rounded bg-amber-500 hover:bg-amber-600 text-white font-bold text-[8px] flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                      >
+                        <Truck className="w-2.5 h-2.5" />
+                        <span>View Bilty</span>
+                      </button>
+                    ) : (
+                      <div className="text-[7px] text-slate-400 truncate pt-0.5 border-t border-slate-100">
+                        By: {step.CREATED_BY}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop 45-Step Ledger Table (md+ screens) */}
+              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-900 text-white font-black text-[10px] uppercase tracking-wider">
@@ -870,29 +933,64 @@ export default function CustomerTrackingView({
                   </div>
                 </div>
 
-                {/* GR Selector Chips */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  <span className="text-xs font-bold text-slate-500">Available GR Notes:</span>
-                  {fleetGRRecords.map((gr, idx) => (
-                    <button
-                      key={gr.grNo}
-                      type="button"
-                      onClick={() => setSelectedGRIndex(idx)}
-                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        selectedGRIndex === idx
-                          ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-500/30'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                      }`}
-                    >
-                      <Truck className="w-3.5 h-3.5" />
-                      <span>{gr.grNo}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
-                        selectedGRIndex === idx ? 'bg-black/20 text-amber-100' : 'bg-slate-200 text-slate-600'
-                      }`}>
-                        {gr.vehicleNo}
-                      </span>
-                    </button>
-                  ))}
+                {/* 2-Column Minimal GR Cards Grid on Mobile & Desktop */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Fleet GR Consignments ({fleetGRRecords.length})
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      Tap card to inspect full Bilty
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                    {fleetGRRecords.map((gr, idx) => {
+                      const isSelected = selectedGRIndex === idx;
+                      return (
+                        <div
+                          key={gr.grNo}
+                          onClick={() => setSelectedGRIndex(idx)}
+                          className={`p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                            isSelected
+                              ? 'bg-amber-50/80 border-amber-500 shadow-sm ring-2 ring-amber-400/40 -translate-y-0.5'
+                              : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
+                            <span className="font-mono font-black text-[10px] sm:text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 truncate">
+                              {gr.grNo}
+                            </span>
+                            <span className={`px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-black ${
+                              gr.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                            }`}>
+                              ● {gr.status}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5 text-[8px] sm:text-xs text-slate-600 bg-slate-50/70 p-1.5 rounded-lg border border-slate-100">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">VEHICLE:</span>
+                              <span className="font-mono font-bold text-blue-900 truncate max-w-[80px]">{gr.vehicleNo}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">DRIVER:</span>
+                              <span className="font-bold text-slate-800 truncate max-w-[80px]">{gr.driverName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">SEAL:</span>
+                              <span className="font-mono font-semibold text-emerald-700 truncate max-w-[80px]">{gr.sealNo}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[7px] sm:text-[10px] text-slate-500 pt-0.5">
+                            <span>Date: <strong>{gr.grDate}</strong></span>
+                            <span className="font-bold text-amber-700">{gr.grossWeight}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
