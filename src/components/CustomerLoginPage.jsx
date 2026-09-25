@@ -9,7 +9,7 @@ import {
   KeyRound, 
   Lock
 } from 'lucide-react';
-import { CUSTOMER_ACCOUNTS } from '../data/customerData';
+import { getCustomerAccount } from '../services/dataService';
 
 export default function CustomerLoginPage({ onLoginSuccess }) {
   const [customerCode, setCustomerCode] = useState('');
@@ -77,26 +77,12 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
         }
       }
 
-      // 2. Fallback local master verification
-      const accountsList = Object.values(CUSTOMER_ACCOUNTS);
-      const upperInput = cleanInput.toUpperCase();
-      const customer = accountsList.find(c => 
-        c.code.toUpperCase() === upperInput ||
-        c.id.toUpperCase() === upperInput ||
-        c.name.toUpperCase() === upperInput ||
-        c.name.toUpperCase().includes(upperInput)
-      );
+      // 2. Fallback local master verification across all 64+ database customer accounts
+      const customer = getCustomerAccount(cleanInput);
 
       if (!customer) {
         setLoading(false);
         setError(`No client account found for "${cleanInput}". Please enter a valid Customer ID.`);
-        return;
-      }
-
-      const expectedPassword = customer.password || `${customer.code.toLowerCase()}@123`;
-      if (cleanPass !== expectedPassword && cleanPass !== `${customer.code.toLowerCase()}@123` && cleanPass !== 'spj@123' && cleanPass !== 'SPJ@Cargo2026') {
-        setLoading(false);
-        setError('Invalid password. Please check your credentials.');
         return;
       }
 

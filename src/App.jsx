@@ -7,8 +7,7 @@ import CustomerTrackingView from './components/CustomerTrackingView';
 import CustomerProfileView from './components/CustomerProfileView';
 import CustomerSupportView from './components/CustomerSupportView';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
-import { CUSTOMER_ACCOUNTS } from './data/customerData';
-import REAL_INVOICES_DATA from './data/realInvoices.json';
+import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices } from './services/dataService';
 
 export default function App() {
   // Try restoring saved customer session or show login page
@@ -17,7 +16,7 @@ export default function App() {
       const saved = localStorage.getItem('spj_customer_session');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return CUSTOMER_ACCOUNTS[parsed.code] || Object.values(CUSTOMER_ACCOUNTS).find(c => c.name === parsed.name || c.id === parsed.code) || null;
+        return getCustomerAccount(parsed.code || parsed.name || parsed.id);
       }
     } catch (e) {}
     return null;
@@ -26,6 +25,25 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('invoices');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [trackingQuery, setTrackingQuery] = useState('');
+  const [customerInvoices, setCustomerInvoices] = useState(() => {
+    if (currentCustomer) {
+      return getLocalCustomerInvoices(currentCustomer.code || currentCustomer.name);
+    }
+    return [];
+  });
+
+  // Re-fetch dynamic invoices when current customer changes
+  React.useEffect(() => {
+    if (currentCustomer) {
+      const local = getLocalCustomerInvoices(currentCustomer.code || currentCustomer.name);
+      setCustomerInvoices(local);
+      fetchCustomerInvoices(currentCustomer.code || currentCustomer.name).then(live => {
+        if (live && live.length > 0) {
+          setCustomerInvoices(live);
+        }
+      });
+    }
+  }, [currentCustomer]);
 
   const handleLogout = () => {
     localStorage.removeItem('spj_customer_session');
@@ -36,8 +54,7 @@ export default function App() {
     return <CustomerLoginPage onLoginSuccess={(c) => setCurrentCustomer(c)} />;
   }
 
-  const customerCode = currentCustomer.code || 'HMA';
-  const customerInvoices = REAL_INVOICES_DATA[customerCode] || REAL_INVOICES_DATA['HMA'] || [];
+  const customerCode = currentCustomer.code || 'MARHABA_FROZEN_FOODS';
 
   // Helper to sort real database invoices latest first
   const sortedCustomerInvoices = [...customerInvoices].sort((a, b) => {

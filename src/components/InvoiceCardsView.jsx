@@ -23,7 +23,7 @@ import {
   ArrowDownCircle,
   FileCheck2
 } from 'lucide-react';
-import REAL_INVOICES_DATA from '../data/realInvoices.json';
+import { getLocalCustomerInvoices, fetchCustomerInvoices } from '../services/dataService';
 
 export default function InvoiceCardsView({ 
   customer, 
@@ -89,8 +89,8 @@ export default function InvoiceCardsView({
   // Merge live invoices or fallback
   const allInvoices = useMemo(() => {
     if (liveInvoices.length > 0) return liveInvoices;
-    return REAL_INVOICES_DATA[customerKey] || REAL_INVOICES_DATA['HMA'] || [];
-  }, [liveInvoices, customerKey]);
+    return getLocalCustomerInvoices(customer?.code || customer?.name || customer?.id);
+  }, [liveInvoices, customer]);
 
   const formatCurrency = (val) => {
     if (!val) return '₹ 0';
