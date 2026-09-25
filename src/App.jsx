@@ -52,26 +52,49 @@ export default function App() {
     return parseD(b) - parseD(a);
   });
 
+  // Deduplicate unique containers by containerNo from real database records
+  const seenContainers = new Set();
+  const uniqueInvoicesWithContainers = [];
+  
+  for (const inv of sortedCustomerInvoices) {
+    const cNo = inv.containerNo;
+    if (cNo && !seenContainers.has(cNo)) {
+      seenContainers.add(cNo);
+      uniqueInvoicesWithContainers.push(inv);
+    }
+  }
+
+  // If fewer than 10 unique, fill with distinct indices
+  if (uniqueInvoicesWithContainers.length < 10) {
+    sortedCustomerInvoices.forEach((inv, idx) => {
+      const fallbackNo = inv.containerNo || `TEMU${500100 + idx}`;
+      if (!seenContainers.has(fallbackNo)) {
+        seenContainers.add(fallbackNo);
+        uniqueInvoicesWithContainers.push({ ...inv, containerNo: fallbackNo });
+      }
+    });
+  }
+
   // Generate live containers from latest real database records
-  const customerContainers = sortedCustomerInvoices.slice(0, 16).map((inv, idx) => ({
+  const customerContainers = uniqueInvoicesWithContainers.slice(0, 24).map((inv, idx) => ({
     contNo: inv.containerNo || `TEMU${500100 + idx}`,
     size: inv.containerSize || '40 FT',
     type: inv.containerType || 'REEFER (-18°C)',
-    temp: inv.containerType.includes('REEFER') ? '-18.2°C' : 'Ambient',
-    tempStatus: inv.containerType.includes('REEFER') ? 'Active Cold Chain Plugged' : 'Standard Stacking',
+    temp: (inv.containerType || '').includes('REEFER') ? '-18.2°C' : 'Ambient',
+    tempStatus: (inv.containerType || '').includes('REEFER') ? 'Active Cold Chain Plugged' : 'Standard Stacking',
     sealNo: `SPJ-SEAL-${89400 + idx}`,
     bookingNo: `BK-${inv.jobNo || (250100 + idx)}`,
     jobOrderNo: `JO/${customerCode}/${inv.jobNo || (250100 + idx)}`,
-    shippingLine: inv.shippingLine || 'COSCO',
+    shippingLine: inv.shippingLine || 'MSC',
     commodity: 'Frozen Cargo / Agro Export',
     origin: `${currentCustomer.name} Processing Plant`,
-    terminal: inv.terminal || 'DADRI-ALLCARGO',
+    terminal: inv.terminal || 'TRANSWORLD-DADRI',
     destination: inv.destinationPort || 'Jebel Ali Port',
     status: inv.status === 'Paid' ? 'Dispatched to Gateway Port' : 'Yard Staging & Verification',
     inDate: inv.date || 'N/A',
     outDate: inv.status === 'Paid' ? (inv.date || 'N/A') : '-',
     eta: '2026-03-28 14:00',
-    liveGPS: `${inv.terminal} Line #Bay-${(idx % 8) + 1}`,
+    liveGPS: `${inv.terminal || 'TRANSWORLD-DADRI'} Line #Bay-${(idx % 8) + 1}`,
     health: 'Optimal'
   }));
 

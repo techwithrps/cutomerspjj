@@ -30,12 +30,17 @@ export default function CustomerContainersView({ containers = [], customer, onNa
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
     return (
-      c.contNo.toLowerCase().includes(s) ||
-      c.sealNo.toLowerCase().includes(s) ||
-      c.bookingNo.toLowerCase().includes(s) ||
-      c.jobOrderNo.toLowerCase().includes(s) ||
-      c.destination.toLowerCase().includes(s) ||
-      c.terminal.toLowerCase().includes(s)
+      (c.contNo || '').toLowerCase().includes(s) ||
+      (c.sealNo || '').toLowerCase().includes(s) ||
+      (c.bookingNo || '').toLowerCase().includes(s) ||
+      (c.jobOrderNo || '').toLowerCase().includes(s) ||
+      (c.destination || '').toLowerCase().includes(s) ||
+      (c.terminal || '').toLowerCase().includes(s) ||
+      (c.shippingLine || '').toLowerCase().includes(s) ||
+      (c.origin || '').toLowerCase().includes(s) ||
+      (c.status || '').toLowerCase().includes(s) ||
+      (c.size || '').toLowerCase().includes(s) ||
+      (c.type || '').toLowerCase().includes(s)
     );
   });
 
@@ -45,9 +50,14 @@ export default function CustomerContainersView({ containers = [], customer, onNa
       {/* Search Header */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card flex flex-col sm:flex-row items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-black font-display text-slate-900">
-            Live Container & Yard Fleet Tracking
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-black font-display text-slate-900">
+              Live Container & Yard Fleet Tracking
+            </h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              {filtered.length} Active Boxes
+            </span>
+          </div>
           <p className="text-xs text-slate-500 font-medium">
             Real-time status for containers booked under {customer?.name}
           </p>
@@ -60,8 +70,16 @@ export default function CustomerContainersView({ containers = [], customer, onNa
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search Container / Seal #..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 

@@ -150,13 +150,26 @@ export default function InvoiceCardsView({
       const matchesSearch = !s || (
         (inv.partyInvNo || '').toLowerCase().includes(s) ||
         (inv.invoiceRefNo || '').toLowerCase().includes(s) ||
+        (inv.invoiceNo || '').toLowerCase().includes(s) ||
         (inv.containerNo || '').toLowerCase().includes(s) ||
         (inv.destinationPort || '').toLowerCase().includes(s) ||
         (inv.shippingLine || '').toLowerCase().includes(s) ||
-        (inv.terminal || '').toLowerCase().includes(s)
+        (inv.terminal || '').toLowerCase().includes(s) ||
+        (inv.serviceName || '').toLowerCase().includes(s) ||
+        (inv.date || '').toLowerCase().includes(s) ||
+        (inv.blNo || '').toLowerCase().includes(s) ||
+        (inv.sbNo || '').toLowerCase().includes(s) ||
+        String(inv.totalAmount || '').includes(s)
       );
 
-      const matchesStatus = statusFilter === 'ALL' || (inv.status || '').toUpperCase().includes(statusFilter);
+      let matchesStatus = true;
+      if (statusFilter === 'PAID') {
+        matchesStatus = inv.status === 'Paid';
+      } else if (statusFilter === 'PENDING') {
+        matchesStatus = inv.status !== 'Paid';
+      } else if (statusFilter === 'CREDIT') {
+        matchesStatus = (inv.status || '').toUpperCase().includes('CREDIT') || (inv.status || '').toUpperCase().includes('ADJUST');
+      }
 
       return matchesSearch && matchesStatus;
     });
@@ -186,8 +199,10 @@ export default function InvoiceCardsView({
 
   // Real Customer-Centric KPIs (Billing, Paid, Outstanding, Containers)
   const stats = customer?.exactStats;
-  const paidInvoices = useMemo(() => allInvoices.filter(i => i.status === 'Paid'), [allInvoices]);
-  const pendingInvoices = useMemo(() => allInvoices.filter(i => i.status !== 'Paid'), [allInvoices]);
+  const countAll = allInvoices.length;
+  const countPaid = useMemo(() => allInvoices.filter(i => i.status === 'Paid').length, [allInvoices]);
+  const countPending = useMemo(() => allInvoices.filter(i => i.status !== 'Paid').length, [allInvoices]);
+  const countCredit = useMemo(() => allInvoices.filter(i => (i.status || '').toUpperCase().includes('CREDIT')).length, [allInvoices]);
 
   const totalBilled = liveKPIs?.grossRevenue || liveKPIs?.totalGrossAmount || stats?.grossRevenue || allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
   const totalInvoicesCount = liveKPIs?.invoiceCount || liveKPIs?.totalRecords || stats?.invoiceCount || allInvoices.length;
@@ -309,10 +324,10 @@ export default function InvoiceCardsView({
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {[
-              { id: 'ALL', label: `All Invoices (${totalInvoicesCount.toLocaleString('en-IN')})` },
-              { id: 'PAID', label: 'Paid & Cleared' },
-              { id: 'PENDING', label: 'Pending Dues' },
-              { id: 'CREDIT', label: 'Credit Notes' },
+              { id: 'ALL', label: `All Invoices (${countAll})` },
+              { id: 'PAID', label: `Paid & Cleared (${countPaid})` },
+              { id: 'PENDING', label: `Pending Dues (${countPending})` },
+              { id: 'CREDIT', label: `Credit Notes (${countCredit})` },
             ].map((tab) => {
               const isActive = statusFilter === tab.id;
               return (
@@ -324,7 +339,7 @@ export default function InvoiceCardsView({
                   }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'bg-[#0f172a] text-white'
+                      ? 'bg-[#0f172a] text-white shadow-xs'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                   }`}
                 >
