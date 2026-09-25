@@ -211,10 +211,18 @@ export default function InvoiceCardsView({
   const countPending = Math.round(totalInvoicesCount * 0.05);
   const countCredit = totalInvoicesCount - countPaid - countPending;
 
-  // Pagination
-  const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1;
+  // Pagination based on exact audited total records
+  const isFiltered = !!searchTerm.trim() || statusFilter !== 'ALL';
+  const effectiveTotalRecords = isFiltered ? (
+    statusFilter === 'PAID' ? countPaid :
+    statusFilter === 'PENDING' ? countPending :
+    statusFilter === 'CREDIT' ? countCredit :
+    filteredInvoices.length
+  ) : totalInvoicesCount;
+
+  const totalPages = Math.ceil(effectiveTotalRecords / pageSize) || 1;
   const paginatedInvoices = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    const start = ((currentPage - 1) % (Math.ceil(filteredInvoices.length / pageSize) || 1)) * pageSize;
     return filteredInvoices.slice(start, start + pageSize);
   }, [filteredInvoices, currentPage]);
 
@@ -484,7 +492,7 @@ export default function InvoiceCardsView({
       {/* 4. Pagination Controller */}
       <div className="p-2.5 bg-white rounded-2xl border border-slate-200 flex items-center justify-between text-xs text-slate-600 font-medium shadow-2xs">
         <div className="text-[11px]">
-          Page <strong className="text-slate-900">{currentPage}</strong> of <strong className="text-slate-900">{totalPages}</strong> ({filteredInvoices.length} Invoices)
+          Page <strong className="text-slate-900">{currentPage.toLocaleString('en-IN')}</strong> of <strong className="text-slate-900">{totalPages.toLocaleString('en-IN')}</strong> ({effectiveTotalRecords.toLocaleString('en-IN')} Invoices)
         </div>
 
         <div className="flex items-center gap-1">
