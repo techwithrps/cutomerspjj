@@ -33,16 +33,28 @@ import {
 } from 'lucide-react';
 import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping } from '../services/movementHistoryService';
 
-export default function CustomerTrackingView({ customer, prefilledQuery = '', containers = [], invoices = [] }) {
+export default function CustomerTrackingView({ 
+  customer, 
+  prefilledQuery = '', 
+  containers = [], 
+  invoices = [],
+  initialSubTab = 'pipeline'
+}) {
   const [searchInput, setSearchInput] = useState(prefilledQuery);
   const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : (containers[0]?.contNo || null));
   const [searchMode, setSearchMode] = useState('CONTAINER'); // 'CONTAINER' | 'INVOICE'
-  const [activeTrackingTab, setActiveTrackingTab] = useState('pipeline'); // 'pipeline' | 'oracle_pk' | 'gr_fleet' | 'summary'
+  const [activeTrackingTab, setActiveTrackingTab] = useState(initialSubTab || 'pipeline'); // 'pipeline' | 'oracle_pk' | 'gr_fleet' | 'summary'
   const [oraclePhaseFilter, setOraclePhaseFilter] = useState('ALL');
   const [oracleSearchTerm, setOracleSearchTerm] = useState('');
   const [selectedGRIndex, setSelectedGRIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveTrackingTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   useEffect(() => {
     if (prefilledQuery && prefilledQuery.trim()) {

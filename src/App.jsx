@@ -190,6 +190,17 @@ export default function App() {
             prefilledQuery={trackingQuery}
             containers={liveContainers}
             invoices={sortedCustomerInvoices}
+            initialSubTab="pipeline"
+          />
+        )}
+
+        {activeTab === 'gr' && (
+          <CustomerTrackingView
+            customer={currentCustomer}
+            prefilledQuery={trackingQuery}
+            containers={liveContainers}
+            invoices={sortedCustomerInvoices}
+            initialSubTab="gr_fleet"
           />
         )}
 

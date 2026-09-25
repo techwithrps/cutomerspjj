@@ -9,12 +9,13 @@ import {
   X, 
   ShieldCheck, 
   MapPin, 
-  ChevronRight,
-  CheckCircle2,
-  Navigation,
-  Ship,
-  Cpu,
-  Sparkles
+  ChevronRight, 
+  CheckCircle2, 
+  Navigation, 
+  Ship, 
+  Cpu, 
+  Sparkles,
+  Truck
 } from 'lucide-react';
 
 export default function CustomerNavbar({ 
@@ -29,9 +30,10 @@ export default function CustomerNavbar({
   const navItems = [
     { id: 'invoices', label: 'Invoices', fullLabel: 'My Invoices', icon: Receipt },
     { id: 'containers', label: 'Containers', fullLabel: 'Containers', icon: Container },
-    { id: 'schedules', label: 'Vessels', fullLabel: 'Vessel Schedules', icon: Ship, isHighlight: true },
-    { id: 'fetcher', label: 'API Hub', fullLabel: 'Live API Scraper', icon: Cpu },
     { id: 'tracking', label: 'Tracking', fullLabel: 'Track Container', icon: Navigation },
+    { id: 'gr', label: 'Fleet GR', fullLabel: 'Fleet GR / Bilty', icon: Truck, isHighlight: true },
+    { id: 'schedules', label: 'Vessels', fullLabel: 'Vessel Schedules', icon: Ship },
+    { id: 'fetcher', label: 'API Hub', fullLabel: 'Live API Scraper', icon: Cpu },
     { id: 'profile', label: 'Profile', fullLabel: 'Account Profile', icon: Building2 },
     { id: 'support', label: 'Support', fullLabel: 'RM Support', icon: Headphones },
   ];
