@@ -153,6 +153,10 @@ export default function App() {
           <InvoiceCardsView
             customer={currentCustomer}
             onSelectInvoice={(inv) => setSelectedInvoice(inv)}
+            onNavigateTrack={(contNo) => {
+              setTrackingQuery(contNo);
+              setActiveTab('tracking');
+            }}
           />
         )}
 

@@ -28,7 +28,8 @@ import { getLocalCustomerInvoices, fetchCustomerInvoices, normalizeInvoiceRecord
 
 export default function InvoiceCardsView({ 
   customer, 
-  onSelectInvoice 
+  onSelectInvoice,
+  onNavigateTrack
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -359,12 +360,38 @@ export default function InvoiceCardsView({
 
       {/* 3. Compact Invoice Cards Grid (2 cards per row on mobile, 3 cards on desktop) */}
       {filteredInvoices.length === 0 ? (
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
-          <AlertCircle className="w-7 h-7 text-amber-500 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900">No Invoices Found</h3>
-          <p className="text-xs text-slate-500">
-            No record matches keyword "{searchTerm}".
-          </p>
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto border border-amber-200 text-amber-600">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-slate-900">No Invoices Found</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              No commercial invoice matches keyword <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">"{searchTerm}"</span> for this customer account.
+            </p>
+          </div>
+
+          {/* Smart Container Tracker Suggestion */}
+          {searchTerm && onNavigateTrack && (
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => onNavigateTrack(searchTerm)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs font-black shadow-lg shadow-cyan-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Container className="w-4 h-4" />
+                <span>Track Container "{searchTerm}" in Live Movement History</span>
+                <Sparkles className="w-3.5 h-3.5 text-cyan-200" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all cursor-pointer"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
