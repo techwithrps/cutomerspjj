@@ -27,13 +27,13 @@ export default function CustomerNavbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { id: 'invoices', label: 'My Invoices', fullLabel: 'My Invoices (Cards)', icon: Receipt },
-    { id: 'containers', label: 'Containers', fullLabel: 'Containers & Fleet Management', icon: Container },
-    { id: 'schedules', label: 'Vessel Schedules', fullLabel: 'Public Vessel Schedules & Radar', icon: Ship, isHighlight: true },
-    { id: 'fetcher', label: 'Live API Scraper', fullLabel: 'Live Schedule Fetcher & API Hub', icon: Cpu },
-    { id: 'tracking', label: 'Track Container', fullLabel: 'Live Container Tracking', icon: Navigation },
-    { id: 'profile', label: 'Account Profile', fullLabel: 'Company Account & Profile', icon: Building2 },
-    { id: 'support', label: 'RM Support', fullLabel: 'RM Desk & Support', icon: Headphones },
+    { id: 'invoices', label: 'Invoices', fullLabel: 'My Invoices', icon: Receipt },
+    { id: 'containers', label: 'Containers', fullLabel: 'Containers', icon: Container },
+    { id: 'schedules', label: 'Vessels', fullLabel: 'Vessel Schedules', icon: Ship, isHighlight: true },
+    { id: 'fetcher', label: 'API Hub', fullLabel: 'Live API Scraper', icon: Cpu },
+    { id: 'tracking', label: 'Tracking', fullLabel: 'Track Container', icon: Navigation },
+    { id: 'profile', label: 'Profile', fullLabel: 'Account Profile', icon: Building2 },
+    { id: 'support', label: 'Support', fullLabel: 'RM Support', icon: Headphones },
   ];
 
   const currentItem = navItems.find(item => item.id === activeTab) || navItems[0];
@@ -44,21 +44,21 @@ export default function CustomerNavbar({
       
       {/* 1. Main Navigation Bar */}
       <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-3 sm:gap-4">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
           
           {/* Left: Logo & Portal Branding */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div 
               onClick={() => {
                 setActiveTab('invoices');
                 setMobileMenuOpen(false);
               }}
-              className="bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-xs flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+              className="bg-white/95 backdrop-blur-md px-2 sm:px-2.5 py-1 rounded-xl shadow-xs flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
             >
               <img 
                 src="/logo.png" 
                 alt="SPJ Group of Companies" 
-                className="h-6 sm:h-7 w-auto object-contain" 
+                className="h-5.5 sm:h-7 w-auto object-contain" 
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
@@ -73,14 +73,14 @@ export default function CustomerNavbar({
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-300 hidden sm:inline truncate max-w-[160px] md:max-w-none">
+              <span className="text-[11px] font-semibold text-slate-300 hidden lg:inline truncate max-w-[170px] xl:max-w-none">
                 Invoicing & Multimodal Gateway
               </span>
             </div>
           </div>
 
-          {/* Center: Navigation Tabs (Desktop & Tablet xl) */}
-          <nav className="hidden xl:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 shrink-0">
+          {/* Center: Navigation Tabs (Desktop & Tablet) */}
+          <nav className="hidden lg:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-0.5 sm:gap-1 shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -89,16 +89,17 @@ export default function CustomerNavbar({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-[#0284c7] to-[#2563eb] text-white shadow-md'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden 2xl:inline">{item.fullLabel}</span>
+                  <span className="inline 2xl:hidden">{item.label}</span>
                   {isTracking && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-cyan-400 text-slate-950 uppercase animate-pulse">
+                    <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-cyan-400 text-slate-950 uppercase animate-pulse shrink-0">
                       LIVE
                     </span>
                   )}
@@ -107,47 +108,25 @@ export default function CustomerNavbar({
             })}
           </nav>
 
-          {/* Right Action Items: Welcome Card Trigger & Big Red LOGOUT BUTTON */}
+          {/* Right Action Items: Big Red LOGOUT BUTTON & Mobile Toggle */}
           <div className="flex items-center gap-2 shrink-0">
             
-            {/* Quick Welcome Profile Trigger */}
-            {customer && (
-              <button
-                type="button"
-                onClick={onOpenWelcome}
-                title="View Client Overview & Hub Details"
-                className="hidden 2xl:flex items-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/60 rounded-xl px-2.5 py-1 gap-2 text-left cursor-pointer transition-all active:scale-95 group"
-              >
-                <div className="w-6 h-6 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 text-cyan-300 flex items-center justify-center font-black text-[10px] shrink-0">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0 max-w-[140px] truncate">
-                  <p className="text-[11px] font-black text-white truncate leading-tight group-hover:text-cyan-200">
-                    {customer.name}
-                  </p>
-                  <p className="text-[9px] text-cyan-400 font-mono leading-tight">
-                    {customer.code} CLIENT
-                  </p>
-                </div>
-              </button>
-            )}
-
             {/* 🔴 ALWAYS-VISIBLE HIGH-CONTRAST LOGOUT BUTTON */}
             <button
               onClick={onLogout}
               type="button"
               title="Sign Out / Logout from Client Portal"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
             >
               <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />
               <span className="font-extrabold uppercase tracking-wide text-xs">Logout</span>
             </button>
 
-            {/* 📱 MOBILE / TABLET MENU TOGGLE (< xl screens) */}
+            {/* 📱 MOBILE / TABLET MENU TOGGLE (< lg screens) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(prev => !prev)}
-              className="flex xl:hidden items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
+              className="flex lg:hidden items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
             >
               {mobileMenuOpen ? <X className="w-4 h-4 text-amber-300" /> : <Menu className="w-4 h-4 text-amber-300" />}
               <span className="text-xs font-bold">Menu</span>
