@@ -7,6 +7,7 @@ import CustomerTrackingView from './components/CustomerTrackingView';
 import CustomerProfileView from './components/CustomerProfileView';
 import CustomerSupportView from './components/CustomerSupportView';
 import VesselSchedulesView from './components/VesselSchedulesView';
+import LiveScheduleFetcher from './components/LiveScheduleFetcher';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices } from './services/dataService';
 
@@ -160,6 +161,12 @@ export default function App() {
 
         {activeTab === 'schedules' && (
           <VesselSchedulesView
+            customer={currentCustomer}
+          />
+        )}
+
+        {activeTab === 'fetcher' && (
+          <LiveScheduleFetcher
             customer={currentCustomer}
           />
         )}
