@@ -45,23 +45,23 @@ export default function CustomerNavbar({
     <header className="sticky top-0 z-40 bg-[#0b1329] text-white border-b border-slate-800 shadow-lg w-full">
       
       {/* 1. Main Navigation Bar */}
-      <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
+      <div className="max-w-[1700px] mx-auto px-2.5 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between h-13 sm:h-16 gap-1.5 sm:gap-4">
           
           {/* Left: Logo & Portal Branding */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
             <div 
               onClick={() => {
                 setActiveTab('invoices');
                 setMobileMenuOpen(false);
               }}
-              className="bg-white/95 backdrop-blur-md px-2 sm:px-2.5 py-1 rounded-xl shadow-xs flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+              className="bg-white/95 backdrop-blur-md px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl shadow-xs flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
             >
               <img 
                 src="/logo.png" 
-                alt="SPJ Group of Companies" 
-                className="h-6 sm:h-7 w-auto max-h-7 max-w-[100px] sm:max-w-[120px] object-contain shrink-0" 
-                style={{ maxHeight: '28px', maxWidth: '110px', height: '26px' }}
+                alt="SPJ Group" 
+                className="h-5 sm:h-7 w-auto max-h-6 sm:max-h-7 max-w-[85px] sm:max-w-[120px] object-contain shrink-0" 
+                style={{ maxHeight: '24px', maxWidth: '90px', height: '22px' }}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
@@ -69,12 +69,12 @@ export default function CustomerNavbar({
               />
             </div>
 
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black tracking-widest text-[#00f2fe] uppercase">
-                  CLIENT PORTAL
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] sm:text-[10px] font-black tracking-wider sm:tracking-widest text-[#00f2fe] uppercase truncate">
+                  PORTAL
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
               </div>
               <span className="text-[11px] font-semibold text-slate-300 hidden lg:inline truncate max-w-[170px] xl:max-w-none">
                 Invoicing & Multimodal Gateway
@@ -111,17 +111,17 @@ export default function CustomerNavbar({
             })}
           </nav>
 
-          {/* Right Action Items: Big Red LOGOUT BUTTON & Mobile Toggle */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right Action Items: Logout & Mobile Menu Toggle */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            {/* 🔴 ALWAYS-VISIBLE HIGH-CONTRAST LOGOUT BUTTON */}
+            {/* 🔴 ALWAYS-VISIBLE LOGOUT BUTTON */}
             <button
               onClick={onLogout}
               type="button"
               title="Sign Out / Logout from Client Portal"
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />
+              <LogOut className="w-3.5 h-3.5 text-white shrink-0" />
               <span className="font-extrabold uppercase tracking-wide text-xs">Logout</span>
             </button>
 
@@ -129,10 +129,10 @@ export default function CustomerNavbar({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(prev => !prev)}
-              className="flex lg:hidden items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
+              aria-label="Toggle navigation menu"
+              className="flex lg:hidden items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
             >
               {mobileMenuOpen ? <X className="w-4 h-4 text-amber-300" /> : <Menu className="w-4 h-4 text-amber-300" />}
-              <span className="text-xs font-bold">Menu</span>
             </button>
 
           </div>
@@ -140,42 +140,64 @@ export default function CustomerNavbar({
         </div>
       </div>
 
+      {/* 📱 Mobile Horizontal Quick Tab Scroller (< lg screens) */}
+      <div className="flex lg:hidden bg-[#070d1e] border-t border-slate-800/90 px-2 py-1.5 overflow-x-auto gap-1 scrollbar-none">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                isActive
+                  ? 'bg-gradient-to-r from-[#0284c7] to-[#2563eb] text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800'
+              }`}
+            >
+              <Icon className="w-3 h-3 shrink-0" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* 2. Prominent Client Executive Banner Strip with Secondary Information */}
       {customer && (
-        <div className="bg-gradient-to-r from-[#070d1e] via-[#0f172a] to-[#070d1e] py-2 px-3 sm:px-6 lg:px-8 border-t border-slate-800/80">
-          <div className="max-w-[1700px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="bg-gradient-to-r from-[#070d1e] via-[#0f172a] to-[#070d1e] py-1.5 sm:py-2 px-3 sm:px-6 lg:px-8 border-t border-slate-800/80">
+          <div className="max-w-[1700px] mx-auto flex items-center justify-between gap-2 overflow-x-auto">
             
             {/* Customer Title & Status */}
             <div 
               onClick={onOpenWelcome}
-              className="flex items-center gap-2 min-w-0 cursor-pointer group"
+              className="flex items-center gap-1.5 min-w-0 cursor-pointer group shrink-0"
               title="Click to view Welcome Overview Modal"
             >
-              <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
               </div>
-              <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="text-xs sm:text-sm font-extrabold text-white group-hover:text-cyan-200 font-display truncate max-w-[280px] sm:max-w-none transition-colors">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[11px] sm:text-sm font-extrabold text-white group-hover:text-cyan-200 font-display truncate max-w-[160px] sm:max-w-none transition-colors">
                   {customer.name}
                 </span>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
-                  {customer.code} CLIENT HUB
+                <span className="text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                  {customer.code}
                 </span>
               </div>
             </div>
 
-            {/* Hub, GST & Verified Badge */}
-            <div className="flex items-center gap-2.5 sm:gap-3 text-[10px] sm:text-[11px] text-slate-300 font-medium flex-wrap">
+            {/* Hub & Verified Badge */}
+            <div className="flex items-center gap-2 text-[9px] sm:text-[11px] text-slate-300 font-medium shrink-0">
               <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
+                <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 shrink-0" />
                 <span>Hub: <strong className="text-white">{(customer.primaryHub || 'TRANSWORLD-DADRI').replace(/--+/g, '-')}</strong></span>
               </span>
-              <span className="hidden md:inline text-slate-600">•</span>
-              <span className="hidden md:inline">GST: <strong className="font-mono text-white">{customer.gstin}</strong></span>
-              <span className="hidden md:inline text-slate-600">•</span>
               <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                SSL Verified
+                <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                <span className="hidden xs:inline">SSL</span>
               </span>
             </div>
 
