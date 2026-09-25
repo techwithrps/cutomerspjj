@@ -191,6 +191,11 @@ export default function CustomerTrackingView({
     });
   }, [contNo, customer, terminal, pol, destination, sbNo, blNo, invoiceDate]);
 
+  // Quick suggestions from real active containers
+  const quickSuggestions = useMemo(() => {
+    return (containers || []).slice(0, 4).map(c => c.contNo).filter(Boolean);
+  }, [containers]);
+
   // Progressive connected arrow pipeline steps based on real container route
   const progressivePipeline = [
     { id: 1, label: 'Origin Plant / CFS', sub: `${terminal}`, status: 'completed', icon: Building2 },
