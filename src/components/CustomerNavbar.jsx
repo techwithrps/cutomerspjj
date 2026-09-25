@@ -43,20 +43,22 @@ export default function CustomerNavbar({
     <header className="sticky top-0 z-40 bg-[#0b1329] text-white border-b border-slate-800 shadow-lg w-full">
       
       {/* 1. Main Navigation Bar */}
-      <div className="max-w-[1700px] mx-auto px-2.5 sm:px-4 lg:px-6 w-full">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
+      <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-3 sm:gap-4">
           
-          {/* Logo & Portal Branding */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="bg-white/95 backdrop-blur-md px-2 py-1 rounded-xl shadow-sm flex items-center shrink-0">
+          {/* Left: Logo & Portal Branding */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div 
+              onClick={() => {
+                setActiveTab('invoices');
+                setMobileMenuOpen(false);
+              }}
+              className="bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl shadow-xs flex items-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+            >
               <img 
                 src="/logo.png" 
                 alt="SPJ Group of Companies" 
-                className="h-6 sm:h-7.5 w-auto object-contain cursor-pointer" 
-                onClick={() => {
-                  setActiveTab('invoices');
-                  setMobileMenuOpen(false);
-                }}
+                className="h-6 sm:h-7 w-auto object-contain" 
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
@@ -71,14 +73,14 @@ export default function CustomerNavbar({
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               </div>
-              <span className="text-[11px] font-bold text-slate-200 hidden sm:inline truncate max-w-[180px] lg:max-w-none">
+              <span className="text-[11px] font-semibold text-slate-300 hidden sm:inline truncate max-w-[160px] md:max-w-none">
                 Invoicing & Multimodal Gateway
               </span>
             </div>
           </div>
 
-          {/* 💻 Navigation Tabs (Visible on md screens and above) */}
-          <nav className="hidden lg:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 shrink-0">
+          {/* Center: Navigation Tabs (Desktop & Tablet xl) */}
+          <nav className="hidden xl:flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -87,7 +89,7 @@ export default function CustomerNavbar({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-[#0284c7] to-[#2563eb] text-white shadow-md'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -105,27 +107,26 @@ export default function CustomerNavbar({
             })}
           </nav>
 
-          {/* Right Action Items: Customer Pill + Big Red LOGOUT BUTTON */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Right Action Items: Welcome Card Trigger & Big Red LOGOUT BUTTON */}
+          <div className="flex items-center gap-2 shrink-0">
             
-            {/* Customer Pill (Desktop) - Clickable to open Welcome overview */}
+            {/* Quick Welcome Profile Trigger */}
             {customer && (
               <button
                 type="button"
                 onClick={onOpenWelcome}
-                title="View Client Company Profile & Quick Stats"
-                className="hidden md:flex items-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 rounded-xl px-2.5 py-1 gap-2 max-w-[200px] lg:max-w-[240px] text-left cursor-pointer transition-all active:scale-95 group"
+                title="View Client Overview & Hub Details"
+                className="hidden 2xl:flex items-center bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/60 rounded-xl px-2.5 py-1 gap-2 text-left cursor-pointer transition-all active:scale-95 group"
               >
                 <div className="w-6 h-6 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 text-cyan-300 flex items-center justify-center font-black text-[10px] shrink-0">
                   <Building2 className="w-3.5 h-3.5" />
                 </div>
-                <div className="min-w-0 truncate">
+                <div className="min-w-0 max-w-[140px] truncate">
                   <p className="text-[11px] font-black text-white truncate leading-tight group-hover:text-cyan-200">
                     {customer.name}
                   </p>
-                  <p className="text-[9px] text-cyan-400 font-mono leading-tight flex items-center gap-1">
-                    <span>{customer.code} CLIENT</span>
-                    <Sparkles className="w-2.5 h-2.5 text-cyan-300 inline" />
+                  <p className="text-[9px] text-cyan-400 font-mono leading-tight">
+                    {customer.code} CLIENT
                   </p>
                 </div>
               </button>
@@ -136,20 +137,20 @@ export default function CustomerNavbar({
               onClick={onLogout}
               type="button"
               title="Sign Out / Logout from Client Portal"
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs rounded-xl shadow-md shadow-rose-950/40 border border-rose-400/40 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
             >
-              <LogOut className="w-4 h-4 text-white shrink-0" />
-              <span className="font-extrabold uppercase tracking-wide">Logout</span>
+              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />
+              <span className="font-extrabold uppercase tracking-wide text-xs">Logout</span>
             </button>
 
             {/* 📱 MOBILE / TABLET MENU TOGGLE (< xl screens) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(prev => !prev)}
-              className="flex xl:hidden items-center gap-1 px-2.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
+              className="flex xl:hidden items-center gap-1.5 px-3 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer border border-cyan-400/30 shrink-0"
             >
               {mobileMenuOpen ? <X className="w-4 h-4 text-amber-300" /> : <Menu className="w-4 h-4 text-amber-300" />}
-              <span className="hidden xs:inline">Menu</span>
+              <span className="text-xs font-bold">Menu</span>
             </button>
 
           </div>
@@ -157,16 +158,16 @@ export default function CustomerNavbar({
         </div>
       </div>
 
-      {/* 2. Prominent Client Executive Banner Strip with Secondary Logout */}
+      {/* 2. Prominent Client Executive Banner Strip with Secondary Information */}
       {customer && (
-        <div className="bg-gradient-to-r from-[#070d1e] via-[#0f172a] to-[#070d1e] py-2 px-2.5 sm:px-4 lg:px-6 border-t border-slate-800/80">
+        <div className="bg-gradient-to-r from-[#070d1e] via-[#0f172a] to-[#070d1e] py-2 px-3 sm:px-6 lg:px-8 border-t border-slate-800/80">
           <div className="max-w-[1700px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             
             {/* Customer Title & Status */}
             <div 
               onClick={onOpenWelcome}
               className="flex items-center gap-2 min-w-0 cursor-pointer group"
-              title="Click to view Welcome Modal"
+              title="Click to view Welcome Overview Modal"
             >
               <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -175,17 +176,17 @@ export default function CustomerNavbar({
                 <span className="text-xs sm:text-sm font-extrabold text-white group-hover:text-cyan-200 font-display truncate max-w-[280px] sm:max-w-none transition-colors">
                   {customer.name}
                 </span>
-                <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
                   {customer.code} CLIENT HUB
                 </span>
               </div>
             </div>
 
-            {/* Hub, GST & Quick Sign Out link */}
+            {/* Hub, GST & Verified Badge */}
             <div className="flex items-center gap-2.5 sm:gap-3 text-[10px] sm:text-[11px] text-slate-300 font-medium flex-wrap">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
-                <span>Hub: <strong className="text-white">{customer.primaryHub}</strong></span>
+                <span>Hub: <strong className="text-white">{(customer.primaryHub || 'TRANSWORLD-DADRI').replace(/--+/g, '-')}</strong></span>
               </span>
               <span className="hidden md:inline text-slate-600">•</span>
               <span className="hidden md:inline">GST: <strong className="font-mono text-white">{customer.gstin}</strong></span>
