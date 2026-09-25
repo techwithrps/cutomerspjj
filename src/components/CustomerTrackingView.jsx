@@ -157,11 +157,11 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
       
-      {/* 1. Clean Minimal Search Bar Box */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-card space-y-4">
-        <div className="text-center max-w-lg mx-auto space-y-1.5">
+      {/* 1. Clean Full-View Search Bar Box */}
+      <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
+        <div className="text-center max-w-2xl mx-auto space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-bold uppercase tracking-wider">
             <Navigation className="w-3.5 h-3.5 text-blue-600" />
             SPJ Multimodal Track & Trace
@@ -175,7 +175,7 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
         </div>
 
         {/* Input & Track Form */}
-        <form onSubmit={handleTrackSubmit} className="max-w-xl mx-auto flex flex-col sm:flex-row items-center gap-2 pt-2">
+        <form onSubmit={handleTrackSubmit} className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-2 pt-2">
           <div className="relative w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
