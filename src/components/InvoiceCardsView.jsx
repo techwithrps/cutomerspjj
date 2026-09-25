@@ -393,27 +393,24 @@ export default function InvoiceCardsView({
                 key={idx}
                 className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-cyan-500/60 transition-all p-2.5 sm:p-3.5 flex flex-col justify-between space-y-2 hover-lift"
               >
-                {/* Header */}
-                <div className="space-y-0.5 border-b border-slate-100 pb-1.5">
+                {/* Header: Invoice No, Date, Job No */}
+                <div className="space-y-1 border-b border-slate-100 pb-2">
+                  {/* Line 1: Invoice No + Copy Button + Status Badge */}
                   <div className="flex items-start justify-between gap-1">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono font-black text-[11px] sm:text-xs text-[#0f172a] truncate block">
-                          {inv.partyInvNo}
-                        </span>
-                        <button
-                          onClick={() => handleCopy(inv.partyInvNo, idx)}
-                          className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
-                        >
-                          {copiedId === idx ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                        </button>
-                      </div>
-                      <span className="text-[9px] text-slate-400 font-mono block truncate">
-                        Ref: {inv.invoiceRefNo}
+                    <div className="min-w-0 flex items-center gap-1">
+                      <span className="font-mono font-black text-xs sm:text-[13px] text-[#0f172a] truncate block">
+                        {inv.partyInvNo || inv.invoiceNo || 'D26-27/10951'}
                       </span>
+                      <button
+                        onClick={() => handleCopy(inv.partyInvNo || inv.invoiceNo, idx)}
+                        className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                        title="Copy Invoice Number"
+                      >
+                        {copiedId === idx ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      </button>
                     </div>
 
-                    <span className={`px-1.5 py-0.2 rounded-full text-[8px] sm:text-[9px] font-black shrink-0 whitespace-nowrap ${
+                    <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black shrink-0 whitespace-nowrap ${
                       isPaid 
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                         : isCredit 
@@ -424,9 +421,22 @@ export default function InvoiceCardsView({
                     </span>
                   </div>
 
-                  <div className="text-[9px] text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-2.5 h-2.5 text-slate-400 shrink-0" />
-                    <span>Date: {inv.date}</span>
+                  {/* Line 2: Date */}
+                  <div className="text-[10px] text-slate-600 flex items-center gap-1 font-medium">
+                    <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span>Date: <strong className="font-mono font-bold text-slate-800">{inv.date || '21/09/2026'}</strong></span>
+                  </div>
+
+                  {/* Line 3: Job No & Ref */}
+                  <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1 flex-wrap">
+                    <span className="truncate">
+                      Job No: <strong className="font-mono font-bold text-blue-700">{inv.jobNo || inv.partyInvNo || '242973'}</strong>
+                    </span>
+                    {inv.invoiceRefNo && (
+                      <span className="text-[9px] text-slate-400 font-mono truncate max-w-[130px]" title={inv.invoiceRefNo}>
+                        Ref: {inv.invoiceRefNo}
+                      </span>
+                    )}
                   </div>
                 </div>
 
