@@ -28,6 +28,7 @@ import {
   PORTS_OF_DISCHARGE, 
   INITIAL_VESSEL_SCHEDULES 
 } from '../data/vesselSchedulesData';
+import { fetchLiveVesselSchedules } from '../services/vesselApiService';
 import VesselLiveRadarModal from './VesselLiveRadarModal';
 import * as XLSX from 'xlsx';
 
@@ -41,6 +42,34 @@ export default function VesselSchedulesView({ customer }) {
   const [activeVesselModal, setActiveVesselModal] = useState(null);
   const [schedules, setSchedules] = useState(INITIAL_VESSEL_SCHEDULES);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [totalLiveCount, setTotalLiveCount] = useState(245);
+
+  const loadLiveSchedules = async () => {
+    setLiveLoading(true);
+    try {
+      const res = await fetchLiveVesselSchedules({
+        pol: selectedPOL !== 'ALL' ? selectedPOL : undefined,
+        pod: selectedPOD !== 'ALL' ? selectedPOD : undefined,
+        shippingLine: selectedLine !== 'ALL' ? selectedLine : undefined,
+        search: search.trim() ? search.trim() : undefined,
+        limit: 100
+      });
+      if (res.success && res.schedules && res.schedules.length > 0) {
+        setSchedules(res.schedules);
+        setTotalLiveCount(res.total || res.schedules.length);
+      }
+    } catch (e) {
+      console.error('Error fetching live schedules:', e);
+    } finally {
+      setLiveLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadLiveSchedules();
+  }, [selectedLine, selectedPOD, selectedPOL, search]);
 
   // Active filters count
   const isFiltered = selectedLine !== 'ALL' || selectedPOD !== 'ALL' || selectedPOL !== 'ALL' || search.trim() !== '';
@@ -55,9 +84,7 @@ export default function VesselSchedulesView({ customer }) {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 400);
+    loadLiveSchedules();
   };
 
   // Filtered schedules
