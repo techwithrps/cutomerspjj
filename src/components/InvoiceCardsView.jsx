@@ -56,7 +56,8 @@ export default function InvoiceCardsView({
               invoiceNo: r.INVOICE_NO || `SPJ/${r.FINANCIAL_YEAR || '26-27'}/${1000 + idx}`,
               partyInvNo: r.PARTY_INVOICE_NO || r.INVOICE_NO || `SPJ/INV/${1000 + idx}`,
               invoiceRefNo: r.INVOICE_REF_NO || r.BILL_NO || `REF-${r.INVOICE_ID || idx}`,
-              date: r.INVOICE_DATE || '15/03/2026',
+              date: r.INVOICE_DATE || r.DATE || r.createdOn || r.date || 'N/A',
+              createdOn: r.CREATED_ON || r.createdOn || null,
               totalAmount: Number(r.AMOUNT || r.BILL_AMOUNT || 0),
               billAmount: Number(r.BILL_AMOUNT || (Number(r.AMOUNT || 0) / 1.18)),
               taxAmount: Number(r.TAX_AMOUNT || (Number(r.AMOUNT || 0) - (Number(r.AMOUNT || 0) / 1.18))),
@@ -111,28 +112,21 @@ export default function InvoiceCardsView({
 
   const [sortOrder, setSortOrder] = useState('LATEST'); // 'LATEST', 'OLDEST', 'HIGHEST_AMOUNT', 'LOWEST_AMOUNT'
 
-  // Helper to parse invoice date and time timestamp
+  // Helper to parse actual database date timestamp for sorting
   const parseInvoiceTimestamp = (inv) => {
     let dateMs = 0;
-    if (inv.createdOn) {
-      const t = new Date(inv.createdOn).getTime();
-      if (!isNaN(t)) dateMs = t;
-    }
-    if (!dateMs && inv.date) {
-      const parts = String(inv.date).trim().split(/[\/\-\.]/);
-      if (parts.length === 3) {
-        if (parts[0].length <= 2 && parts[2].length === 4) {
-          // DD/MM/YYYY
-          const d = parts[0].padStart(2, '0');
-          const m = parts[1].padStart(2, '0');
-          const y = parts[2];
-          const t = new Date(`${y}-${m}-${d}T12:00:00Z`).getTime();
-          if (!isNaN(t)) dateMs = t;
-        } else if (parts[0].length === 4) {
-          // YYYY/MM/DD
-          const t = new Date(inv.date).getTime();
-          if (!isNaN(t)) dateMs = t;
-        }
+    const rawDate = inv.createdOn || inv.date || inv.INVOICE_DATE || inv.DATE;
+    if (rawDate) {
+      const s = String(rawDate).trim();
+      const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (dmy) {
+        const d = parseInt(dmy[1], 10);
+        const m = parseInt(dmy[2], 10) - 1;
+        const y = parseInt(dmy[3], 10);
+        dateMs = new Date(y, m, d, 12, 0, 0).getTime();
+      } else {
+        const t = new Date(s).getTime();
+        if (!isNaN(t)) dateMs = t;
       }
     }
     
