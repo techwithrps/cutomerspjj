@@ -31,15 +31,16 @@ import {
   Table,
   CheckCircle
 } from 'lucide-react';
-import { executeMovementHistoryPK, executeMovementHistorySummary } from '../services/movementHistoryService';
+import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping } from '../services/movementHistoryService';
 
 export default function CustomerTrackingView({ customer, prefilledQuery = '', containers = [], invoices = [] }) {
   const [searchInput, setSearchInput] = useState(prefilledQuery);
   const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : (containers[0]?.contNo || null));
   const [searchMode, setSearchMode] = useState('CONTAINER'); // 'CONTAINER' | 'INVOICE'
-  const [activeTrackingTab, setActiveTrackingTab] = useState('pipeline'); // 'pipeline' | 'oracle_pk' | 'summary'
+  const [activeTrackingTab, setActiveTrackingTab] = useState('pipeline'); // 'pipeline' | 'oracle_pk' | 'gr_fleet' | 'summary'
   const [oraclePhaseFilter, setOraclePhaseFilter] = useState('ALL');
   const [oracleSearchTerm, setOracleSearchTerm] = useState('');
+  const [selectedGRIndex, setSelectedGRIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -164,8 +165,19 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
     document.body.removeChild(link);
   };
 
-  // Quick suggestions from real active containers
-  const quickSuggestions = (containers || []).slice(0, 4).map(c => c.contNo).filter(Boolean);
+  // Execute Fleet GR mapping
+  const fleetGRRecords = useMemo(() => {
+    return executeFleetGRMapping(contNo, {
+      customer,
+      customerName: customer?.name,
+      terminal,
+      pol,
+      destination,
+      sbNo,
+      blNo,
+      date: invoiceDate
+    });
+  }, [contNo, customer, terminal, pol, destination, sbNo, blNo, invoiceDate]);
 
   // Progressive connected arrow pipeline steps based on real container route
   const progressivePipeline = [
@@ -436,6 +448,22 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
 
               <button
                 type="button"
+                onClick={() => setActiveTrackingTab('gr_fleet')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  activeTrackingTab === 'gr_fleet'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-200" />
+                <span>Fleet GR & Bilty (FLEET_GR_MAPPING)</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-700/50 text-amber-100 border border-amber-400/40">
+                  {fleetGRRecords.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTrackingTab('summary')}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTrackingTab === 'summary'
@@ -456,6 +484,17 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Export 45 Steps CSV</span>
+              </button>
+            )}
+
+            {activeTrackingTab === 'gr_fleet' && (
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Print Official GR Bilty Slip</span>
               </button>
             )}
           </div>
@@ -744,7 +783,19 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
                           {step.DOC_TYPE || '-'}
                         </td>
                         <td className="py-2.5 px-4 font-mono font-bold text-slate-900 max-w-[200px] truncate" title={step.DOC_NO}>
-                          {step.DOC_NO}
+                          {step.SR_NO === 12 ? (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTrackingTab('gr_fleet')}
+                              className="text-amber-700 hover:text-amber-900 underline font-bold inline-flex items-center gap-1 cursor-pointer bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"
+                              title="Click to view full GR Consignment Bilty"
+                            >
+                              <Truck className="w-3 h-3 text-amber-600" />
+                              <span>{step.DOC_NO}</span>
+                            </button>
+                          ) : (
+                            step.DOC_NO
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-700 whitespace-nowrap">
                           {step.ACTIVITY_DATE}
@@ -762,6 +813,311 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '', co
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+            </div>
+          )}
+
+          {/* VIEW 4: FLEET GR & BILTY CONSIGNMENT (FLEET_GR_MAPPING) */}
+          {activeTrackingTab === 'gr_fleet' && (
+            <div className="space-y-4 sm:space-y-6 animate-fade-in">
+              
+              {/* Header & GR Selector */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-5 sm:p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                          Fleet GR & Consignment Bilty Ledger (FLEET_GR_MAPPING)
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Official Transporter Goods Receipt (GR / LR Bilty) issued for Container <strong className="font-mono text-slate-800">{contNo}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Print Official Bilty PDF</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* GR Selector Chips */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  <span className="text-xs font-bold text-slate-500">Available GR Notes:</span>
+                  {fleetGRRecords.map((gr, idx) => (
+                    <button
+                      key={gr.grNo}
+                      type="button"
+                      onClick={() => setSelectedGRIndex(idx)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        selectedGRIndex === idx
+                          ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-500/30'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                      }`}
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>{gr.grNo}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                        selectedGRIndex === idx ? 'bg-black/20 text-amber-100' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {gr.vehicleNo}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Official Bilty / Consignment Document Box */}
+              {fleetGRRecords[selectedGRIndex] && (() => {
+                const gr = fleetGRRecords[selectedGRIndex];
+                return (
+                  <div className="bg-white rounded-3xl border-2 border-amber-300/80 shadow-card p-6 sm:p-8 space-y-6 relative overflow-hidden">
+                    
+                    {/* Watermark Logo/Text */}
+                    <div className="absolute right-6 top-6 opacity-5 pointer-events-none select-none">
+                      <Truck className="w-72 h-72 text-slate-900" />
+                    </div>
+
+                    {/* Bilty Top Bar Header */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-white font-black text-xs uppercase tracking-wider">
+                            OFFICIAL GOODS RECEIPT (GR / BILTY)
+                          </span>
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            ● {gr.status}
+                          </span>
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 mt-1">
+                          {gr.transporter}
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          SPJ Multimodal Transport Network • Fleet Division • ISO 9001:2015 Certified
+                        </p>
+                      </div>
+
+                      <div className="text-left sm:text-right space-y-1 bg-amber-50 p-3 rounded-2xl border border-amber-200">
+                        <span className="text-[10px] font-bold text-amber-800 uppercase block">CONSIGNMENT NOTE NO</span>
+                        <span className="text-lg sm:text-xl font-mono font-black text-slate-900 block">{gr.grNo}</span>
+                        <span className="text-xs font-medium text-slate-600 block">Date: <strong>{gr.grDate}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Grid: 4 Core Sections */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      
+                      {/* Section 1: Consignor & Consignee */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
+                          Consignor & Consignee Parties
+                        </span>
+                        <div>
+                          <span className="text-slate-500 text-[11px] block">Shipper / Consignor:</span>
+                          <span className="font-bold text-slate-900 text-sm">{gr.consignor}</span>
+                          <span className="text-[11px] text-slate-500 block">GSTIN: {customer?.gstin || '09AAACS9677K1Z6'}</span>
+                        </div>
+                        <div className="pt-1 border-t border-slate-200/60">
+                          <span className="text-slate-500 text-[11px] block">Consignee / Destination Receiver:</span>
+                          <span className="font-bold text-slate-900">{gr.consignee}</span>
+                          <span className="text-[11px] text-slate-500 block">Port: {gr.finalPort}</span>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Vehicle & Driver Details */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
+                          Fleet Vehicle & Driver Verification
+                        </span>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Assigned Trailer No:</span>
+                            <span className="font-mono font-black text-slate-900 text-base text-blue-800">{gr.vehicleNo}</span>
+                          </div>
+                          <span className="px-2 py-1 rounded-lg bg-blue-100 text-blue-900 font-bold text-[10px]">
+                            {gr.vehicleType}
+                          </span>
+                        </div>
+                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Driver Name:</span>
+                            <span className="font-bold text-slate-900">{gr.driverName}</span>
+                            <span className="text-[10px] text-slate-500 block">DL: {gr.driverLicense}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Driver Mobile:</span>
+                            <span className="font-mono font-bold text-emerald-700">{gr.driverPhone}</span>
+                            <span className="text-[10px] text-slate-500 block">{gr.tollFastag}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Container & Cargo Telemetry */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
+                          Container Equipment & Cold Chain Spec
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Container No:</span>
+                            <span className="font-mono font-black text-slate-900 text-sm">{gr.contNo}</span>
+                            <span className="text-[10px] text-slate-500 block">{gr.contSize}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Seal Number:</span>
+                            <span className="font-mono font-bold text-cyan-800 text-xs">{gr.sealNo}</span>
+                          </div>
+                        </div>
+                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
+                            <span className="text-[9px] text-slate-400 block font-bold">SET TEMP</span>
+                            <span className="font-mono font-bold text-blue-700">{gr.setTemp}</span>
+                          </div>
+                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
+                            <span className="text-[9px] text-slate-400 block font-bold">ACTUAL</span>
+                            <span className="font-mono font-bold text-emerald-700">{gr.actualTemp.split(' ')[0]}</span>
+                          </div>
+                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
+                            <span className="text-[9px] text-slate-400 block font-bold">GENSET</span>
+                            <span className="font-bold text-amber-700 text-[10px]">440V OK</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 4: Packages, Weight & E-Way Bill */}
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
+                          E-Way Bill & Cargo Weight Audit
+                        </span>
+                        <div>
+                          <span className="text-slate-500 text-[11px] block">E-Way Bill Number:</span>
+                          <span className="font-mono font-black text-purple-900 text-sm">{gr.ewayBillNo}</span>
+                          <span className="text-[10px] text-slate-500 block">Date: {gr.ewayBillDate}</span>
+                        </div>
+                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Packages / Description:</span>
+                            <span className="font-bold text-slate-900 block">{gr.packagesCount}</span>
+                            <span className="text-[10px] text-slate-500 block truncate">{gr.cargoDescription}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 text-[11px] block">Gross / Net Weight:</span>
+                            <span className="font-mono font-bold text-slate-900 block">Gross: {gr.grossWeight}</span>
+                            <span className="font-mono text-[11px] text-slate-600 block">Net: {gr.netWeight}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Route Corridor Flow */}
+                    <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 text-xs space-y-2">
+                      <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">
+                        Transit Corridor Milestones
+                      </span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold text-slate-800">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                          <span><strong>From:</strong> {gr.pickupPoint}</span>
+                        </div>
+                        <span className="text-slate-400 hidden sm:inline">➔</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                          <span><strong>Stuffing:</strong> {gr.stuffingPoint}</span>
+                        </div>
+                        <span className="text-slate-400 hidden sm:inline">➔</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                          <span><strong>Destination:</strong> {gr.deliveryPoint}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Proof & Signatures */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-slate-200 text-xs text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <span>{gr.epodStatus}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(JSON.stringify(gr, null, 2))}
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Copy GR Record
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                          Download Bilty Slip
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+
+              {/* Full Historical GR Table */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-5 sm:p-6 space-y-3">
+                <h4 className="text-sm font-black text-slate-900">
+                  Container Fleet Consignment History (All Trips)
+                </h4>
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#0b1329] text-white font-black text-[10px] uppercase tracking-wider">
+                        <th className="py-3 px-3">GR NO</th>
+                        <th className="py-3 px-3">GR Date</th>
+                        <th className="py-3 px-3">Vehicle No</th>
+                        <th className="py-3 px-3">Trip Type</th>
+                        <th className="py-3 px-3">Driver Name</th>
+                        <th className="py-3 px-3">E-Way Bill</th>
+                        <th className="py-3 px-3">Gross Wt</th>
+                        <th className="py-3 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+                      {fleetGRRecords.map((gr, idx) => (
+                        <tr 
+                          key={gr.grNo} 
+                          onClick={() => setSelectedGRIndex(idx)}
+                          className={`hover:bg-amber-50/50 cursor-pointer transition-colors ${
+                            selectedGRIndex === idx ? 'bg-amber-50/70 font-bold' : ''
+                          }`}
+                        >
+                          <td className="py-2.5 px-3 font-mono font-bold text-amber-700">{gr.grNo}</td>
+                          <td className="py-2.5 px-3 font-mono text-slate-600">{gr.grDate}</td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{gr.vehicleNo}</td>
+                          <td className="py-2.5 px-3 text-slate-700">{gr.tripType}</td>
+                          <td className="py-2.5 px-3 text-slate-900">{gr.driverName}</td>
+                          <td className="py-2.5 px-3 font-mono text-purple-800">{gr.ewayBillNo}</td>
+                          <td className="py-2.5 px-3 font-mono text-slate-800">{gr.grossWeight}</td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                              {gr.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
             </div>

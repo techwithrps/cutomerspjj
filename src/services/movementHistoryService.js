@@ -596,3 +596,96 @@ export function executeMovementHistoryPK(contNo, context = {}) {
 
   return rows;
 }
+
+/**
+ * Generates detailed FLEET_GR_MAPPING records for a container or customer
+ * @param {string} contNo 
+ * @param {Object} context 
+ * @returns {Array} List of GR / Bilty Consignment records
+ */
+export function executeFleetGRMapping(contNo, context = {}) {
+  const cNo = (contNo || context.contNo || 'MNBU0361774').toUpperCase().trim();
+  const shipper = context.customerName || context.customer?.name || 'MARHABA FROZEN FOODS-HR';
+  const terminal = context.terminal || 'TRANSWORLD-DADRI';
+  const pol = context.pol || context.portOfLoading || 'JNPT Nhava Sheva';
+  const pod = context.destination || context.destinationPort || 'JEDDAH - SAUDI ARABIA';
+  const sbNo = context.sbNo || '6741000';
+  const blNo = context.blNo || 'MEDU1190000';
+  const dateBase = context.date || '25/09/2026';
+
+  return [
+    {
+      grNo: `GR-98412`,
+      grDate: `${dateBase} 16:30`,
+      contNo: cNo,
+      contSize: '40 FT HIGH CUBE REEFER',
+      tripType: 'Export Factory Stuffing & Rail Dispatch',
+      transporter: 'SPJ REEFER LOGISTICS FLEET (FLEET-NORTH)',
+      vehicleNo: 'HR-38-AB-9821',
+      vehicleType: '40FT Multi-Axle Air-Suspension Trailer',
+      driverName: 'Rameshwar Singh Yadav',
+      driverPhone: '+91 98712 44921',
+      driverLicense: 'DL-04201809281',
+      consignor: shipper,
+      consignee: 'AL-MARWAH FOODS INTERNATIONAL W.L.L.',
+      pickupPoint: `SPJ Empty Reefer Depot / ${terminal}`,
+      stuffingPoint: `${shipper} Processing Plant, Dock 03`,
+      deliveryPoint: `ICD Railhead Terminal / ${pol} Rake`,
+      finalPort: pod,
+      ewayBillNo: '2418 9032 8812',
+      ewayBillDate: dateBase,
+      sealNo: 'SPJ-SEAL-891024 / LINE-MSC-44910',
+      cargoDescription: 'Frozen Boneless Buffalo Meat (Halal Certified)',
+      packagesCount: '1,420 Master Cartons',
+      netWeight: '28.400 MT',
+      grossWeight: '29.120 MT',
+      setTemp: '-18.0°C',
+      actualTemp: '-18.4°C (Optimal)',
+      gensetType: 'Thermo King / Carrier Clip-on 440V 3-Phase Genset',
+      fuelLevel: '94% (Diesel Aux Tank)',
+      status: 'In-Transit to Gateway Railhead',
+      statusCode: 'IN_TRANSIT',
+      freightBasis: 'Through Multimodal Rate Contract',
+      tollFastag: 'FASTag Active (Auto-Deduct)',
+      epodStatus: 'Digital Consignment Note Signed & Geo-Stamped',
+      remarks: 'Continuous cold chain maintained. Pre-cooling certificate attached with driver bilty.'
+    },
+    {
+      grNo: `GR-98350`,
+      grDate: `15/09/2026 10:15`,
+      contNo: cNo,
+      contSize: '40 FT HIGH CUBE REEFER',
+      tripType: 'Empty Container Repositioning / Yard Lift',
+      transporter: 'SPJ HEAVY LOGISTICS PVT LTD',
+      vehicleNo: 'UP-78-BT-4120',
+      vehicleType: '40FT Semi-Trailer',
+      driverName: 'Gurpreet Singh',
+      driverPhone: '+91 98110 33812',
+      driverLicense: 'UP-78201500392',
+      consignor: 'SPJ CONTAINER DEPOT (KANPUR-JRY)',
+      consignee: shipper,
+      pickupPoint: 'KANPUR-JRY Empty Buffer Depot',
+      stuffingPoint: `${shipper} Cold Store Plant`,
+      deliveryPoint: `${shipper} Dispatch Bay`,
+      finalPort: pol,
+      ewayBillNo: '2418 9011 5409',
+      ewayBillDate: '15/09/2026',
+      sealNo: 'YARD-SURVEY-PASS-0912',
+      cargoDescription: 'Empty Pre-Trip Inspected (PTI OK) Reefer Shell',
+      packagesCount: 'N/A (Empty)',
+      netWeight: '4.820 MT (Tare Weight)',
+      grossWeight: '4.820 MT',
+      setTemp: 'Ambient Pre-Cool',
+      actualTemp: '-15.0°C Pulldown',
+      gensetType: 'Mounted Yard Power Station',
+      fuelLevel: '100%',
+      status: 'Trip Completed & Handed to Factory',
+      statusCode: 'COMPLETED',
+      freightBasis: 'Allotted via SP_MOVEMENT_HISTORY_PK SR# 04',
+      tollFastag: 'FASTag Cleared',
+      epodStatus: 'Plant Gate-In Verified by Security',
+      remarks: 'PTI cleanliness survey grade A1.'
+    }
+  ];
+}
+
