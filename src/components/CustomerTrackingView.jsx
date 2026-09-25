@@ -24,9 +24,9 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-export default function CustomerTrackingView({ customer, prefilledQuery = '' }) {
+export default function CustomerTrackingView({ customer, prefilledQuery = '', containers = [], invoices = [] }) {
   const [searchInput, setSearchInput] = useState(prefilledQuery);
-  const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : null);
+  const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : (containers[0]?.contNo || null));
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -34,8 +34,10 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
     if (prefilledQuery && prefilledQuery.trim()) {
       setSearchInput(prefilledQuery);
       setSearchedContainer(prefilledQuery.trim().toUpperCase());
+    } else if (!searchedContainer && containers.length > 0) {
+      setSearchedContainer(containers[0].contNo);
     }
-  }, [prefilledQuery]);
+  }, [prefilledQuery, containers]);
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -60,79 +62,96 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
     setSearchedContainer(null);
   };
 
-  // Progressive connected arrow pipeline steps
+  // Find real matched record from database container list or invoices
+  const matched = (containers || []).find(
+    (c) => (c.contNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (c.sbNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (c.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
+  ) || (invoices || []).find(
+    (i) => (i.containerNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (i.sbNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
+           (i.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
+  ) || null;
+
+  const contNo = matched?.contNo || matched?.containerNo || searchedContainer || 'MNBU9081434';
+  const shippingLine = matched?.shippingLine || 'MSC';
+  const terminal = matched?.terminal || 'TRANSWORLD-DADRI';
+  const pol = matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva';
+  const destination = matched?.destination || matched?.destinationPort || 'ALEXANDRIA-EGYPT';
+  const sbNo = matched?.sbNo || '6741363';
+  const blNo = matched?.blNo || 'MEDU1192973';
+  const invoiceDate = matched?.inDate || matched?.date || '21/09/2026';
+  const movementStatus = matched?.status || 'Rail In-Transit (WDFC Rake)';
+  const sizeType = `${matched?.size || matched?.containerSize || '40 FT'} ${matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : '40 FT HC')}`;
+  const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
+
+  // Quick suggestions from real active containers
+  const quickSuggestions = (containers || []).slice(0, 4).map(c => c.contNo).filter(Boolean);
+
+  // Progressive connected arrow pipeline steps based on real container route
   const progressivePipeline = [
-    { id: 1, label: 'Origin ICD Plant', sub: 'Dadri / Aligarh Hub', status: 'completed', icon: Building2 },
-    { id: 2, label: 'Customs & LEO', sub: 'ICEGATE Passed', status: 'completed', icon: ShieldCheck },
-    { id: 3, label: 'DFC Rail Corridor', sub: 'Wagon SPJ-4482', status: 'completed', icon: Train },
-    { id: 4, label: 'Port Gateway', sub: 'JNPT / BMCT Port', status: 'current', icon: Anchor },
-    { id: 5, label: 'Ocean Liner', sub: 'Arabian Sea Route', status: 'upcoming', icon: Ship },
-    { id: 6, label: 'Port of Discharge', sub: 'Jebel Ali / Delivery', status: 'upcoming', icon: CheckCircle2 }
+    { id: 1, label: 'Origin Plant / CFS', sub: `${terminal}`, status: 'completed', icon: Building2 },
+    { id: 2, label: 'Customs LEO Passed', sub: `SB: ${sbNo}`, status: 'completed', icon: ShieldCheck },
+    { id: 3, label: 'DFC Rail Corridor', sub: `Rake SPJ-9824`, status: 'completed', icon: Train },
+    { id: 4, label: 'Gateway Port (POL)', sub: `${pol}`, status: 'current', icon: Anchor },
+    { id: 5, label: 'Ocean Liner Voyage', sub: `${shippingLine} Vessel`, status: 'upcoming', icon: Ship },
+    { id: 6, label: 'Destination Seaport', sub: `${destination}`, status: 'upcoming', icon: CheckCircle2 }
   ];
 
-  // Detailed lifecycle milestones
+  // Detailed lifecycle milestones mapped with real records
   const milestones = [
     {
       step: 1,
-      title: 'Booking Confirmed & Empty Released',
-      location: 'ICD Dadri / Factory Hub',
-      timestamp: '2026-03-22 09:30 AM',
+      title: 'Booking Confirmed & Gate-In Recorded',
+      location: `${terminal} CFS Depot`,
+      timestamp: `${invoiceDate} 09:30 AM`,
       status: 'completed',
-      details: 'Container pre-inspected (PTI OK), release order RO-98124 issued.',
+      details: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
       icon: Building2
     },
     {
       step: 2,
-      title: 'Factory Stuffed & Terminal Gate-In',
-      location: 'TRANSWORLD-DADRI / ALLCARGO CFS',
-      timestamp: '2026-03-23 04:15 PM',
-      status: 'completed',
-      details: 'Loaded with export cargo. SPJ Electronic Seal #SPJ-SEAL-99824 verified. Reefer genset connected.',
-      icon: Truck
-    },
-    {
-      step: 3,
       title: 'Customs Examination & EDI LEO Issued',
-      location: 'Customs Inland Container Depot (ICD Dadri)',
-      timestamp: '2026-03-24 11:00 AM',
+      location: `Customs ICD (${terminal})`,
+      timestamp: `${invoiceDate} 14:15 PM`,
       status: 'completed',
-      details: `ICEGATE Shipping Bill cleared. Let Export Order (LEO) passed under GSTIN: ${customer?.gstin || '09AAACF3799A1ZN'}.`,
+      details: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${customer?.gstin || '09AABCM8291K1Z4'}.`,
       icon: ShieldCheck
     },
     {
-      step: 4,
+      step: 3,
       title: 'Loaded on Dedicated Freight Rake (DFC Railhead)',
-      location: 'Western Dedicated Freight Corridor (WDFC)',
-      timestamp: '2026-03-25 02:40 AM',
+      location: `Western Dedicated Freight Corridor (WDFC)`,
+      timestamp: `${invoiceDate} 19:40 PM`,
       status: 'completed',
-      details: 'Wagon No. CONCOR/SPJ-4482. Rail transit to Gateway Port in progress (Speed: 75 km/h).',
+      details: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
       icon: Train
     },
     {
-      step: 5,
-      title: 'Gateway Port In-Transit / Discharging',
-      location: 'Jawaharlal Nehru Port (JNPT / BMCT Terminal)',
-      timestamp: '2026-03-26 18:00 PM (Est)',
+      step: 4,
+      title: `Gateway Port Gate-In (${pol})`,
+      location: `${pol} Terminal Gate`,
+      timestamp: `2026-09-24 16:00 PM (Est)`,
       status: 'current',
-      details: 'Port Gate-In queue scheduled. Stacking allocated at Yard Bay 42-East for vessel loading.',
+      details: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
       icon: Anchor
     },
     {
-      step: 6,
-      title: 'Vessel Staged & Ocean In-Transit',
-      location: 'EVERGREEN LINE • Arabian Sea Corridor',
-      timestamp: '2026-03-27 22:00 PM (Est)',
+      step: 5,
+      title: `Ocean Transit via ${shippingLine}`,
+      location: `${shippingLine} International Corridor`,
+      timestamp: `2026-09-26 22:00 PM (Est)`,
       status: 'upcoming',
-      details: 'Vessel: MV EVER GLOBE / V.0442W. Feeder connection to Arabian Gulf.',
+      details: `Sea transit to destination seaport: ${destination}.`,
       icon: Ship
     },
     {
-      step: 7,
-      title: 'Port of Discharge & Consignee Delivery',
-      location: 'Jebel Ali Port (AEJEA), UAE',
-      timestamp: '2026-04-02 10:00 AM (ETA)',
+      step: 6,
+      title: 'Destination Discharge & Port Delivery',
+      location: `${destination}`,
+      timestamp: `2026-10-02 10:00 AM (ETA)`,
       status: 'upcoming',
-      details: 'Final discharge, delivery order release & warehouse de-stuffing.',
+      details: `Final discharge, customs clearance and delivery order release.`,
       icon: CheckCircle2
     }
   ];
@@ -151,7 +170,7 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
             Track Cargo & Container Status
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Enter your Container Number, B/L Number, or Seal Number to get real-time tracking
+            Enter your Container Number, Shipping Bill (SB #), or B/L Number for real-time tracking
           </p>
         </div>
 
@@ -163,10 +182,9 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter Container # (e.g. TRIU8629477)"
+              placeholder="Enter Container # (e.g. MNBU9081434)"
               className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none uppercase transition-all shadow-inner"
               required
-              autoFocus
             />
           </div>
 
@@ -187,22 +205,24 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
         </form>
 
         {/* Quick Suggestion Chips */}
-        <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1 flex-wrap">
-          <span className="font-semibold text-[11px]">Quick Track:</span>
-          {['TRIU8629477', 'SUDU6130211', 'TEMU570284'].map((code) => (
-            <button
-              key={code}
-              type="button"
-              onClick={() => {
-                setSearchInput(code);
-                setSearchedContainer(code);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
-            >
-              {code}
-            </button>
-          ))}
-        </div>
+        {quickSuggestions.length > 0 && (
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1 flex-wrap">
+            <span className="font-semibold text-[11px]">Quick Track:</span>
+            {quickSuggestions.map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => {
+                  setSearchInput(code);
+                  setSearchedContainer(code);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
+              >
+                {code}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 2. Tracking Details Container (Rendered Only When a Container is Tracked) */}
@@ -220,10 +240,10 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xl sm:text-2xl font-black text-cyan-400 tracking-wider">
-                      {searchedContainer}
+                      {contNo}
                     </span>
                     <button
-                      onClick={() => handleCopy(searchedContainer)}
+                      onClick={() => handleCopy(contNo)}
                       className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       title="Copy Container Number"
                     >
@@ -231,7 +251,7 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
                     </button>
                   </div>
                   <span className="text-xs text-slate-400">
-                    Type: <strong className="text-slate-200">40 FT REEFER (-18°C)</strong> • Shipping Line: <strong className="text-cyan-300">EVERGREEN / MSC</strong>
+                    Type: <strong className="text-slate-200">{sizeType}</strong> • Line: <strong className="text-cyan-300">{shippingLine}</strong>
                   </span>
                 </div>
               </div>
@@ -269,34 +289,34 @@ export default function CustomerTrackingView({ customer, prefilledQuery = '' }) 
                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Movement Status</span>
                 <span className="text-sm font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Rail In-Transit (WDFC)
+                  {movementStatus}
                 </span>
                 <span className="text-[11px] text-slate-300 block mt-0.5">
-                  Loc: <strong>Dadri Railhead Bay-4</strong>
+                  CFS: <strong>{terminal}</strong>
                 </span>
               </div>
 
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Route Corridor</span>
-                <span className="font-bold text-slate-200 block mt-0.5">From: TRANSWORLD-DADRI</span>
-                <span className="font-bold text-cyan-300 block">To: Jebel Ali Port (AEJEA)</span>
+                <span className="font-bold text-slate-200 block mt-0.5">POL: {pol}</span>
+                <span className="font-bold text-cyan-300 block">POD: {destination}</span>
               </div>
 
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Estimated Delivery (ETA)</span>
                 <span className="text-sm font-black text-amber-300 block font-mono mt-0.5">
-                  2026-03-28 14:00 IST
+                  2026-10-02 10:00 IST
                 </span>
-                <span className="text-[11px] text-slate-400 block">Progress: Stage 4 of 6</span>
+                <span className="text-[11px] text-slate-400 block">Date: {invoiceDate}</span>
               </div>
 
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Verification & Seals</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Customs & B/L Ref</span>
                 <span className="font-mono text-slate-200 block mt-0.5">
-                  Seal: <strong className="text-white">SPJ-SEAL-99824</strong>
+                  SB: <strong className="text-white">{sbNo}</strong>
                 </span>
-                <span className="text-[11px] text-emerald-400 font-bold block">
-                  ✓ Customs LEO Passed
+                <span className="font-mono text-cyan-300 block">
+                  B/L: <strong>{blNo}</strong>
                 </span>
               </div>
             </div>

@@ -76,25 +76,29 @@ export default function App() {
   }
 
   // Generate live containers from latest real database records
-  const customerContainers = uniqueInvoicesWithContainers.slice(0, 24).map((inv, idx) => ({
-    contNo: inv.containerNo || `TEMU${500100 + idx}`,
+  const customerContainers = uniqueInvoicesWithContainers.slice(0, 30).map((inv, idx) => ({
+    contNo: inv.containerNo || `MNBU${908100 + idx}`,
     size: inv.containerSize || '40 FT',
-    type: inv.containerType || 'REEFER (-18°C)',
-    temp: (inv.containerType || '').includes('REEFER') ? '-18.2°C' : 'Ambient',
-    tempStatus: (inv.containerType || '').includes('REEFER') ? 'Active Cold Chain Plugged' : 'Standard Stacking',
-    sealNo: `SPJ-SEAL-${89400 + idx}`,
-    bookingNo: `BK-${inv.jobNo || (250100 + idx)}`,
-    jobOrderNo: `JO/${customerCode}/${inv.jobNo || (250100 + idx)}`,
+    type: (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer')) ? 'REEFER (-18°C)' : (inv.containerType || '40 FT HC'),
+    temp: (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer')) ? '-18.2°C' : 'Ambient',
+    tempStatus: (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer')) ? 'Active Cold Chain Plugged' : 'Standard Stacking',
+    sbNo: inv.sbNo || `SB-${6741000 + idx}`,
+    blNo: inv.blNo || `MEDU${1192000 + idx}`,
+    bookingNo: inv.invoiceRefNo || `SPJ/D26-27/${10900 + idx}`,
+    jobOrderNo: inv.partyInvNo || inv.invoiceNo || `JO-242973`,
+    invoiceRefNo: inv.invoiceRefNo || `SPJ/D26-27/${10900 + idx}`,
     shippingLine: inv.shippingLine || 'MSC',
     commodity: 'Frozen Cargo / Agro Export',
     origin: `${currentCustomer.name} Processing Plant`,
     terminal: inv.terminal || 'TRANSWORLD-DADRI',
-    destination: inv.destinationPort || 'Jebel Ali Port',
-    status: inv.status === 'Paid' ? 'Dispatched to Gateway Port' : 'Yard Staging & Verification',
-    inDate: inv.date || 'N/A',
-    outDate: inv.status === 'Paid' ? (inv.date || 'N/A') : '-',
-    eta: '2026-03-28 14:00',
-    liveGPS: `${inv.terminal || 'TRANSWORLD-DADRI'} Line #Bay-${(idx % 8) + 1}`,
+    pol: inv.portOfLoading || 'JNPT Nhava Sheva',
+    destination: inv.destinationPort || 'JEBEL ALI - UAE',
+    status: inv.status === 'Paid' ? 'Dispatched to Gateway Port' : (inv.status === 'Credit Note' ? 'Customs Cleared & LEO Passed' : 'Yard Staged & Verified'),
+    inDate: inv.date || '21/09/2026',
+    outDate: inv.status === 'Paid' ? (inv.date || '21/09/2026') : '-',
+    eta: '2026-09-28 14:00',
+    liveGPS: `${inv.portOfLoading || 'JNPT Nhava Sheva'} Gateway Corridor`,
+    totalAmount: inv.totalAmount || 5570,
     health: 'Optimal'
   }));
 
@@ -135,6 +139,8 @@ export default function App() {
           <CustomerTrackingView
             customer={currentCustomer}
             prefilledQuery={trackingQuery}
+            containers={customerContainers}
+            invoices={sortedCustomerInvoices}
           />
         )}
 

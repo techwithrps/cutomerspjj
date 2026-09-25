@@ -31,11 +31,14 @@ export default function CustomerContainersView({ containers = [], customer, onNa
     if (!s) return true;
     return (
       (c.contNo || '').toLowerCase().includes(s) ||
+      (c.sbNo || '').toLowerCase().includes(s) ||
+      (c.blNo || '').toLowerCase().includes(s) ||
       (c.sealNo || '').toLowerCase().includes(s) ||
       (c.bookingNo || '').toLowerCase().includes(s) ||
       (c.jobOrderNo || '').toLowerCase().includes(s) ||
       (c.destination || '').toLowerCase().includes(s) ||
       (c.terminal || '').toLowerCase().includes(s) ||
+      (c.pol || '').toLowerCase().includes(s) ||
       (c.shippingLine || '').toLowerCase().includes(s) ||
       (c.origin || '').toLowerCase().includes(s) ||
       (c.status || '').toLowerCase().includes(s) ||
@@ -69,7 +72,7 @@ export default function CustomerContainersView({ containers = [], customer, onNa
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search Container / Seal #..."
+            placeholder="Search Container / SB # / BL #..."
             className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
           />
           {searchTerm && (
@@ -95,7 +98,7 @@ export default function CustomerContainersView({ containers = [], customer, onNa
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((item, idx) => {
-            const isReefer = item.type?.includes('REEFER');
+            const isReefer = (item.type || '').includes('REEFER') || (item.type || '').includes('RF');
 
             return (
               <div 
@@ -117,9 +120,11 @@ export default function CustomerContainersView({ containers = [], customer, onNa
                         {copiedId === item.contNo ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <span className="text-[11px] text-slate-500 font-semibold block mt-1">
-                      Seal: <strong className="font-mono text-slate-800">{item.sealNo}</strong>
-                    </span>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold mt-1 flex-wrap">
+                      <span>SB: <strong className="font-mono text-slate-800">{item.sbNo || 'N/A'}</strong></span>
+                      <span className="text-slate-300">•</span>
+                      <span>B/L: <strong className="font-mono text-slate-800">{item.blNo || 'N/A'}</strong></span>
+                    </div>
                   </div>
 
                   <div className="text-right">
@@ -163,7 +168,12 @@ export default function CustomerContainersView({ containers = [], customer, onNa
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Destination Gateway</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Gateway Port (POL)</span>
+                    <span className="font-semibold text-slate-800 truncate block mt-0.5">{item.pol}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Destination Seaport</span>
                     <span className="font-semibold text-slate-800 truncate block mt-0.5">{item.destination}</span>
                   </div>
 
@@ -171,13 +181,18 @@ export default function CustomerContainersView({ containers = [], customer, onNa
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Shipping Line</span>
                     <span className="font-semibold text-slate-800 truncate block mt-0.5">{item.shippingLine}</span>
                   </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Booking / Job #</span>
+                    <span className="font-semibold text-slate-800 truncate block mt-0.5">{item.jobOrderNo || item.bookingNo}</span>
+                  </div>
                 </div>
 
                 {/* Live GPS & Direct Track Action Button */}
                 <div className="flex items-center justify-between text-xs pt-1 gap-2 flex-wrap sm:flex-nowrap">
                   <div className="flex items-center gap-1.5 text-slate-600 truncate">
                     <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                    <span className="text-[11px] font-semibold truncate">{item.liveGPS}</span>
+                    <span className="text-[11px] font-semibold truncate">Corridor: {item.pol} (via {item.terminal})</span>
                   </div>
 
                   <button
