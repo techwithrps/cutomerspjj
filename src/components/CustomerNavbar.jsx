@@ -109,17 +109,17 @@ export default function CustomerNavbar({
                 <span>WhatsApp</span>
               </a>
 
-              <div className="flex items-center bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 transition-all rounded-2xl p-1.5 pl-3 gap-3 shadow-md">
-                <div className="flex flex-col text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black text-white tracking-tight">
+              <div className="flex items-center bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 transition-all rounded-2xl p-1.5 pl-3 gap-2.5 shadow-md max-w-[260px] xl:max-w-xs">
+                <div className="flex flex-col text-left min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-xs font-black text-white tracking-tight truncate">
                       {customer.name}
                     </span>
-                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
                       {customer.code}
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono font-medium">
+                  <span className="text-[10px] text-slate-400 font-mono font-medium truncate">
                     GST: {customer.gstin}
                   </span>
                 </div>
@@ -127,15 +127,17 @@ export default function CustomerNavbar({
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0284c7] to-[#1e40af] text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
                   <Building2 className="w-4 h-4 text-cyan-200" />
                 </div>
-
-                <button
-                  onClick={onLogout}
-                  title="Sign Out from Client Portal"
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition-all cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
               </div>
+
+              {/* Prominent High-Visibility Logout Button */}
+              <button
+                onClick={onLogout}
+                title="Sign Out / Logout from Client Portal"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-rose-100 border border-rose-500/40 text-xs font-black transition-all hover-lift active:scale-95 cursor-pointer shadow-sm shrink-0"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>Logout</span>
+              </button>
             </div>
           )}
 
