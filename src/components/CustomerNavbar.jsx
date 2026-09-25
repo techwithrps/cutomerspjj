@@ -60,7 +60,8 @@ export default function CustomerNavbar({
               <img 
                 src="/logo.png" 
                 alt="SPJ Group of Companies" 
-                className="h-5.5 sm:h-7 w-auto object-contain" 
+                className="h-6 sm:h-7 w-auto max-h-7 max-w-[100px] sm:max-w-[120px] object-contain shrink-0" 
+                style={{ maxHeight: '28px', maxWidth: '110px', height: '26px' }}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';

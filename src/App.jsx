@@ -225,7 +225,8 @@ export default function App() {
             <img 
               src="/logo.png" 
               alt="SPJ Logo" 
-              className="h-5 w-auto object-contain" 
+              className="h-5 w-auto object-contain shrink-0" 
+              style={{ maxHeight: '20px', maxWidth: '80px', height: '20px' }}
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.style.display = 'none';
