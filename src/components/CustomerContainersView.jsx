@@ -22,7 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 
-export default function CustomerContainersView({ containers = [], customer, onNavigateTrack }) {
+export default function CustomerContainersView({ allContainers = [], liveContainers = [], containers = [], customer, onNavigateTrack }) {
   const [subTab, setSubTab] = useState('live'); // 'live' | 'master'
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState(null);
@@ -35,7 +35,11 @@ export default function CustomerContainersView({ containers = [], customer, onNa
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const filtered = (containers || []).filter((c) => {
+  const effectiveLiveList = liveContainers.length > 0 ? liveContainers : containers;
+  const effectiveAllList = allContainers.length > 0 ? allContainers : containers;
+  const activeDataset = subTab === 'live' ? effectiveLiveList : effectiveAllList;
+
+  const filtered = activeDataset.filter((c) => {
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
     return (
@@ -76,7 +80,7 @@ export default function CustomerContainersView({ containers = [], customer, onNa
               Container Management & Fleet Hub
             </h2>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              {filtered.length} Total Boxes
+              {filtered.length} {subTab === 'live' ? 'Live Active' : 'Total Trips'}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium">
@@ -102,7 +106,7 @@ export default function CustomerContainersView({ containers = [], customer, onNa
             <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
               subTab === 'live' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
             }`}>
-              {containers.length}
+              {effectiveLiveList.length}
             </span>
           </button>
 
@@ -122,7 +126,7 @@ export default function CustomerContainersView({ containers = [], customer, onNa
             <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
               subTab === 'master' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
             }`}>
-              All Records
+              {effectiveAllList.length} Trips
             </span>
           </button>
         </div>

@@ -485,7 +485,7 @@ export default function InvoiceCardsView({
       {/* 4. Pagination Controller */}
       <div className="p-2.5 bg-white rounded-2xl border border-slate-200 flex items-center justify-between text-xs text-slate-600 font-medium shadow-2xs">
         <div className="text-[11px]">
-          Page <strong className="text-slate-900">{currentPage.toLocaleString('en-IN')}</strong> of <strong className="text-slate-900">{totalPages.toLocaleString('en-IN')} Pages</strong> • <strong className="text-blue-700">{effectiveTotalRecords.toLocaleString('en-IN')} Total Invoices</strong> (18 bills / page)
+          Page <strong className="text-slate-900">{currentPage.toLocaleString('en-IN')}</strong> of <strong className="text-slate-900">{totalPages.toLocaleString('en-IN')} Pages</strong> • <strong className="text-blue-700">{filteredInvoices.length.toLocaleString('en-IN')} Filtered Invoices</strong> (18 bills / page)
         </div>
 
         <div className="flex items-center gap-1">

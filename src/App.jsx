@@ -69,33 +69,10 @@ export default function App() {
     return parseD(b) - parseD(a);
   });
 
-  // Deduplicate unique containers by containerNo from real database records
-  const seenContainers = new Set();
-  const uniqueInvoicesWithContainers = [];
-  
-  for (const inv of sortedCustomerInvoices) {
-    const cNo = inv.containerNo;
-    if (cNo && !seenContainers.has(cNo)) {
-      seenContainers.add(cNo);
-      uniqueInvoicesWithContainers.push(inv);
-    }
-  }
-
-  // If fewer than 10 unique, fill with distinct indices
-  if (uniqueInvoicesWithContainers.length < 10) {
-    sortedCustomerInvoices.forEach((inv, idx) => {
-      const fallbackNo = inv.containerNo || `TEMU${500100 + idx}`;
-      if (!seenContainers.has(fallbackNo)) {
-        seenContainers.add(fallbackNo);
-        uniqueInvoicesWithContainers.push({ ...inv, containerNo: fallbackNo });
-      }
-    });
-  }
-
-  // Generate live containers from latest real database records
-  const customerContainers = uniqueInvoicesWithContainers.map((inv, idx) => ({
-    id: inv.id || `CONT-${idx}`,
-    contNo: inv.containerNo || `MNBU${908100 + idx}`,
+  // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across all customer invoices/jobs)
+  const allContainerTrips = sortedCustomerInvoices.map((inv, idx) => ({
+    id: inv.id || `TRIP-${idx}`,
+    contNo: inv.containerNo || `MNBU${908100 + (idx % 80)}`,
     size: inv.containerSize || '40 FT',
     type: (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer')) ? 'REEFER (-18°C)' : (inv.containerType || '40 FT HC'),
     temp: (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer')) ? '-18.2°C' : 'Ambient',
@@ -125,6 +102,27 @@ export default function App() {
     health: 'Optimal'
   }));
 
+  // 2. UNIQUE ACTIVE / LIVE CONTAINERS (Deduplicated latest box status with telemetry)
+  const seenContainers = new Set();
+  const liveContainers = [];
+  for (const trip of allContainerTrips) {
+    if (trip.contNo && !seenContainers.has(trip.contNo)) {
+      seenContainers.add(trip.contNo);
+      liveContainers.push(trip);
+    }
+  }
+
+  // Fallback to ensure at least 10 live containers exist
+  if (liveContainers.length < 10) {
+    allContainerTrips.forEach((trip, idx) => {
+      const fallbackNo = trip.contNo || `TEMU${500100 + idx}`;
+      if (!seenContainers.has(fallbackNo)) {
+        seenContainers.add(fallbackNo);
+        liveContainers.push({ ...trip, contNo: fallbackNo });
+      }
+    });
+  }
+
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 flex flex-col font-sans selection:bg-[#0284c7] selection:text-white">
       
@@ -149,7 +147,8 @@ export default function App() {
 
         {activeTab === 'containers' && (
           <CustomerContainersView
-            containers={customerContainers}
+            allContainers={allContainerTrips}
+            liveContainers={liveContainers}
             customer={currentCustomer}
             onNavigateTrack={(contNo) => {
               setTrackingQuery(contNo);
@@ -162,7 +161,7 @@ export default function App() {
           <CustomerTrackingView
             customer={currentCustomer}
             prefilledQuery={trackingQuery}
-            containers={customerContainers}
+            containers={liveContainers}
             invoices={sortedCustomerInvoices}
           />
         )}
