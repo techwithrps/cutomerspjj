@@ -52,7 +52,6 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
 
           const defaultRm = {
             name: 'Mr. Dinesh',
-            role: 'Key Account Director — SPJ Group',
             phone: '+91-8750194222',
             altPhone: '+91-9310209222',
             email: 'info@spjcargo.com',

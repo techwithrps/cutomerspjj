@@ -156,7 +156,6 @@ export default function CustomerProfileView({ customer }) {
 
               <div className="space-y-1">
                 <h4 className="text-base font-black text-white">{rm.name}</h4>
-                <p className="text-xs text-purple-200 font-medium">{rm.role}</p>
                 <p className="text-[11px] text-slate-300 leading-relaxed">📍 {rm.office}</p>
               </div>
 

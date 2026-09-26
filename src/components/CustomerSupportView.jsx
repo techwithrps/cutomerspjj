@@ -15,7 +15,6 @@ import {
 export default function CustomerSupportView({ customer }) {
   const defaultRm = {
     name: 'Mr. Dinesh',
-    role: 'Key Account Director — SPJ Group',
     phone: '+91-8750194222',
     altPhone: '+91-9310209222',
     email: 'info@spjcargo.com',
@@ -60,12 +59,11 @@ export default function CustomerSupportView({ customer }) {
           <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-card space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 font-bold text-slate-900 text-sm sm:text-base">
               <ShieldCheck className="w-5 h-5 text-[#2b1f55]" />
-              Assigned Key Account Director
+              SPJ Dedicated RM Desk
             </div>
 
             <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-100 space-y-1.5">
               <span className="text-base font-extrabold text-[#2b1f55] block">{rm.name}</span>
-              <span className="text-xs text-purple-800 font-semibold block">{rm.role}</span>
               <span className="text-[11px] text-slate-600 block leading-relaxed">
                 📍 {rm.office}
               </span>
@@ -76,24 +74,18 @@ export default function CustomerSupportView({ customer }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <a 
                   href={`tel:${rm.phone || '+91-8750194222'}`}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="text-[11px]">{rm.phone || '+91-8750194222'}</span>
-                  </div>
-                  <span className="text-[9px] text-slate-400">Primary</span>
+                  <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="text-xs">{rm.phone || '+91-8750194222'}</span>
                 </a>
 
                 <a 
                   href={`tel:${rm.altPhone || '+91-9310209222'}`}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="text-[11px]">{rm.altPhone || '+91-9310209222'}</span>
-                  </div>
-                  <span className="text-[9px] text-slate-400">Direct</span>
+                  <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="text-xs">{rm.altPhone || '+91-9310209222'}</span>
                 </a>
               </div>
 

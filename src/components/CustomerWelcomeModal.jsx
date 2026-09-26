@@ -160,8 +160,8 @@ export default function CustomerWelcomeModal({ customer, onClose, onNavigateTab 
               <span className="font-extrabold text-slate-900 text-xs block truncate mt-0.5">
                 {rm.name}
               </span>
-              <span className="text-[10px] text-slate-500 block truncate">
-                {rm.role}
+              <span className="text-[10px] text-slate-500 block truncate font-mono">
+                {rm.phone || '+91-8750194222'}
               </span>
             </div>
 

@@ -23,7 +23,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 22 2683 8800',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -63,7 +62,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 565 240 8820',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -103,7 +101,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 571 249 1100',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -143,7 +140,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 515 282 0451',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -183,7 +179,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 98714 88001',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -223,7 +218,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 98102 33491',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
@@ -263,7 +257,6 @@ export const CUSTOMER_ACCOUNTS = {
     phone: '+91 120 410 8822',
     relationshipManager: {
       name: 'Mr. Dinesh',
-      role: 'Key Account Director — SPJ Group',
       phone: '+91-8750194222',
       altPhone: '+91-9310209222',
       email: 'info@spjcargo.com',
