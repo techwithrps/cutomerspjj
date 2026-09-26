@@ -189,11 +189,11 @@ export default function CustomerNavbar({
               </div>
             </div>
 
-            {/* Hub & Verified Badge */}
+            {/* Billing Head & Verified Badge */}
             <div className="flex items-center gap-2 text-[9px] sm:text-[11px] text-slate-300 font-medium shrink-0">
               <span className="flex items-center gap-1">
                 <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 shrink-0" />
-                <span>Hub: <strong className="text-white">{(customer.primaryHub || 'TRANSWORLD-DADRI').replace(/--+/g, '-')}</strong></span>
+                <span>Billing Head: <strong className="text-white">{(customer.primaryHub || 'TRANSWORLD-DADRI').replace(/--+/g, '-')}</strong></span>
               </span>
               <span className="text-emerald-400 font-bold flex items-center gap-1">
                 <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
