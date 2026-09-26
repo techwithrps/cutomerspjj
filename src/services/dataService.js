@@ -108,12 +108,12 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
     totalAmount,
     billAmount,
     status: (() => {
-      const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || '').trim();
-      if (st.toLowerCase() === 'paid' || st.toLowerCase() === 'cleared' || st.toLowerCase() === 'settled') {
-        return 'Paid';
-      }
-      if (st.toLowerCase().includes('credit') || st.toLowerCase().includes('refund') || st.toLowerCase().includes('cn')) {
+      const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || '').trim().toLowerCase();
+      if (st.includes('credit') || st.includes('refund') || st.includes('cn')) {
         return 'Credit Note';
+      }
+      if (inv.isSettled === true || inv.isPaid === true) {
+        return 'Paid';
       }
       return 'Pending';
     })(),
