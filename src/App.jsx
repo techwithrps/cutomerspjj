@@ -128,9 +128,17 @@ export default function App() {
 
     const isReefer = (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer') || (inv.containerType || '').includes('REEFER'));
 
+    const isRail = (inv.terminal || '').toUpperCase().includes('DADRI') || 
+                   (inv.terminal || '').toUpperCase().includes('KANPUR') || 
+                   (inv.terminal || '').toUpperCase().includes('PANKI') || 
+                   (inv.terminal || '').toUpperCase().includes('ICD') || 
+                   (inv.terminal || '').toUpperCase().includes('JRY') ||
+                   (inv.terminal || '').toUpperCase().includes('TUGHLAKABAD') ||
+                   (inv.terminal || '').toUpperCase().includes('SONEPAT');
+
     // Dynamic active in-transit status for live containers
-    let liveStatus = 'In-Transit (DFC Rail Corridor)';
-    let liveGPS = 'Western DFC Rail Corridor (Speed: 64 km/h)';
+    let liveStatus = isRail ? 'In-Transit (DFC Rail Corridor)' : 'In-Transit (Road Fleet Trailer)';
+    let liveGPS = isRail ? 'Western DFC Rail Corridor (Speed: 64 km/h)' : 'Expressway Corridor (Trailer GPS Active)';
     let currentStep = 3;
 
     if (isLive) {
@@ -143,12 +151,12 @@ export default function App() {
         liveGPS = `${inv.portOfLoading || 'JNPT Nhava Sheva'} Berth Terminal`;
         currentStep = 4;
       } else if (idx % 4 === 2) {
-        liveStatus = 'In-Transit (DFC Rail Corridor)';
-        liveGPS = 'Dedicated Freight Corridor - Dadri to JNPT';
+        liveStatus = isRail ? 'In-Transit (DFC Rail Corridor)' : 'In-Transit (Road Fleet Trailer)';
+        liveGPS = isRail ? 'Dedicated Freight Corridor - Dadri/Kanpur to Port' : 'Expressway Highway Corridor to Gateway Port';
         currentStep = 3;
       } else {
-        liveStatus = 'Customs Cleared & Rake Staged';
-        liveGPS = `${inv.terminal || 'TRANSWORLD-DADRI'} Railhead`;
+        liveStatus = isRail ? 'Customs Cleared & Rake Staged' : 'Customs Cleared & Trailer Dispatched';
+        liveGPS = `${inv.terminal || 'TRANSWORLD-DADRI'} Dispatch Yard`;
         currentStep = 2;
       }
     }

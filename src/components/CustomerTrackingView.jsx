@@ -200,166 +200,123 @@ export default function CustomerTrackingView({
   const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
   const sbNo = matched?.sbNo || '6741363';
   const blNo = matched?.blNo || 'MEDU1192973';
-  const invoiceDate = matched?.inDate || matched?.date || '25/09/2026';
-  const movementStatus = matched?.status || 'Rail In-Transit (WDFC Rake)';
-  const sizeType = `${matched?.size || matched?.containerSize || '40 FT'} ${matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : '40 FT HC')}`;
-  const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
+  const isRailRoute = useMemo(() => {
+    const term = (terminal || '').toUpperCase();
+    return term.includes('DADRI') || term.includes('KANPUR') || term.includes('PANKI') || term.includes('ICD') || term.includes('JRY') || term.includes('TUGHLAKABAD') || term.includes('SONEPAT');
+  }, [terminal]);
 
-  // Compute 45-step Oracle Stored Procedure (SP_MOVEMENT_HISTORY_PK)
-  const oracleMovementSteps = useMemo(() => {
-    return executeMovementHistoryPK(contNo, {
-      ...matched,
-      shippingLine,
-      terminal,
-      pol,
-      destination,
-      customerName: customer?.name,
-      partyInvNo: matched?.partyInvNo || matched?.invoiceNo,
-      invoiceRefNo: matched?.invoiceRefNo,
-      sbNo,
-      blNo,
-      date: invoiceDate
-    });
-  }, [contNo, matched, shippingLine, terminal, pol, destination, customer, sbNo, blNo, invoiceDate]);
-
-  // Compute Invoice Summary Cursor (SP_MOVEMENT_HISTORY_SUMMARY)
-  const invoiceSummaryRecords = useMemo(() => {
-    const invQuery = matched?.partyInvNo || matched?.invoiceNo || searchedContainer || '243439';
-    return executeMovementHistorySummary(invQuery);
-  }, [matched, searchedContainer]);
-
-  // Filter 45 Oracle movement steps
-  const filteredOracleSteps = useMemo(() => {
-    return oracleMovementSteps.filter(step => {
-      const matchesPhase = oraclePhaseFilter === 'ALL' || step.PHASE === oraclePhaseFilter;
-      const s = oracleSearchTerm.toLowerCase().trim();
-      const matchesSearch = !s || (
-        step.ACTIVITY_NAME.toLowerCase().includes(s) ||
-        step.DOC_NO.toLowerCase().includes(s) ||
-        step.DOC_TYPE.toLowerCase().includes(s) ||
-        step.REMARKS.toLowerCase().includes(s) ||
-        step.CREATED_BY.toLowerCase().includes(s) ||
-        String(step.SR_NO).includes(s)
-      );
-      return matchesPhase && matchesSearch;
-    });
-  }, [oracleMovementSteps, oraclePhaseFilter, oracleSearchTerm]);
-
-  // Export 45 steps as CSV
-  const handleExportCSV = () => {
-    const headers = ['SR_NO', 'PHASE', 'DOC_TYPE', 'ACTIVITY_NAME', 'DOC_NO', 'ACTIVITY_DATE', 'REMARKS', 'CREATED_BY', 'CREATED_ON'];
-    const rows = oracleMovementSteps.map(s => [
-      s.SR_NO,
-      `"${s.PHASE}"`,
-      `"${s.DOC_TYPE}"`,
-      `"${s.ACTIVITY_NAME}"`,
-      `"${s.DOC_NO}"`,
-      `"${s.ACTIVITY_DATE}"`,
-      `"${s.REMARKS}"`,
-      `"${s.CREATED_BY}"`,
-      `"${s.CREATED_ON}"`
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SP_MOVEMENT_HISTORY_PK_${contNo}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Execute Fleet GR mapping
-  const fleetGRRecords = useMemo(() => {
-    return executeFleetGRMapping(contNo, {
-      customer,
-      customerName: customer?.name,
-      terminal,
-      pol,
-      destination,
-      sbNo,
-      blNo,
-      date: invoiceDate
-    });
-  }, [contNo, customer, terminal, pol, destination, sbNo, blNo, invoiceDate]);
-
-  // Quick suggestions with diverse query types (Container, Vehicle, Party Inv, GR)
-  const quickSuggestions = useMemo(() => {
-    const list = [];
-    if (containers && containers[0]) list.push({ label: 'Cont #', val: containers[0].contNo });
-    list.push({ label: 'Vehicle #', val: 'HR-38-AB-9821' });
-    if (invoices && invoices[0]) list.push({ label: 'Party Inv #', val: invoices[0].partyInvNo || invoices[0].invoiceNo });
-    list.push({ label: 'GR #', val: 'GR-98412' });
-    return list;
-  }, [containers, invoices]);
-
-  // Progressive connected arrow pipeline steps based on real container route
-  const progressivePipeline = [
-    { id: 1, label: 'Origin Plant / CFS', sub: `${terminal}`, status: 'completed', icon: Building2 },
-    { id: 2, label: 'Customs LEO Passed', sub: `SB: ${sbNo}`, status: 'completed', icon: ShieldCheck },
-    { id: 3, label: 'DFC Rail Corridor', sub: `Rake SPJ-9824`, status: 'completed', icon: Train },
-    { id: 4, label: 'Gateway Port (POL)', sub: `${pol}`, status: 'current', icon: Anchor },
-    { id: 5, label: 'Ocean Liner Voyage', sub: `${shippingLine} Vessel`, status: 'upcoming', icon: Ship },
-    { id: 6, label: 'Destination Seaport', sub: `${destination}`, status: 'upcoming', icon: CheckCircle2 }
-  ];
-
-  // Detailed lifecycle milestones mapped with real records
-  const milestones = [
-    {
-      step: 1,
-      title: 'Booking Confirmed & Gate-In Recorded',
-      location: `${terminal} CFS Depot`,
-      timestamp: `${invoiceDate} 09:30 AM`,
-      status: 'completed',
-      details: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
-      icon: Building2
-    },
-    {
-      step: 2,
-      title: 'Customs Examination & EDI LEO Issued',
-      location: `Customs ICD (${terminal})`,
-      timestamp: `${invoiceDate} 14:15 PM`,
-      status: 'completed',
-      details: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${customer?.gstin || '09AABCM8291K1Z4'}.`,
-      icon: ShieldCheck
-    },
-    {
-      step: 3,
-      title: 'Loaded on Dedicated Freight Rake (DFC Railhead)',
-      location: `Western Dedicated Freight Corridor (WDFC)`,
-      timestamp: `${invoiceDate} 19:40 PM`,
-      status: 'completed',
-      details: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
-      icon: Train
-    },
-    {
-      step: 4,
-      title: `Gateway Port Gate-In (${pol})`,
-      location: `${pol} Terminal Gate`,
-      timestamp: `2026-09-24 16:00 PM (Est)`,
-      status: 'current',
-      details: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
-      icon: Anchor
-    },
-    {
-      step: 5,
-      title: `Ocean Transit via ${shippingLine}`,
-      location: `${shippingLine} International Corridor`,
-      timestamp: `2026-09-26 22:00 PM (Est)`,
-      status: 'upcoming',
-      details: `Sea transit to destination seaport: ${destination}.`,
-      icon: Ship
-    },
-    {
-      step: 6,
-      title: 'Destination Discharge & Port Delivery',
-      location: `${destination}`,
-      timestamp: `2026-10-02 10:00 AM (ETA)`,
-      status: 'upcoming',
-      details: `Final discharge, customs clearance and delivery order release.`,
-      icon: CheckCircle2
+  // Derive active current step (1 to 6) dynamically from matched container
+  const activeStepNumber = useMemo(() => {
+    if (matched?.dischargeDate || (matched?.status || '').toLowerCase().includes('discharg') || matched?.currentStep === 6) {
+      return 6;
     }
-  ];
+    if (matched?.currentStep && matched.currentStep >= 1 && matched.currentStep <= 6) {
+      return matched.currentStep;
+    }
+    const st = (matched?.status || '').toLowerCase();
+    if (st.includes('ocean') || st.includes('sail') || st.includes('voyage')) return 5;
+    if (st.includes('port') || st.includes('berth') || st.includes('sob') || st.includes('staging')) return 4;
+    if (st.includes('rail') || st.includes('dfc') || st.includes('rake') || st.includes('transit') || st.includes('trailer') || st.includes('highway')) return 3;
+    if (st.includes('custom') || st.includes('leo') || st.includes('clear')) return 2;
+    if (st.includes('gate') || st.includes('stuff') || st.includes('depot') || st.includes('plant')) return 1;
+    
+    // Realistic fallback distributed across in-transit stages (Stage 2, 3, 4, 5)
+    const seed = String(contNo).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return 2 + (seed % 4);
+  }, [matched, contNo]);
+
+  // Dynamic movement status label based on actual stage & transit mode
+  const movementStatus = useMemo(() => {
+    if (activeStepNumber === 6) return 'Discharged at Destination Port';
+    if (activeStepNumber === 5) return `Ocean Liner Voyage (Sailing - ${shippingLine})`;
+    if (activeStepNumber === 4) return `Gateway Port Staging & SOB (${pol})`;
+    if (activeStepNumber === 3) return isRailRoute ? 'In-Transit (Dedicated Freight Rail Corridor)' : 'In-Transit (Direct Road Fleet / Reefer Trailer)';
+    if (activeStepNumber === 2) return isRailRoute ? 'Customs ICD Cleared & Rake Staged' : 'Customs Cleared & Trailer Dispatched';
+    return 'Origin Factory Stuffing & Gate-In Recorded';
+  }, [activeStepNumber, isRailRoute, shippingLine, pol]);
+
+  // Progressive connected arrow pipeline steps dynamically mapped to activeStepNumber and transport mode
+  const progressivePipeline = useMemo(() => {
+    const step3Label = isRailRoute ? 'DFC Rail Corridor' : 'Road Fleet Transit';
+    const step3Sub = isRailRoute ? 'Rake SPJ-9824' : 'Trailer HR-38-AB-9821';
+    const Step3Icon = isRailRoute ? Train : Truck;
+
+    return [
+      { id: 1, label: isRailRoute ? 'Origin ICD / CFS' : 'Origin Factory Plant', sub: `${terminal}`, status: activeStepNumber > 1 ? 'completed' : activeStepNumber === 1 ? 'current' : 'upcoming', icon: Building2 },
+      { id: 2, label: 'Customs LEO Passed', sub: `SB: ${sbNo}`, status: activeStepNumber > 2 ? 'completed' : activeStepNumber === 2 ? 'current' : 'upcoming', icon: ShieldCheck },
+      { id: 3, label: step3Label, sub: step3Sub, status: activeStepNumber > 3 ? 'completed' : activeStepNumber === 3 ? 'current' : 'upcoming', icon: Step3Icon },
+      { id: 4, label: 'Gateway Port (POL)', sub: `${pol}`, status: activeStepNumber > 4 ? 'completed' : activeStepNumber === 4 ? 'current' : 'upcoming', icon: Anchor },
+      { id: 5, label: 'Ocean Liner Voyage', sub: `${shippingLine} Vessel`, status: activeStepNumber > 5 ? 'completed' : activeStepNumber === 5 ? 'current' : 'upcoming', icon: Ship },
+      { id: 6, label: 'Destination Seaport', sub: `${destination}`, status: activeStepNumber === 6 ? 'completed' : 'upcoming', icon: CheckCircle2 }
+    ];
+  }, [activeStepNumber, isRailRoute, terminal, sbNo, pol, shippingLine, destination]);
+
+  // Detailed lifecycle milestones dynamically mapped with real container dates and statuses
+  const milestones = useMemo(() => {
+    const step3Title = isRailRoute ? 'Loaded on Dedicated Freight Rake (DFC Railhead)' : 'Dispatched via Multi-Axle Reefer Trailer (Road Fleet)';
+    const step3Location = isRailRoute ? 'Western Dedicated Freight Corridor (WDFC)' : 'Expressway Corridor to Gateway Seaport';
+    const step3Details = isRailRoute 
+      ? `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`
+      : `High-speed multi-axle trailer transit towards ${pol} port terminal with active GPS tracking.`;
+    const Step3Icon = isRailRoute ? Train : Truck;
+
+    return [
+      {
+        step: 1,
+        title: isRailRoute ? 'Booking Confirmed & Gate-In Recorded' : 'Factory Stuffing Completed & Gate-In Recorded',
+        location: `${terminal} CFS Depot`,
+        timestamp: `${invoiceDate} 09:30 AM`,
+        status: activeStepNumber > 1 ? 'completed' : activeStepNumber === 1 ? 'current' : 'upcoming',
+        details: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
+        icon: Building2
+      },
+      {
+        step: 2,
+        title: 'Customs Examination & EDI LEO Issued',
+        location: `Customs ICD / CFS (${terminal})`,
+        timestamp: `${invoiceDate} 14:15 PM`,
+        status: activeStepNumber > 2 ? 'completed' : activeStepNumber === 2 ? 'current' : 'upcoming',
+        details: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${customer?.gstin || '09AABCM8291K1Z4'}.`,
+        icon: ShieldCheck
+      },
+      {
+        step: 3,
+        title: step3Title,
+        location: step3Location,
+        timestamp: `${matched?.trainOutDate || invoiceDate} 19:40 PM`,
+        status: activeStepNumber > 3 ? 'completed' : activeStepNumber === 3 ? 'current' : 'upcoming',
+        details: step3Details,
+        icon: Step3Icon
+      },
+      {
+        step: 4,
+        title: `Gateway Port Gate-In (${pol})`,
+        location: `${pol} Terminal Gate`,
+        timestamp: `${matched?.sailedDate || '2026-09-24'} 16:00 PM (Est)`,
+        status: activeStepNumber > 4 ? 'completed' : activeStepNumber === 4 ? 'current' : 'upcoming',
+        details: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
+        icon: Anchor
+      },
+      {
+        step: 5,
+        title: `Ocean Transit via ${shippingLine}`,
+        location: `${shippingLine} International Corridor`,
+        timestamp: `${matched?.sailedDate || '2026-09-26'} 22:00 PM (Est)`,
+        status: activeStepNumber > 5 ? 'completed' : activeStepNumber === 5 ? 'current' : 'upcoming',
+        details: `Sea transit to destination seaport: ${destination}.`,
+        icon: Ship
+      },
+      {
+        step: 6,
+        title: 'Destination Discharge & Port Delivery',
+        location: `${destination}`,
+        timestamp: matched?.dischargeDate ? `${matched.dischargeDate} (Discharged)` : `2026-10-02 10:00 AM (ETA)`,
+        status: activeStepNumber === 6 ? 'completed' : 'upcoming',
+        details: activeStepNumber === 6 ? `Delivered & container discharged at ${destination}.` : `Final discharge, customs clearance and delivery order release.`,
+        icon: CheckCircle2
+      }
+    ];
+  }, [activeStepNumber, isRailRoute, terminal, invoiceDate, blNo, sbNo, customer, matched, pol, shippingLine, destination]);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
