@@ -3,9 +3,96 @@
  * Implements Oracle Stored Procedures:
  * 1. SP_MOVEMENT_HISTORY_PK (45-Step Container Lifecycle Tracking)
  * 2. SP_MOVEMENT_HISTORY_SUMMARY (Party Invoice Summary Cursor)
+ * 3. FLEET_GR_MAPPING (Dynamic Container-Seeded Goods Receipt / LR Bilty Ledger)
  */
 
 import dbStore from '../data/dbStore.json';
+
+/**
+ * Deterministic hash seed generator from string
+ */
+function getSeed(str) {
+  return String(str || 'MNBU0361774')
+    .split('')
+    .reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+}
+
+/**
+ * Helper to adjust date by +/- days
+ */
+function addDaysToDateStr(dateStr, days) {
+  try {
+    let d;
+    if (dateStr && dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      }
+    } else if (dateStr && dateStr.includes('-')) {
+      d = new Date(dateStr);
+    }
+    if (!d || isNaN(d.getTime())) {
+      d = new Date(2026, 8, 25); // Default 25/09/2026
+    }
+    d.setDate(d.getDate() + days);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return '25/09/2026';
+  }
+}
+
+/**
+ * Driver registry for realistic multimodal fleet assignments
+ */
+const DRIVER_POOL = [
+  { name: 'Rameshwar Singh Yadav', phone: '+91 98712 44921', dl: 'DL-04201809281', state: 'HR' },
+  { name: 'Sunil Kumar Gujjar', phone: '+91 98108 55219', dl: 'HR-38201900482', state: 'HR' },
+  { name: 'Manpreet Singh Sandhu', phone: '+91 98761 22910', dl: 'PB-02201600812', state: 'PB' },
+  { name: 'Mohd. Irfan Qureshi', phone: '+91 98914 77312', dl: 'UP-78201700941', state: 'UP' },
+  { name: 'Rajendra Prasad Meena', phone: '+91 98290 66418', dl: 'RJ-14201800319', state: 'RJ' },
+  { name: 'Virender Singh Rawat', phone: '+91 98119 88320', dl: 'UK-07201500249', state: 'UK' },
+  { name: 'Dharmendra Yadav', phone: '+91 98188 33419', dl: 'DL-1M202000512', state: 'DL' },
+  { name: 'Gurpreet Singh', phone: '+91 98110 33812', dl: 'UP-78201500392', state: 'UP' },
+  { name: 'Balvinder Singh Gill', phone: '+91 98723 11840', dl: 'PB-65201400192', state: 'PB' },
+  { name: 'Harish Chandra Pant', phone: '+91 98102 99401', dl: 'UP-32201600843', state: 'UP' }
+];
+
+/**
+ * Trailer vehicle registry
+ */
+const VEHICLE_PREFIXES = ['HR-38-AB', 'HR-55-E', 'UP-78-BT', 'UP-14-CC', 'NL-01-AF', 'RJ-14-GC', 'DL-1M-AA', 'PB-02-CX'];
+
+/**
+ * Overseas Consignee Resolver based on Seaport Destination
+ */
+function resolveConsignee(pod) {
+  const p = (pod || '').toUpperCase();
+  if (p.includes('ALEXANDRIA') || p.includes('EGYPT') || p.includes('EGALY')) {
+    return 'AL-MARWAH FOODS INTERNATIONAL W.L.L. (Alexandria, Egypt)';
+  }
+  if (p.includes('JEBEL') || p.includes('DUBAI') || p.includes('UAE') || p.includes('AEJEA')) {
+    return 'AL-KHALEEJ GLOBAL TRADING LLC (Jebel Ali Freezone, Dubai)';
+  }
+  if (p.includes('JEDDAH') || p.includes('SAJED')) {
+    return 'RED SEA COLD CHAIN LOGISTICS CO. (Jeddah Islamic Port, KSA)';
+  }
+  if (p.includes('DAMMAM') || p.includes('SADMM')) {
+    return 'ARABIAN AGRO IMPORTS W.L.L. (King Abdulaziz Port, Dammam)';
+  }
+  if (p.includes('AQABA') || p.includes('JORDAN') || p.includes('JOAQB')) {
+    return 'AMMAN GENERAL TRADING & COLD STORAGE (Aqaba, Jordan)';
+  }
+  if (p.includes('SHUWAIKH') || p.includes('KUWAIT') || p.includes('KWSWK')) {
+    return 'KUWAIT REEFER TRADING EST. (Shuwaikh Port, Kuwait)';
+  }
+  if (p.includes('MERSIN') || p.includes('TURKEY') || p.includes('TRMER')) {
+    return 'MEDITERRANEAN AGRO TRADE A.S. (Mersin, Turkey)';
+  }
+  return 'INTERNATIONAL AGRO IMPORTS & LOGISTICS W.L.L.';
+}
 
 /**
  * Executes SP_MOVEMENT_HISTORY_SUMMARY by Party Invoice Number
@@ -40,7 +127,7 @@ export function executeMovementHistorySummary(partyInvoiceNo) {
         POL: pol,
         POD: pod,
         PARTY_INV_NO: inv.partyInvNo || inv.invoiceNo,
-        REQUIRED_VESSEL: 'MSC SASKIA A / VOY 26W',
+        REQUIRED_VESSEL: `${line} SASKIA A / VOY 26W`,
         REQUIRED_ETD: inv.date || '25/09/2026',
         COD_REMARK: inv.terminal?.includes('KANPUR') ? 'Direct Rail corridor via Dadri' : 'Standard Gateway Routing',
         CUSTOMER_NAME: inv.customerName,
@@ -61,7 +148,7 @@ export function executeMovementHistorySummary(partyInvoiceNo) {
       POL: `INNSA`,
       POD: `AEJEA`,
       PARTY_INV_NO: partyInvoiceNo,
-      REQUIRED_VESSEL: 'MSC KATRINA / VOY 26W',
+      REQUIRED_VESSEL: 'MSC SASKIA A / VOY 26W',
       REQUIRED_ETD: '25/09/2026',
       COD_REMARK: 'Standard Multimodal Movement',
       CUSTOMER_NAME: 'MARHABA FROZEN FOODS',
@@ -76,25 +163,52 @@ export function executeMovementHistorySummary(partyInvoiceNo) {
 
 /**
  * Executes SP_MOVEMENT_HISTORY_PK
- * Generates the full, authentic 45-point Oracle tracking timeline for any container
+ * Generates the full, authentic 45-point Oracle tracking timeline dynamically for any container
  * @param {string} contNo - Container Number
- * @param {Object} context - Optional matched invoice/container metadata
+ * @param {Object} context - Matched invoice/container metadata
  * @returns {Array} 45-Step Movement History rows
  */
 export function executeMovementHistoryPK(contNo, context = {}) {
-  const cNo = (contNo || context.contNo || 'MNBU0361774').toUpperCase().trim();
-  const line = context.shippingLine || 'MSC';
-  const term = context.terminal || 'TRANSWORLD-DADRI';
-  const pol = context.pol || context.portOfLoading || 'JNPT Nhava Sheva';
-  const pod = context.destination || context.destinationPort || 'JEBEL ALI - UAE';
+  const cNo = (contNo || context.contNo || context.containerNo || 'MNBU0361774').toUpperCase().trim();
+  const seed = getSeed(cNo);
+
+  const line = context.shippingLine || (seed % 3 === 0 ? 'MAERSK' : seed % 3 === 1 ? 'MSC' : 'CMA CGM');
+  const term = context.terminal || (seed % 2 === 0 ? 'TRANSWORLD-DADRI' : 'KANPUR-JRY');
+  const pol = context.pol || context.portOfLoading || (term.includes('KANPUR') ? 'MUNDRA MDCC' : 'JNPT Nhava Sheva');
+  const pod = context.destination || context.destinationPort || (seed % 4 === 0 ? 'ALEXANDRIA - EGYPT' : seed % 4 === 1 ? 'JEBEL ALI - UAE' : seed % 4 === 2 ? 'JEDDAH - SAUDI ARABIA' : 'AQABA - JORDAN');
   const shipper = context.customerName || context.customer?.name || 'MARHABA FROZEN FOODS-HR';
-  const partyInvNo = context.partyInvNo || context.invoiceNo || '243439';
-  const invRefNo = context.invoiceRefNo || 'SPJ/TP26-27/4502';
-  const sbNo = context.sbNo || '6741363';
-  const blNo = context.blNo || 'MEDU1192973';
-  const jobNo = context.jobNo || 'EXP/2026-27/04457';
-  const trainNo = '9824-WDFC';
-  const dateBase = context.date || '21/09/2026';
+  const partyInvNo = context.partyInvNo || context.invoiceNo || `D26-27/${10900 + (seed % 99)}`;
+  const invRefNo = context.invoiceRefNo || `SPJ/TP26-27/${4500 + (seed % 500)}`;
+  const sbNo = context.sbNo || `${6740000 + (seed % 9999)}`;
+  const blNo = context.blNo || `${line.slice(0, 3)}U${1190000 + (seed % 9999)}`;
+  const jobNo = context.jobNo || context.jobOrderNo || `EXP/2026-27/${String(4400 + (seed % 900)).padStart(5, '0')}`;
+  const trainNo = `${9800 + (seed % 100)}-WDFC`;
+  const bookingNo = context.bookingNo || `BK-${line.slice(0, 3)}-${890000 + (seed % 9999)}`;
+  const vesselName = `${line} SASKIA A / VOY ${26 + (seed % 10)}W`;
+  
+  // Dynamic vehicle & driver for this container
+  const vPrefix = VEHICLE_PREFIXES[seed % VEHICLE_PREFIXES.length];
+  const vehicleNo = context.vehicleNo || `${vPrefix}-${1000 + (seed % 8999)}`;
+  const driver = DRIVER_POOL[seed % DRIVER_POOL.length];
+  const grNo = context.grNo || `GR-${98000 + (seed % 1900)}`;
+
+  // Base dates calculated dynamically
+  const baseDate = context.inDate || context.date || '25/09/2026';
+  const dEmpty = addDaysToDateStr(baseDate, -10);
+  const dAllot = addDaysToDateStr(baseDate, -9);
+  const dPickup = addDaysToDateStr(baseDate, -8);
+  const dEDI = addDaysToDateStr(baseDate, -7);
+  const dStuffing = addDaysToDateStr(baseDate, -6);
+  const dBuffer = addDaysToDateStr(baseDate, -5);
+  const dICDIn = addDaysToDateStr(baseDate, -4);
+  const dBL = addDaysToDateStr(baseDate, -3);
+  const dRailOut = addDaysToDateStr(baseDate, -2);
+  const dPortGateIn = addDaysToDateStr(baseDate, 0);
+  const dSOB = addDaysToDateStr(baseDate, 1);
+  const dVoyage = addDaysToDateStr(baseDate, 2);
+  const dDischarge = context.dischargeDate || addDaysToDateStr(baseDate, 8);
+  const dGateOut = addDaysToDateStr(dDischarge, 2);
+  const dEmptyReturn = addDaysToDateStr(dDischarge, 4);
 
   const rows = [
     {
@@ -102,22 +216,22 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       PHASE: 'Empty Allocation',
       DOC_TYPE: 'EMPTY',
       ACTIVITY_NAME: 'EMPTY JOB NO',
-      DOC_NO: `MTY/26-27/01892`,
-      ACTIVITY_DATE: '15/09/2026',
-      REMARKS: 'Empty Reefer Container Survey Passed & Cleaned (-18°C PTI OK)',
+      DOC_NO: `MTY/26-27/${String(1800 + (seed % 500)).padStart(5, '0')}`,
+      ACTIVITY_DATE: dEmpty,
+      REMARKS: `Empty Reefer Shell Survey Passed & Cleaned (-18°C PTI OK) for Container ${cNo}`,
       CREATED_BY: 'SYSTEM_ORACLE',
-      CREATED_ON: '15/09/2026'
+      CREATED_ON: dEmpty
     },
     {
       SR_NO: 2,
       PHASE: 'Empty Allocation',
-      DOC_TYPE: '15/09/2026 10:30',
+      DOC_TYPE: `${dEmpty} 10:30`,
       ACTIVITY_NAME: 'DOC TYPE',
       DOC_NO: 'Export',
-      ACTIVITY_DATE: '15/09/2026',
-      REMARKS: 'Commercial Export Allocation for Reefer Perishable Cargo',
-      CREATED_BY: 'AMIT_FLEET',
-      CREATED_ON: '15/09/2026'
+      ACTIVITY_DATE: dEmpty,
+      REMARKS: 'Commercial Export Allocation for Reefer Perishable Food Cargo',
+      CREATED_BY: 'FLEET_DESK',
+      CREATED_ON: dEmpty
     },
     {
       SR_NO: 3,
@@ -125,21 +239,21 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: '',
       ACTIVITY_NAME: 'ICD NAME',
       DOC_NO: term,
-      ACTIVITY_DATE: '15/09/2026',
+      ACTIVITY_DATE: dEmpty,
       REMARKS: `Pickup Depot designated at ${term}`,
-      CREATED_BY: 'AMIT_FLEET',
-      CREATED_ON: '15/09/2026'
+      CREATED_BY: 'DEPOT_MGR',
+      CREATED_ON: dEmpty
     },
     {
       SR_NO: 4,
       PHASE: 'Empty Allocation',
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'ALLOTMENT JOB NO',
-      DOC_NO: `FLT/26-27/09412`,
-      ACTIVITY_DATE: '16/09/2026',
-      REMARKS: 'Fleet Allotment Confirmed for Cold Chain Trail',
+      DOC_NO: `FLT/26-27/${String(9400 + (seed % 500)).padStart(5, '0')}`,
+      ACTIVITY_DATE: dAllot,
+      REMARKS: `Fleet Allotment Confirmed for Dedicated Cold Chain Trail (Assigned ${vehicleNo})`,
       CREATED_BY: 'LOGISTICS_DESK',
-      CREATED_ON: '16/09/2026'
+      CREATED_ON: dAllot
     },
     {
       SR_NO: 5,
@@ -147,10 +261,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'SHIPPING LINE',
       DOC_NO: line,
-      ACTIVITY_DATE: '16/09/2026',
+      ACTIVITY_DATE: dAllot,
       REMARKS: `Carrier Equipment Slot booked with ${line} Line`,
       CREATED_BY: 'LINE_COORD',
-      CREATED_ON: '16/09/2026'
+      CREATED_ON: dAllot
     },
     {
       SR_NO: 6,
@@ -158,10 +272,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'ALLOTMENT DATE',
       DOC_NO: 'SPJ REEFER LOGISTICS FLEET',
-      ACTIVITY_DATE: '16/09/2026',
-      REMARKS: 'Gen-set mounted trailer assigned for movement',
+      ACTIVITY_DATE: dAllot,
+      REMARKS: `Gen-set mounted trailer ${vehicleNo} assigned under Driver ${driver.name}`,
       CREATED_BY: 'FLEET_HEAD',
-      CREATED_ON: '16/09/2026'
+      CREATED_ON: dAllot
     },
     {
       SR_NO: 7,
@@ -169,10 +283,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'SHIPPER AT PICK-UP',
       DOC_NO: shipper,
-      ACTIVITY_DATE: '17/09/2026',
+      ACTIVITY_DATE: dPickup,
       REMARKS: `Shipper Consignor verified: ${shipper}`,
       CREATED_BY: 'DISPATCH_INSPECTOR',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dPickup
     },
     {
       SR_NO: 8,
@@ -180,10 +294,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'CONTAINER PICK-UP LOCATION',
       DOC_NO: term,
-      ACTIVITY_DATE: '17/09/2026',
-      REMARKS: 'Container lifted from empty yard stack',
+      ACTIVITY_DATE: dPickup,
+      REMARKS: `Container ${cNo} lifted from empty yard stack at ${term}`,
       CREATED_BY: 'DEPOT_MGR',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dPickup
     },
     {
       SR_NO: 9,
@@ -191,10 +305,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'PORT OF DESTINATION DURING STUFFING',
       DOC_NO: pod,
-      ACTIVITY_DATE: '17/09/2026',
+      ACTIVITY_DATE: dPickup,
       REMARKS: `Final POD Declared: ${pod}`,
       CREATED_BY: 'DOCUMENTATION',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dPickup
     },
     {
       SR_NO: 10,
@@ -202,10 +316,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'PORT OF LOADING DURING STUFFING',
       DOC_NO: pol,
-      ACTIVITY_DATE: '17/09/2026',
+      ACTIVITY_DATE: dPickup,
       REMARKS: `Gateway Seaport declared: ${pol}`,
       CREATED_BY: 'DOCUMENTATION',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dPickup
     },
     {
       SR_NO: 11,
@@ -213,32 +327,32 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'ICD OUT DATE',
       DOC_NO: 'SPJ HEAVY LOGISTICS PVT LTD',
-      ACTIVITY_DATE: '17/09/2026 14:15',
-      REMARKS: 'Trailer departed ICD for Shipper Processing Plant',
+      ACTIVITY_DATE: `${dPickup} 14:15`,
+      REMARKS: `Trailer ${vehicleNo} departed ${term} for Shipper Processing Plant`,
       CREATED_BY: 'GATE_SECURITY',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dPickup
     },
     {
       SR_NO: 12,
       PHASE: 'Road Transit & GR',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'GR DETAILS',
-      DOC_NO: `GR-90412 / HR-38-AB-9821`,
-      ACTIVITY_DATE: '17/09/2026 16:30',
-      REMARKS: 'E-Way Bill & Goods Receipt issued with digital seal',
+      DOC_NO: `${grNo} / ${vehicleNo}`,
+      ACTIVITY_DATE: `${dStuffing} 16:30`,
+      REMARKS: `E-Way Bill & Goods Receipt ${grNo} issued with digital seal for ${cNo}`,
       CREATED_BY: 'GR_OFFICER',
-      CREATED_ON: '17/09/2026'
+      CREATED_ON: dStuffing
     },
     {
       SR_NO: 13,
       PHASE: 'Commercial Billing',
-      DOC_TYPE: '18/09/2026 11:20',
+      DOC_TYPE: `${dEDI} 11:20`,
       ACTIVITY_NAME: 'SHIPPER INVOICE NO/REF_ID',
       DOC_NO: partyInvNo,
-      ACTIVITY_DATE: '18/09/2026 11:20',
+      ACTIVITY_DATE: `${dEDI} 11:20`,
       REMARKS: `Commercial Tax Invoice ${partyInvNo} linked to Container ${cNo}`,
       CREATED_BY: 'ACCOUNTS_EXE',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dEDI
     },
     {
       SR_NO: 14,
@@ -246,21 +360,21 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'EDI DETAILS',
       DOC_NO: jobNo,
-      ACTIVITY_DATE: '18/09/2026 12:45',
-      REMARKS: `Customs ICEGATE EDI Job ${jobNo} submitted`,
+      ACTIVITY_DATE: `${dEDI} 12:45`,
+      REMARKS: `Customs ICEGATE EDI Job ${jobNo} (SB: ${sbNo}) submitted`,
       CREATED_BY: 'CHA_OPERATOR',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dEDI
     },
     {
       SR_NO: 15,
       PHASE: 'Stuffing & Vessel Plan',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'VESSEL PLANNING DURING STUFFING',
-      DOC_NO: `MSC SASKIA A | 26/09/2026 | ${pol} | ${pod}`,
-      ACTIVITY_DATE: '18/09/2026',
-      REMARKS: 'Connected to direct mother vessel feeder schedule',
+      DOC_NO: `${vesselName} | ${baseDate} | ${pol} | ${pod}`,
+      ACTIVITY_DATE: dEDI,
+      REMARKS: `Connected to ${line} direct mother vessel schedule`,
       CREATED_BY: 'VESSEL_PLANNER',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dEDI
     },
     {
       SR_NO: 16,
@@ -268,10 +382,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'FACTORY LOCATION',
       DOC_NO: `${shipper} Processing Unit`,
-      ACTIVITY_DATE: '18/09/2026 14:00',
-      REMARKS: 'Trailer arrived at Cold Store Dock 3',
+      ACTIVITY_DATE: `${dStuffing} 14:00`,
+      REMARKS: `Trailer arrived at Cold Store Dock 03 for ${cNo}`,
       CREATED_BY: 'PLANT_OFFICER',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dStuffing
     },
     {
       SR_NO: 17,
@@ -279,10 +393,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'FACTORY IN DATE',
       DOC_NO: 'SPJ REEFER FLEET',
-      ACTIVITY_DATE: '18/09/2026 14:30',
+      ACTIVITY_DATE: `${dStuffing} 14:30`,
       REMARKS: 'Temperature verification: -18.4°C core temperature OK',
       CREATED_BY: 'QC_INSPECTOR',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dStuffing
     },
     {
       SR_NO: 18,
@@ -290,10 +404,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'FACTORY OUT DATE',
       DOC_NO: 'SPJ REEFER FLEET',
-      ACTIVITY_DATE: '18/09/2026 21:00',
-      REMARKS: 'Stuffing complete. High-security bottle seal applied: SL-98124',
+      ACTIVITY_DATE: `${dStuffing} 21:00`,
+      REMARKS: `Stuffing complete. High-security bottle seal applied: SPJ-SEAL-${890000 + (seed % 99999)}`,
       CREATED_BY: 'QC_INSPECTOR',
-      CREATED_ON: '18/09/2026'
+      CREATED_ON: dStuffing
     },
     {
       SR_NO: 19,
@@ -301,10 +415,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'BUFFER IN DATE',
       DOC_NO: 'SPJ CENTRAL BUFFER YARD',
-      ACTIVITY_DATE: '19/09/2026 02:45',
-      REMARKS: 'Reefer plugged into 415V 3-phase station',
+      ACTIVITY_DATE: `${dBuffer} 02:45`,
+      REMARKS: 'Reefer plugged into 415V 3-phase yard station',
       CREATED_BY: 'YARD_SUPERVISOR',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dBuffer
     },
     {
       SR_NO: 20,
@@ -312,10 +426,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'BUFFER OUT DATE',
       DOC_NO: 'SPJ CENTRAL BUFFER YARD',
-      ACTIVITY_DATE: '19/09/2026 06:30',
-      REMARKS: 'Staged for ICD Customs Examination Gate Entry',
+      ACTIVITY_DATE: `${dBuffer} 06:30`,
+      REMARKS: `Staged for ${term} Customs Examination Gate Entry`,
       CREATED_BY: 'YARD_SUPERVISOR',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dBuffer
     },
     {
       SR_NO: 21,
@@ -323,10 +437,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'EMPTY RETURN/BTT/REWORK',
       DOC_NO: 'N/A (DIRECT EXPORT)',
-      ACTIVITY_DATE: '19/09/2026 08:00',
+      ACTIVITY_DATE: `${dBuffer} 08:00`,
       REMARKS: 'No rework required. Sealed cargo 100% compliant',
       CREATED_BY: 'CUSTOMS_APPRAISER',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dBuffer
     },
     {
       SR_NO: 22,
@@ -334,32 +448,32 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'ICD IN DATE',
       DOC_NO: term,
-      ACTIVITY_DATE: '19/09/2026 09:15',
-      REMARKS: `Container gated in at ${term} - Rake Staging Area`,
+      ACTIVITY_DATE: `${dICDIn} 09:15`,
+      REMARKS: `Container ${cNo} gated in at ${term} - Customs LEO passed & Rake Staged`,
       CREATED_BY: 'ICD_GATE',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dICDIn
     },
     {
       SR_NO: 23,
       PHASE: 'Booking & Space Allotment',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'VESSEL PLAN AT TIME OF BOOKING UPDATE',
-      DOC_NO: `ETD DATE-26/09/2026  VESSEL NAME-MSC SASKIA A`,
-      ACTIVITY_DATE: '19/09/2026',
+      DOC_NO: `ETD DATE-${baseDate}  VESSEL NAME-${vesselName}`,
+      ACTIVITY_DATE: dICDIn,
       REMARKS: 'Ocean carrier space confirmed under direct contract',
       CREATED_BY: 'BOOKING_DESK',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dICDIn
     },
     {
       SR_NO: 24,
       PHASE: 'Booking & Space Allotment',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'BOOKING NO',
-      DOC_NO: `BK-${line.slice(0, 3)}-892401`,
-      ACTIVITY_DATE: '19/09/2026',
-      REMARKS: 'Master Carrier Booking Reference Generated',
+      DOC_NO: bookingNo,
+      ACTIVITY_DATE: dICDIn,
+      REMARKS: `Master Carrier Booking Reference Generated: ${bookingNo}`,
       CREATED_BY: 'BOOKING_DESK',
-      CREATED_ON: '19/09/2026'
+      CREATED_ON: dICDIn
     },
     {
       SR_NO: 25,
@@ -367,10 +481,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'BL NO',
       ACTIVITY_NAME: 'BL NO',
       DOC_NO: blNo,
-      ACTIVITY_DATE: '20/09/2026',
-      REMARKS: 'DRAFT BL ISSUED & APPROVED',
+      ACTIVITY_DATE: dBL,
+      REMARKS: `DRAFT BL ISSUED & APPROVED for ${cNo}`,
       CREATED_BY: 'DOC_LEAD',
-      CREATED_ON: '20/09/2026'
+      CREATED_ON: dBL
     },
     {
       SR_NO: 26,
@@ -378,21 +492,21 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'BL STATUS',
       ACTIVITY_NAME: 'BL STATUS',
       DOC_NO: 'APPROVED & RELEASED',
-      ACTIVITY_DATE: '20/09/2026',
+      ACTIVITY_DATE: dBL,
       REMARKS: 'Original Bill of Lading ready for express release',
       CREATED_BY: 'DOC_LEAD',
-      CREATED_ON: '20/09/2026'
+      CREATED_ON: dBL
     },
     {
       SR_NO: 27,
       PHASE: 'Documentation & Telex',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'TELEX STATUS',
-      DOC_NO: 'Telex release-APPROVED BY LINE',
-      ACTIVITY_DATE: '20/09/2026 15:45',
-      REMARKS: 'Express Telex Release authorized for destination consignee',
+      DOC_NO: `Telex release-APPROVED BY ${line}`,
+      ACTIVITY_DATE: `${dBL} 15:45`,
+      REMARKS: 'Express Telex Release authorized for destination overseas consignee',
       CREATED_BY: 'TELEX_OFFICER',
-      CREATED_ON: '20/09/2026'
+      CREATED_ON: dBL
     },
     {
       SR_NO: 28,
@@ -400,21 +514,21 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'CFS AT HANDOVER',
       DOC_NO: 'SHIPPER AT HAND OVER',
-      ACTIVITY_DATE: '20/09/2026 18:00',
+      ACTIVITY_DATE: `${dBL} 18:00`,
       REMARKS: 'CFS handover formalities verified without hold',
       CREATED_BY: 'PORT_AGENT',
-      CREATED_ON: '20/09/2026'
+      CREATED_ON: dBL
     },
     {
       SR_NO: 29,
       PHASE: 'CFS & Seaport Handover',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'HANDOVER LOCATION',
-      DOC_NO: `${pol} Gateway Terminal (GTI/BMCT)`,
-      ACTIVITY_DATE: '21/09/2026 08:30',
+      DOC_NO: `${pol} Gateway Terminal (GTI/BMCT/MICT)`,
+      ACTIVITY_DATE: `${dRailOut} 08:30`,
       REMARKS: 'Port container interchange receipt (EIR) generated',
       CREATED_BY: 'HANDOVER_LEAD',
-      CREATED_ON: '21/09/2026'
+      CREATED_ON: dRailOut
     },
     {
       SR_NO: 30,
@@ -425,7 +539,7 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       ACTIVITY_DATE: pod,
       REMARKS: `Discharge Seaport Confirmed: ${pod}`,
       CREATED_BY: 'ROUTE_MGR',
-      CREATED_ON: '21/09/2026'
+      CREATED_ON: dRailOut
     },
     {
       SR_NO: 31,
@@ -433,10 +547,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'TR STATUS',
       DOC_NO: 'TR DATE',
-      ACTIVITY_DATE: '21/09/2026',
-      REMARKS: 'Train Receipt generated and loaded on dedicated rake wagon',
+      ACTIVITY_DATE: dRailOut,
+      REMARKS: `Train Receipt generated and loaded on dedicated rake wagon ${trainNo}`,
       CREATED_BY: 'RAIL_DISPATCHER',
-      CREATED_ON: '21/09/2026'
+      CREATED_ON: dRailOut
     },
     {
       SR_NO: 32,
@@ -444,43 +558,43 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'RAILOUT DETAILS',
       DOC_NO: trainNo,
-      ACTIVITY_DATE: '21/09/2026',
-      REMARKS: `Rake ${trainNo} departed ICD Dadri on Western Dedicated Freight Corridor`,
+      ACTIVITY_DATE: dRailOut,
+      REMARKS: `Rake ${trainNo} departed ${term} on Western Dedicated Freight Corridor`,
       CREATED_BY: 'RAIL_OFFICER',
-      CREATED_ON: '21/09/2026 22:30'
+      CREATED_ON: `${dRailOut} 22:30`
     },
     {
       SR_NO: 33,
       PHASE: 'Vessel Staging',
       DOC_TYPE: '',
       ACTIVITY_NAME: 'VESSEL PLAN AT RAIL OUT',
-      DOC_NO: `ETD DATE-26/09/2026  VESSEL NAME-MSC SASKIA A`,
-      ACTIVITY_DATE: '22/09/2026',
-      REMARKS: 'Reefer monitoring telemetry active during rail movement',
+      DOC_NO: `ETD DATE-${baseDate}  VESSEL NAME-${vesselName}`,
+      ACTIVITY_DATE: baseDate,
+      REMARKS: 'Reefer monitoring telemetry active during transit corridor',
       CREATED_BY: 'TRACK_SYSTEM',
-      CREATED_ON: '22/09/2026'
+      CREATED_ON: baseDate
     },
     {
       SR_NO: 34,
       PHASE: 'Port Gate-In & SOB',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'VESSEL PLAN AT POL',
-      DOC_NO: `ETD DATE-26/09/2026  VESSEL NAME-MSC SASKIA A`,
-      ACTIVITY_DATE: '23/09/2026',
-      REMARKS: 'Container arrived at Seaport Yard and staged in vessel berth queue',
+      DOC_NO: `ETD DATE-${baseDate}  VESSEL NAME-${vesselName}`,
+      ACTIVITY_DATE: dPortGateIn,
+      REMARKS: `Container arrived at ${pol} Seaport Yard and staged in vessel berth queue`,
       CREATED_BY: 'BERTH_PLANNER',
-      CREATED_ON: '23/09/2026'
+      CREATED_ON: dPortGateIn
     },
     {
       SR_NO: 35,
       PHASE: 'Shipped On Board',
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'VESSEL PLAN AT SOB',
-      DOC_NO: `ETD DATE-26/09/2026  VESSEL NAME-MSC SASKIA A`,
-      ACTIVITY_DATE: '24/09/2026',
-      REMARKS: 'Loaded onto vessel bay slot 14-02-08 (Gantry Crane Loaded)',
+      DOC_NO: `ETD DATE-${baseDate}  VESSEL NAME-${vesselName}`,
+      ACTIVITY_DATE: dSOB,
+      REMARKS: `Loaded onto vessel bay slot ${12 + (seed % 10)}-02-${String(seed % 20).padStart(2, '0')} (Gantry Crane Loaded)`,
       CREATED_BY: 'VESSEL_SURVEYOR',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 36,
@@ -488,10 +602,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'TRAN SHIPMENT 1/ST DETAILS',
       DOC_NO: 'DIRECT VOYAGE (NO TRANSHIPMENT)',
-      ACTIVITY_DATE: '26/09/2026',
+      ACTIVITY_DATE: dVoyage,
       REMARKS: 'Express Non-Stop Arabian Sea / Red Sea Corridor',
       CREATED_BY: 'OCEAN_OPS',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 37,
@@ -499,10 +613,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'TRAN SHIPMENT 2/ND DETAILS',
       DOC_NO: 'DIRECT PORT ROUTING',
-      ACTIVITY_DATE: '26/09/2026',
+      ACTIVITY_DATE: dVoyage,
       REMARKS: 'Fast-transit perishable agro priority handling',
       CREATED_BY: 'OCEAN_OPS',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 38,
@@ -510,10 +624,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'TRAN SHIPMENT 3/RD DETAILS',
       DOC_NO: 'N/A',
-      ACTIVITY_DATE: '26/09/2026',
+      ACTIVITY_DATE: dVoyage,
       REMARKS: 'Voyage tracking verified via AIS Sea Satellite Radar',
       CREATED_BY: 'OCEAN_OPS',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 39,
@@ -521,10 +635,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'DISCHARGE DATE',
       DOC_NO: 'DISCHARGE DATE',
-      ACTIVITY_DATE: '02/10/2026',
-      REMARKS: `ETA POD: 02/10/2026 at ${pod} Container Terminal`,
+      ACTIVITY_DATE: dDischarge,
+      REMARKS: `ETA POD: ${dDischarge} at ${pod} Container Terminal`,
       CREATED_BY: 'DEST_AGENT',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 40,
@@ -532,10 +646,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'GATE OUT DATE',
       DOC_NO: 'GATE OUT DATE',
-      ACTIVITY_DATE: '04/10/2026',
+      ACTIVITY_DATE: dGateOut,
       REMARKS: 'Customs cleared & delivery to overseas consignee warehouse',
       CREATED_BY: 'DEST_AGENT',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 41,
@@ -543,10 +657,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'EMPTY GATE IN/BTT/RE-WORKING',
       DOC_NO: `${pod} Carrier Depot`,
-      ACTIVITY_DATE: '06/10/2026 11:00',
+      ACTIVITY_DATE: `${dEmptyReturn} 11:00`,
       REMARKS: 'Empty equipment returned to shipping line pool',
       CREATED_BY: 'OVERSEAS_DEPOT',
-      CREATED_ON: '24/09/2026'
+      CREATED_ON: dSOB
     },
     {
       SR_NO: 42,
@@ -554,21 +668,21 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'INVOICE NO SPJ',
       DOC_NO: invRefNo,
-      ACTIVITY_DATE: dateBase,
+      ACTIVITY_DATE: baseDate,
       REMARKS: 'Company ID 2 (SPJ Cargo & Multimodal Pvt. Ltd.) - Billed & Reconciled',
       CREATED_BY: 'ORACLE_FINANCE',
-      CREATED_ON: dateBase
+      CREATED_ON: baseDate
     },
     {
       SR_NO: 43,
       PHASE: 'SJ Billing',
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'INVOICE NO SJ',
-      DOC_NO: `SJ/26-27/${invRefNo.replace(/[^0-9]/g, '').slice(-5)}`,
-      ACTIVITY_DATE: dateBase,
+      DOC_NO: `SJ/26-27/${invRefNo.replace(/[^0-9]/g, '').slice(-5) || '10947'}`,
+      ACTIVITY_DATE: baseDate,
       REMARKS: 'Company ID 1 (SJ Freight Lines) - Internal Clearing Verified',
       CREATED_BY: 'ORACLE_FINANCE',
-      CREATED_ON: dateBase
+      CREATED_ON: baseDate
     },
     {
       SR_NO: 44,
@@ -576,10 +690,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'TRANSPORT',
       ACTIVITY_NAME: 'CREDIT NOTE',
       DOC_NO: 'N/A (NIL CREDIT)',
-      ACTIVITY_DATE: dateBase,
+      ACTIVITY_DATE: baseDate,
       REMARKS: 'No dispute / deduction filed. 100% full realization',
       CREATED_BY: 'AUDIT_DESK',
-      CREATED_ON: dateBase
+      CREATED_ON: baseDate
     },
     {
       SR_NO: 45,
@@ -587,10 +701,10 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'CHANGE OF DESTINATION (COD)',
       DOC_NO: pod,
-      ACTIVITY_DATE: dateBase,
+      ACTIVITY_DATE: baseDate,
       REMARKS: 'Original destination port maintained without alteration',
       CREATED_BY: 'CENTRAL_CONTROL',
-      CREATED_ON: dateBase
+      CREATED_ON: baseDate
     }
   ];
 
@@ -598,79 +712,122 @@ export function executeMovementHistoryPK(contNo, context = {}) {
 }
 
 /**
- * Generates detailed FLEET_GR_MAPPING records for a container or customer
- * @param {string} contNo 
- * @param {Object} context 
- * @returns {Array} List of GR / Bilty Consignment records
+ * Generates detailed, unique FLEET_GR_MAPPING records for any container or customer
+ * @param {string} contNo - Container Number
+ * @param {Object} context - Optional matched invoice/container context
+ * @returns {Array} List of dynamic GR / Bilty Consignment records
  */
 export function executeFleetGRMapping(contNo, context = {}) {
-  const cNo = (contNo || context.contNo || 'MNBU0361774').toUpperCase().trim();
+  const cNo = (contNo || context.contNo || context.containerNo || 'MNBU0361774').toUpperCase().trim();
+  const seed = getSeed(cNo);
+
   const shipper = context.customerName || context.customer?.name || 'MARHABA FROZEN FOODS-HR';
-  const terminal = context.terminal || 'TRANSWORLD-DADRI';
-  const pol = context.pol || context.portOfLoading || 'JNPT Nhava Sheva';
-  const pod = context.destination || context.destinationPort || 'JEDDAH - SAUDI ARABIA';
-  const sbNo = context.sbNo || '6741000';
-  const blNo = context.blNo || 'MEDU1190000';
-  const dateBase = context.date || '25/09/2026';
+  const terminal = context.terminal || (seed % 2 === 0 ? 'TRANSWORLD-DADRI' : 'KANPUR-JRY');
+  const pol = context.pol || context.portOfLoading || (terminal.includes('KANPUR') ? 'MUNDRA MDCC' : 'JNPT Nhava Sheva');
+  const pod = context.destination || context.destinationPort || (seed % 4 === 0 ? 'ALEXANDRIA - EGYPT' : seed % 4 === 1 ? 'JEBEL ALI - UAE' : seed % 4 === 2 ? 'JEDDAH - SAUDI ARABIA' : 'AQABA - JORDAN');
+  const line = context.shippingLine || (seed % 3 === 0 ? 'MAERSK' : seed % 3 === 1 ? 'MSC' : 'CMA CGM');
+  const baseDate = context.inDate || context.date || '25/09/2026';
+
+  // Dynamic Driver & Vehicle #1 (Loaded Factory Stuffing Trip)
+  const vPrefix1 = VEHICLE_PREFIXES[seed % VEHICLE_PREFIXES.length];
+  const vehicleNo1 = context.vehicleNo || `${vPrefix1}-${1000 + (seed % 8999)}`;
+  const driver1 = DRIVER_POOL[seed % DRIVER_POOL.length];
+  const grNo1 = context.grNo || `GR-${98000 + (seed % 1900)}`;
+
+  // Dynamic Driver & Vehicle #2 (Empty Yard Placement Trip)
+  const vPrefix2 = VEHICLE_PREFIXES[(seed + 3) % VEHICLE_PREFIXES.length];
+  const vehicleNo2 = `${vPrefix2}-${1000 + ((seed * 7) % 8999)}`;
+  const driver2 = DRIVER_POOL[(seed + 4) % DRIVER_POOL.length];
+  const grNo2 = `GR-${97000 + ((seed * 3) % 1900)}`;
+
+  const ewayBill1 = `2418 ${9000 + (seed % 999)} ${1000 + ((seed * 7) % 8999)}`;
+  const ewayBill2 = `2418 ${9000 + ((seed + 5) % 999)} ${1000 + ((seed * 11) % 8999)}`;
+  const sealNo1 = `SPJ-SEAL-${890000 + (seed % 99999)} / LINE-${line}-${10000 + ((seed * 3) % 89999)}`;
+  const sealNo2 = `YARD-SURVEY-PASS-${String(900 + (seed % 99)).padStart(4, '0')}`;
+
+  const consignee = resolveConsignee(pod);
+  const grossWeightVal = (28.6 + ((seed % 12) * 0.08)).toFixed(3);
+  const netWeightVal = (parseFloat(grossWeightVal) - 0.72).toFixed(3);
+  const pkgs = 1380 + (seed % 120);
+
+  // Status computation for main trip
+  let mainStatus = 'In-Transit to Gateway Railhead';
+  let mainStatusCode = 'IN_TRANSIT';
+  if (context.dischargeDate || context.currentStep === 6 || context.stageNumber === 6) {
+    mainStatus = 'Trip Completed & Cargo Discharged at Port';
+    mainStatusCode = 'COMPLETED';
+  } else if (context.currentStep === 5 || context.stageNumber === 5) {
+    mainStatus = 'Road Leg Completed — Ocean Liner Sailing';
+    mainStatusCode = 'PORT_HANDOVER';
+  } else if (context.currentStep === 4 || context.stageNumber === 4) {
+    mainStatus = 'Port Gate-In Done & Handed to Berth Terminal';
+    mainStatusCode = 'PORT_HANDOVER';
+  } else if (context.currentStep === 2 || context.stageNumber === 2) {
+    mainStatus = 'Customs Cleared & Trailer Dispatched';
+    mainStatusCode = 'STAGED';
+  }
+
+  const dMain = baseDate;
+  const dEmpty = addDaysToDateStr(baseDate, -10);
 
   return [
     {
-      grNo: `GR-98412`,
-      grDate: `${dateBase} 16:30`,
+      grNo: grNo1,
+      grDate: `${dMain} 16:30`,
       contNo: cNo,
       contSize: '40 FT HIGH CUBE REEFER',
       tripType: 'Export Factory Stuffing & Rail Dispatch',
       transporter: 'SPJ REEFER LOGISTICS FLEET (FLEET-NORTH)',
-      vehicleNo: 'HR-38-AB-9821',
+      vehicleNo: vehicleNo1,
       vehicleType: '40FT Multi-Axle Air-Suspension Trailer',
-      driverName: 'Rameshwar Singh Yadav',
-      driverPhone: '+91 98712 44921',
-      driverLicense: 'DL-04201809281',
+      driverName: driver1.name,
+      driverPhone: driver1.phone,
+      driverLicense: driver1.dl,
       consignor: shipper,
-      consignee: 'AL-MARWAH FOODS INTERNATIONAL W.L.L.',
+      consignee: consignee,
       pickupPoint: `SPJ Empty Reefer Depot / ${terminal}`,
       stuffingPoint: `${shipper} Processing Plant, Dock 03`,
       deliveryPoint: `ICD Railhead Terminal / ${pol} Rake`,
       finalPort: pod,
-      ewayBillNo: '2418 9032 8812',
-      ewayBillDate: dateBase,
-      sealNo: 'SPJ-SEAL-891024 / LINE-MSC-44910',
+      ewayBillNo: ewayBill1,
+      ewayBillDate: dMain,
+      sealNo: sealNo1,
       cargoDescription: 'Frozen Boneless Buffalo Meat (Halal Certified)',
-      packagesCount: '1,420 Master Cartons',
-      netWeight: '28.400 MT',
-      grossWeight: '29.120 MT',
+      packagesCount: `${pkgs.toLocaleString()} Master Cartons`,
+      netWeight: `${netWeightVal} MT`,
+      grossWeight: `${grossWeightVal} MT`,
       setTemp: '-18.0°C',
-      actualTemp: '-18.4°C (Optimal)',
+      actualTemp: `${(-18.0 - ((seed % 7) * 0.1)).toFixed(1)}°C (Optimal)`,
       gensetType: 'Thermo King / Carrier Clip-on 440V 3-Phase Genset',
-      fuelLevel: '94% (Diesel Aux Tank)',
-      status: 'In-Transit to Gateway Railhead',
-      statusCode: 'IN_TRANSIT',
+      fuelLevel: `${88 + (seed % 11)}% (Diesel Aux Tank)`,
+      status: mainStatus,
+      statusCode: mainStatusCode,
       freightBasis: 'Through Multimodal Rate Contract',
       tollFastag: 'FASTag Active (Auto-Deduct)',
       epodStatus: 'Digital Consignment Note Signed & Geo-Stamped',
       remarks: 'Continuous cold chain maintained. Pre-cooling certificate attached with driver bilty.'
     },
     {
-      grNo: `GR-98350`,
-      grDate: `15/09/2026 10:15`,
+      grNo: grNo2,
+      grDate: `${dEmpty} 10:15`,
       contNo: cNo,
       contSize: '40 FT HIGH CUBE REEFER',
       tripType: 'Empty Container Repositioning / Yard Lift',
       transporter: 'SPJ HEAVY LOGISTICS PVT LTD',
-      vehicleNo: 'UP-78-BT-4120',
+      vehicleNo: vehicleNo2,
       vehicleType: '40FT Semi-Trailer',
-      driverName: 'Gurpreet Singh',
-      driverPhone: '+91 98110 33812',
-      driverLicense: 'UP-78201500392',
-      consignor: 'SPJ CONTAINER DEPOT (KANPUR-JRY)',
+      driverName: driver2.name,
+      driverPhone: driver2.phone,
+      driverLicense: driver2.dl,
+      consignor: `SPJ CONTAINER DEPOT (${terminal})`,
       consignee: shipper,
-      pickupPoint: 'KANPUR-JRY Empty Buffer Depot',
+      pickupPoint: `${terminal} Empty Buffer Depot`,
       stuffingPoint: `${shipper} Cold Store Plant`,
       deliveryPoint: `${shipper} Dispatch Bay`,
       finalPort: pol,
-      ewayBillNo: '2418 9011 5409',
-      ewayBillDate: '15/09/2026',
-      sealNo: 'YARD-SURVEY-PASS-0912',
+      ewayBillNo: ewayBill2,
+      ewayBillDate: dEmpty,
+      sealNo: sealNo2,
       cargoDescription: 'Empty Pre-Trip Inspected (PTI OK) Reefer Shell',
       packagesCount: 'N/A (Empty)',
       netWeight: '4.820 MT (Tare Weight)',
@@ -688,4 +845,3 @@ export function executeFleetGRMapping(contNo, context = {}) {
     }
   ];
 }
-
