@@ -255,3 +255,208 @@ export function getLocalCustomerInvoices(inputKey) {
   const rawList = dbStore.invoices[key] || [];
   return rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
 }
+
+/**
+ * Universal Multimodal Lifecycle Stage Engine
+ * Computes exact stage metadata (1-6), badge styles, and status descriptions dynamically from DB fields
+ */
+export function getContainerStageInfo(container) {
+  if (!container) {
+    return {
+      stage: 3,
+      stageNumber: 3,
+      label: 'Stage 3: In-Transit (DFC Rail Corridor)',
+      shortTag: 'STAGE 3: DFC RAIL TRANSIT',
+      statusText: 'In-Transit (Dedicated Freight Rail Corridor)',
+      badgeClass: 'bg-blue-50 text-blue-800 border-blue-300',
+      pillClass: 'bg-blue-600 text-white',
+      accentColor: '#2563eb',
+      lightBg: 'bg-blue-500/10'
+    };
+  }
+
+  // Stage 6: Completed / Discharged at Destination Port
+  if (
+    container.dischargeDate || 
+    (container.status || '').toLowerCase().includes('discharg') || 
+    (container.status || '').toLowerCase().includes('deliver') || 
+    (container.health || '').toLowerCase() === 'completed' ||
+    container.currentStep === 6
+  ) {
+    return {
+      stage: 6,
+      stageNumber: 6,
+      label: 'Stage 6: Completed & Discharged',
+      shortTag: 'STAGE 6: DISCHARGED & DELIVERED',
+      statusText: 'Completed & Discharged at Destination Seaport',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      pillClass: 'bg-emerald-600 text-white',
+      accentColor: '#059669',
+      lightBg: 'bg-emerald-500/10'
+    };
+  }
+
+  const step = Number(container.currentStep);
+  const st = String(container.status || '').toLowerCase();
+
+  // Stage 5: Ocean Liner Voyage (Sailing on High Seas)
+  if (step === 5 || st.includes('ocean') || st.includes('sail') || st.includes('voyage') || st.includes('high seas')) {
+    return {
+      stage: 5,
+      stageNumber: 5,
+      label: 'Stage 5: Ocean Liner Voyage',
+      shortTag: 'STAGE 5: OCEAN VOYAGE',
+      statusText: 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)',
+      badgeClass: 'bg-purple-50 text-purple-800 border-purple-300',
+      pillClass: 'bg-purple-600 text-white',
+      accentColor: '#9333ea',
+      lightBg: 'bg-purple-500/10'
+    };
+  }
+
+  // Stage 4: Gateway Port Staging & SOB
+  if (step === 4 || st.includes('port') || st.includes('berth') || st.includes('sob') || st.includes('staging') || st.includes('gateway')) {
+    return {
+      stage: 4,
+      stageNumber: 4,
+      label: 'Stage 4: Gateway Port Staging & SOB',
+      shortTag: 'STAGE 4: GATEWAY PORT SOB',
+      statusText: 'Gateway Port Gate-In Recorded & Shipped On Board (SOB) Berth Staging',
+      badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-300',
+      pillClass: 'bg-indigo-600 text-white',
+      accentColor: '#4f46e5',
+      lightBg: 'bg-indigo-500/10'
+    };
+  }
+
+  // Stage 3: In-Transit (DFC Rail Rake / Road Trailer)
+  if (step === 3 || st.includes('rail') || st.includes('dfc') || st.includes('rake') || st.includes('transit') || st.includes('trailer') || st.includes('highway') || st.includes('speed')) {
+    return {
+      stage: 3,
+      stageNumber: 3,
+      label: 'Stage 3: In-Transit (DFC Rail / Trailer)',
+      shortTag: 'STAGE 3: DFC RAIL TRANSIT',
+      statusText: 'Loaded on Dedicated Freight Rake (DFC Rail Corridor) — Speed 64 km/h en-route to Gateway Port',
+      badgeClass: 'bg-blue-50 text-blue-800 border-blue-300',
+      pillClass: 'bg-blue-600 text-white',
+      accentColor: '#2563eb',
+      lightBg: 'bg-blue-500/10'
+    };
+  }
+
+  // Stage 2: Customs Cleared & Rake Staged
+  if (step === 2 || st.includes('custom') || st.includes('leo') || st.includes('clear') || st.includes('yard')) {
+    return {
+      stage: 2,
+      stageNumber: 2,
+      label: 'Stage 2: Customs Cleared & Rake Staged',
+      shortTag: 'STAGE 2: CUSTOMS CLEARED',
+      statusText: 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+      pillClass: 'bg-amber-600 text-white',
+      accentColor: '#d97706',
+      lightBg: 'bg-amber-500/10'
+    };
+  }
+
+  // Stage 1: Origin Factory Gate-In
+  return {
+    stage: 1,
+    stageNumber: 1,
+    label: 'Stage 1: Origin Factory Gate-In',
+    shortTag: 'STAGE 1: FACTORY GATE-IN',
+    statusText: 'Origin Factory Stuffing Completed & Gate-In Recorded',
+    badgeClass: 'bg-slate-100 text-slate-800 border-slate-300',
+    pillClass: 'bg-slate-700 text-white',
+    accentColor: '#475569',
+    lightBg: 'bg-slate-500/10'
+  };
+}
+
+export const FEATURED_STAGE_EXAMPLES = [
+  {
+    stage: 2,
+    stageLabel: 'Stage 2: Customs Cleared & Rake Staged',
+    shortTag: 'STAGE 2: CUSTOMS CLEARED',
+    contNo: 'TEMU642969',
+    partyInvNo: 'D26-27/10947',
+    route: 'TRANSWORLD-DADRI ➔ JEBEL ALI - UAE',
+    terminal: 'TRANSWORLD-DADRI',
+    pol: 'JNPT Nhava Sheva',
+    destination: 'JEBEL ALI - UAE',
+    shippingLine: 'MAERSK',
+    currentStatus: 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead.',
+    badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+    accentColor: '#d97706',
+    step: 2
+  },
+  {
+    stage: 3,
+    stageLabel: 'Stage 3: In-Transit (DFC Rail Corridor)',
+    shortTag: 'STAGE 3: DFC RAIL TRANSIT',
+    contNo: 'TEMU642971',
+    altContNo: 'MNBU3060901',
+    partyInvNo: 'D26-27/10949',
+    route: 'TRANSWORLD-DADRI ➔ JEBEL ALI - UAE',
+    terminal: 'TRANSWORLD-DADRI',
+    pol: 'JNPT Nhava Sheva',
+    destination: 'JEBEL ALI - UAE',
+    shippingLine: 'MSC',
+    currentStatus: 'Loaded on Dedicated Freight Rake (DFC Rail Corridor) — Speed 64 km/h en-route to Gateway Port.',
+    badgeClass: 'bg-blue-50 text-blue-800 border-blue-300',
+    accentColor: '#2563eb',
+    step: 3
+  },
+  {
+    stage: 4,
+    stageLabel: 'Stage 4: Gateway Port Staging & SOB',
+    shortTag: 'STAGE 4: GATEWAY PORT SOB',
+    contNo: 'TEMU642973',
+    altContNo: 'MNBU4197210',
+    partyInvNo: 'D26-27/10951',
+    route: 'TRANSWORLD-DADRI ➔ JNPT Nhava Sheva ➔ JEBEL ALI',
+    terminal: 'TRANSWORLD-DADRI',
+    pol: 'JNPT Nhava Sheva',
+    destination: 'JEBEL ALI - UAE',
+    shippingLine: 'CMA CGM',
+    currentStatus: 'Gateway Port Gate-In Recorded & Shipped On Board (SOB) Berth Staging.',
+    badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-300',
+    accentColor: '#4f46e5',
+    step: 4
+  },
+  {
+    stage: 5,
+    stageLabel: 'Stage 5: Ocean Liner Voyage (Sailing)',
+    shortTag: 'STAGE 5: OCEAN VOYAGE',
+    contNo: 'MNBU9081434',
+    partyInvNo: 'MFF/HR/023/26-27',
+    route: 'MUNDRA MDCC ➔ ALEXANDRIA - EGYPT',
+    terminal: 'MUNDRA MDCC',
+    pol: 'Mundra Seaport',
+    destination: 'ALEXANDRIA - EGYPT',
+    shippingLine: 'MSC',
+    currentStatus: 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor).',
+    badgeClass: 'bg-purple-50 text-purple-800 border-purple-300',
+    accentColor: '#9333ea',
+    step: 5
+  },
+  {
+    stage: 6,
+    stageLabel: 'Stage 6: Completed & Discharged',
+    shortTag: 'STAGE 6: DISCHARGED & DELIVERED',
+    contNo: 'MNBU4600455',
+    altContNo: 'TEMU642963',
+    partyInvNo: 'MFF/HR/016/26-27',
+    route: 'TRANSWORLD-DADRI ➔ ALEXANDRIA - EGYPT',
+    terminal: 'TRANSWORLD-DADRI',
+    pol: 'JNPT Nhava Sheva',
+    destination: 'ALEXANDRIA - EGYPT',
+    shippingLine: 'MSC',
+    currentStatus: 'Completed & Discharged at Destination Port.',
+    dischargeDate: '18/09/2026',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    accentColor: '#059669',
+    step: 6
+  }
+];
+

@@ -19,11 +19,15 @@ import {
   Anchor,
   Layers,
   Activity,
-  FileText
+  FileText,
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
+import { getContainerStageInfo, FEATURED_STAGE_EXAMPLES } from '../services/dataService';
 
 export default function CustomerContainersView({ allContainers = [], liveContainers = [], containers = [], customer, onNavigateTrack }) {
   const [subTab, setSubTab] = useState('live'); // 'live' | 'master'
+  const [stageFilter, setStageFilter] = useState('ALL'); // 'ALL' | 2 | 3 | 4 | 5 | 6
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,13 +44,18 @@ export default function CustomerContainersView({ allContainers = [], liveContain
   const activeDataset = subTab === 'live' ? effectiveLiveList : effectiveAllList;
 
   const filtered = activeDataset.filter((c) => {
+    const stageInfo = c.stageInfo || getContainerStageInfo(c);
+    if (stageFilter !== 'ALL' && stageInfo.stageNumber !== Number(stageFilter)) {
+      return false;
+    }
+
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
     return (
       (c.contNo || '').toLowerCase().includes(s) ||
       (c.sbNo || '').toLowerCase().includes(s) ||
       (c.blNo || '').toLowerCase().includes(s) ||
-      (c.sealNo || '').toLowerCase().includes(s) ||
+      (c.partyInvNo || '').toLowerCase().includes(s) ||
       (c.bookingNo || '').toLowerCase().includes(s) ||
       (c.jobOrderNo || '').toLowerCase().includes(s) ||
       (c.destination || '').toLowerCase().includes(s) ||
@@ -61,7 +70,8 @@ export default function CustomerContainersView({ allContainers = [], liveContain
       (c.trainOutDate || '').toLowerCase().includes(s) ||
       (c.sailedDate || '').toLowerCase().includes(s) ||
       (c.dischargeDate || '').toLowerCase().includes(s) ||
-      (c.sbDate || '').toLowerCase().includes(s)
+      (c.sbDate || '').toLowerCase().includes(s) ||
+      stageInfo.shortTag.toLowerCase().includes(s)
     );
   });
 
@@ -71,92 +81,248 @@ export default function CustomerContainersView({ allContainers = [], liveContain
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* 1. Header with View Mode Switcher & Search Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card flex flex-col lg:flex-row items-center justify-between gap-4">
-        
-        {/* Title & Customer Context */}
-        <div className="w-full lg:w-auto">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-base sm:text-lg font-black font-display text-slate-900">
-              Container Management & Fleet Hub
-            </h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              {filtered.length} {subTab === 'live' ? 'Live Active' : 'Total Trips'}
-            </span>
+      {/* 1. Multimodal Lifecycle Stage Showcase Banner (Top Exemplars) */}
+      <div className="bg-gradient-to-r from-slate-950 via-[#0b1329] to-[#0f172a] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white border border-slate-800 shadow-xl space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <h3 className="text-xs sm:text-sm font-black tracking-wide uppercase text-cyan-300 flex items-center gap-1.5 font-display">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              Multimodal Lifecycle Stage Reference (Top Verified Stages)
+            </h3>
           </div>
-          <p className="text-xs text-slate-500 font-medium">
-            Real Oracle database synchronized containers for {customer?.name}
-          </p>
+          <span className="text-[11px] text-slate-400 font-medium">
+            Click any stage exemplar to track or filter containers in real time
+          </span>
         </div>
 
-        {/* 2 Subtabs Switcher: Container vs Live Container */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 w-full lg:w-auto shrink-0 justify-center">
-          <button
-            onClick={() => {
-              setSubTab('live');
-              setCurrentPage(1);
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              subTab === 'live'
-                ? 'bg-gradient-to-r from-[#0284c7] to-[#2563eb] text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Live Container</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-              subTab === 'live' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {effectiveLiveList.length}
-            </span>
-          </button>
+        {/* 5 Stage Reference Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
+          {FEATURED_STAGE_EXAMPLES.map((ex) => {
+            const isSelected = stageFilter === ex.stage;
+            return (
+              <div
+                key={ex.stage}
+                onClick={() => {
+                  if (onNavigateTrack) {
+                    onNavigateTrack(ex.contNo);
+                  }
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden group hover:scale-[1.02] ${
+                  isSelected 
+                    ? 'bg-white/15 border-cyan-400 shadow-md shadow-cyan-500/20' 
+                    : 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-cyan-400/50'
+                }`}
+              >
+                {/* Top Badge */}
+                <div className="flex items-center justify-between gap-1">
+                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-wider ${ex.badgeClass}`}>
+                    {ex.shortTag}
+                  </span>
+                  <span className="text-[9px] font-mono text-cyan-300 font-bold group-hover:underline flex items-center gap-0.5">
+                    Track <ChevronRight className="w-2.5 h-2.5" />
+                  </span>
+                </div>
 
-          <button
-            onClick={() => {
-              setSubTab('master');
-              setCurrentPage(1);
-            }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              subTab === 'master'
-                ? 'bg-gradient-to-r from-[#0b1329] to-[#1e293b] text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Container className="w-3.5 h-3.5" />
-            <span>Container</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-              subTab === 'master' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {effectiveAllList.length} Trips
-            </span>
-          </button>
-        </div>
+                {/* Container No & Party Inv */}
+                <div>
+                  <div className="font-mono text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
+                    {ex.contNo}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium truncate">
+                    Party Inv: <strong className="text-slate-200 font-mono">{ex.partyInvNo}</strong>
+                  </div>
+                </div>
 
-        {/* Search Input */}
-        <div className="relative w-full lg:max-w-xs shrink-0">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search Container / SB # / Date..."
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-            >
-              ✕
-            </button>
-          )}
+                {/* Route & Status */}
+                <div className="text-[9px] text-slate-300 pt-1 border-t border-white/10 space-y-0.5">
+                  <div className="text-cyan-400 font-bold truncate">{ex.route}</div>
+                  <div className="text-slate-400 line-clamp-2">{ex.currentStatus}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 2. Empty State */}
+      {/* 2. Header with View Mode Switcher, Stage Filter Pills & Search Bar */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
+        
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+          {/* Title & Customer Context */}
+          <div className="w-full lg:w-auto">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black font-display text-slate-900">
+                Container Management & Fleet Hub
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                {filtered.length} {subTab === 'live' ? 'Live Active' : 'Total Trips'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 font-medium">
+              Real Oracle database synchronized containers for {customer?.name}
+            </p>
+          </div>
+
+          {/* 2 Subtabs Switcher: Container vs Live Container */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 w-full lg:w-auto shrink-0 justify-center">
+            <button
+              onClick={() => {
+                setSubTab('live');
+                setCurrentPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                subTab === 'live'
+                  ? 'bg-gradient-to-r from-[#0284c7] to-[#2563eb] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Live Container</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                subTab === 'live' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {effectiveLiveList.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setSubTab('master');
+                setCurrentPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                subTab === 'master'
+                  ? 'bg-gradient-to-r from-[#0b1329] to-[#1e293b] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Container className="w-3.5 h-3.5" />
+              <span>Container</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                subTab === 'master' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {effectiveAllList.length} Trips
+              </span>
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full lg:max-w-xs shrink-0">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search Container, Party Inv, SB #..."
+              className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#0284c7] rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none transition-all uppercase"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Stage Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase mr-1 shrink-0">Filter By Stage:</span>
+          
+          <button
+            onClick={() => {
+              setStageFilter('ALL');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+              stageFilter === 'ALL'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All Stages ({activeDataset.length})
+          </button>
+
+          <button
+            onClick={() => {
+              setStageFilter(2);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border ${
+              stageFilter === 2
+                ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                : 'bg-amber-50/70 text-amber-800 border-amber-200 hover:bg-amber-100'
+            }`}
+          >
+            Stage 2: Customs Cleared
+          </button>
+
+          <button
+            onClick={() => {
+              setStageFilter(3);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border ${
+              stageFilter === 3
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                : 'bg-blue-50/70 text-blue-800 border-blue-200 hover:bg-blue-100'
+            }`}
+          >
+            Stage 3: DFC Rail Transit
+          </button>
+
+          <button
+            onClick={() => {
+              setStageFilter(4);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border ${
+              stageFilter === 4
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : 'bg-indigo-50/70 text-indigo-800 border-indigo-200 hover:bg-indigo-100'
+            }`}
+          >
+            Stage 4: Port Staging & SOB
+          </button>
+
+          <button
+            onClick={() => {
+              setStageFilter(5);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border ${
+              stageFilter === 5
+                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                : 'bg-purple-50/70 text-purple-800 border-purple-200 hover:bg-purple-100'
+            }`}
+          >
+            Stage 5: Ocean Sailing
+          </button>
+
+          <button
+            onClick={() => {
+              setStageFilter(6);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer border ${
+              stageFilter === 6
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+            }`}
+          >
+            Stage 6: Discharged & Delivered
+          </button>
+        </div>
+
+      </div>
+
+      {/* 3. Empty State */}
       {filtered.length === 0 ? (
         <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3 shadow-card">
           <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
@@ -173,14 +339,25 @@ export default function CustomerContainersView({ allContainers = [], liveContain
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
               {paginated.map((item, idx) => {
                 const isReefer = (item.type || '').includes('REEFER') || (item.type || '').includes('RF');
+                const stageInfo = item.stageInfo || getContainerStageInfo(item);
 
                 return (
                   <div 
                     key={item.id || idx}
                     className="bg-white rounded-xl sm:rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 p-2 sm:p-5 flex flex-col justify-between space-y-1.5 sm:space-y-4 hover-lift"
                   >
+                    {/* Top Prominent Stage Tag */}
+                    <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1.5 sm:pb-2">
+                      <span className={`px-2 py-0.5 rounded-md text-[8px] sm:text-[10px] font-black border uppercase tracking-wider ${stageInfo.badgeClass}`}>
+                        {stageInfo.shortTag}
+                      </span>
+                      <span className="text-[8px] sm:text-[10px] text-slate-400 font-mono truncate">
+                        {item.size} {item.type}
+                      </span>
+                    </div>
+
                     {/* Header */}
-                    <div className="flex items-start justify-between gap-1 border-b border-slate-100 pb-1.5 sm:pb-3">
+                    <div className="flex items-start justify-between gap-1">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1">
                           <span className="font-mono font-black text-[11px] sm:text-base text-[#0b1329] bg-slate-100 px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-md sm:rounded-xl border border-slate-300 truncate">
@@ -195,16 +372,16 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                           </button>
                         </div>
                         <div className="text-[8px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">
-                          SB: <strong className="font-mono text-slate-800">{item.sbNo || 'N/A'}</strong>
+                          Party Inv: <strong className="font-mono text-slate-800">{item.partyInvNo || item.jobOrderNo || 'N/A'}</strong>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[7px] sm:text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block whitespace-nowrap">
-                          {item.status}
+                        <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[7px] sm:text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200 inline-block whitespace-nowrap">
+                          {item.shippingLine}
                         </span>
                         <span className="text-[7px] sm:text-[10px] text-slate-400 block mt-0.5 font-mono truncate">
-                          {item.size} {item.type}
+                          SB: {item.sbNo || 'N/A'}
                         </span>
                       </div>
                     </div>
@@ -415,13 +592,19 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                           </td>
 
                           <td className="py-3.5 px-3">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap inline-block ${
-                              item.dischargeDate 
-                                ? 'bg-slate-100 text-slate-700 border-slate-200' 
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              {item.status}
-                            </span>
+                            {(() => {
+                              const stageInfo = item.stageInfo || getContainerStageInfo(item);
+                              return (
+                                <div className="space-y-1">
+                                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border whitespace-nowrap block uppercase tracking-wider ${stageInfo.badgeClass}`}>
+                                    {stageInfo.shortTag}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 block truncate max-w-[140px]">
+                                    {item.status}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           <td className="py-3.5 px-4 text-right">

@@ -32,6 +32,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping } from '../services/movementHistoryService';
+import { getContainerStageInfo, FEATURED_STAGE_EXAMPLES } from '../services/dataService';
 
 export default function CustomerTrackingView({
   customer,
@@ -316,8 +317,81 @@ export default function CustomerTrackingView({
     ];
   }, [activeStepNumber, isRailRoute, terminal, invoiceDate, blNo, sbNo, customer, matched, pol, shippingLine, destination]);
 
+  // Dynamic container stage metadata
+  const stageInfo = useMemo(() => {
+    return getContainerStageInfo(matched || {
+      contNo,
+      currentStep: activeStepNumber,
+      status: movementStatus,
+      dischargeDate: matched?.dischargeDate
+    });
+  }, [matched, contNo, activeStepNumber, movementStatus]);
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
+
+      {/* Top Multimodal Lifecycle Stages Reference Cards (Quick Track 5 Key Stages) */}
+      <div className="bg-gradient-to-r from-slate-950 via-[#0b1329] to-[#0f172a] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white border border-slate-800 shadow-xl space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <h3 className="text-xs sm:text-sm font-black tracking-wide uppercase text-cyan-300 flex items-center gap-1.5 font-display">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              Live Stage Exemplars — Instant Multimodal Tracking
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-400 font-medium">
+            Click any stage container to instantly view its live lifecycle & milestones
+          </span>
+        </div>
+
+        {/* 5 Stage Showcase Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
+          {FEATURED_STAGE_EXAMPLES.map((ex) => {
+            const isCurrent = searchedContainer === ex.contNo;
+            return (
+              <div
+                key={ex.stage}
+                onClick={() => {
+                  setSearchInput(ex.contNo);
+                  setSearchedContainer(ex.contNo);
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden group hover:scale-[1.02] ${
+                  isCurrent 
+                    ? 'bg-cyan-950/60 border-cyan-400 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400' 
+                    : 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-cyan-400/50'
+                }`}
+              >
+                {/* Top Badge */}
+                <div className="flex items-center justify-between gap-1">
+                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-wider ${ex.badgeClass}`}>
+                    {ex.shortTag}
+                  </span>
+                  <span className="text-[9px] font-mono text-cyan-300 font-bold group-hover:underline flex items-center gap-0.5">
+                    {isCurrent ? 'Active' : 'Track'} <ChevronRight className="w-2.5 h-2.5" />
+                  </span>
+                </div>
+
+                {/* Container No & Party Inv */}
+                <div>
+                  <div className="font-mono text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
+                    {ex.contNo}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium truncate">
+                    Party Inv: <strong className="text-slate-200 font-mono">{ex.partyInvNo}</strong>
+                  </div>
+                </div>
+
+                {/* Route & Status */}
+                <div className="text-[9px] text-slate-300 pt-1 border-t border-white/10 space-y-0.5">
+                  <div className="text-cyan-400 font-bold truncate">{ex.route}</div>
+                  <div className="text-slate-400 line-clamp-2">{ex.currentStatus}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* 1. Clean Full-View Search Bar Box */}
       <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
@@ -342,7 +416,7 @@ export default function CustomerTrackingView({
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter Vehicle #, Party Inv #, GR #, or Container # (e.g. HR-38-AB-9821, 242973, GR-98412)"
+              placeholder="Enter Vehicle #, Party Inv #, GR #, or Container # (e.g. TEMU642971, D26-27/10949, HR-38-AB-9821)"
               className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none uppercase transition-all shadow-inner"
               required
             />
@@ -396,6 +470,22 @@ export default function CustomerTrackingView({
 
           {/* Header Summary Card */}
           <div className="bg-gradient-to-br from-slate-900 via-[#0b1329] to-[#0f172a] text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-slate-800 space-y-4">
+
+            {/* Prominent Stage Banner */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800/90 pb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-sm ${stageInfo.badgeClass}`}>
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: stageInfo.accentColor }}></span>
+                  {stageInfo.shortTag}
+                </span>
+                <span className="text-xs text-slate-300 font-medium">
+                  {stageInfo.statusText}
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono font-medium">
+                Party Inv: <strong className="text-white">{matched?.partyInvNo || matched?.jobOrderNo || 'D26-27/10949'}</strong>
+              </span>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">

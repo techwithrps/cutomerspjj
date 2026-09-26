@@ -10,7 +10,7 @@ import VesselSchedulesView from './components/VesselSchedulesView';
 import LiveScheduleFetcher from './components/LiveScheduleFetcher';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import CustomerWelcomeModal from './components/CustomerWelcomeModal';
-import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices } from './services/dataService';
+import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices, getContainerStageInfo } from './services/dataService';
 
 export default function App() {
   // Try restoring saved customer session or show login page
@@ -141,7 +141,64 @@ export default function App() {
     let liveGPS = isRail ? 'Western DFC Rail Corridor (Speed: 64 km/h)' : 'Expressway Corridor (Trailer GPS Active)';
     let currentStep = 3;
 
-    if (isLive) {
+    // Exemplar Top Containers requested for instant identification across all 5 key stages
+    let contNo = inv.containerNo || `MNBU${908100 + (idx % 80)}`;
+    let partyInvNo = inv.partyInvNo || inv.invoiceNo || `JO-242973`;
+    let routeTerminal = inv.terminal || 'TRANSWORLD-DADRI';
+    let routePol = inv.portOfLoading || 'JNPT Nhava Sheva';
+    let routePod = inv.destinationPort || 'JEBEL ALI - UAE';
+    let routeLine = inv.shippingLine || 'MSC / MAERSK';
+
+    if (idx === 0) {
+      contNo = 'TEMU642969';
+      partyInvNo = 'D26-27/10947';
+      liveStatus = 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead';
+      liveGPS = 'TRANSWORLD-DADRI ICD Yard — LEO Passed';
+      currentStep = 2;
+      routeTerminal = 'TRANSWORLD-DADRI';
+      routePod = 'JEBEL ALI - UAE';
+      routeLine = 'MAERSK';
+    } else if (idx === 1) {
+      contNo = 'TEMU642971';
+      partyInvNo = 'D26-27/10949';
+      liveStatus = 'Loaded on Dedicated Freight Rake (DFC Rail Corridor) — Speed 64 km/h en-route to Gateway Port';
+      liveGPS = 'Western DFC Rail Corridor — Speed: 64 km/h';
+      currentStep = 3;
+      routeTerminal = 'TRANSWORLD-DADRI';
+      routePod = 'JEBEL ALI - UAE';
+      routeLine = 'MSC';
+    } else if (idx === 2) {
+      contNo = 'TEMU642973';
+      partyInvNo = 'D26-27/10951';
+      liveStatus = 'Gateway Port Gate-In Recorded & Shipped On Board (SOB) Berth Staging';
+      liveGPS = 'JNPT Nhava Sheva Berth Staging (SOB Active)';
+      currentStep = 4;
+      routeTerminal = 'TRANSWORLD-DADRI';
+      routePol = 'JNPT Nhava Sheva';
+      routePod = 'JEBEL ALI - UAE';
+      routeLine = 'CMA CGM';
+    } else if (idx === 3) {
+      contNo = 'MNBU9081434';
+      partyInvNo = 'MFF/HR/023/26-27';
+      liveStatus = 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)';
+      liveGPS = 'Arabian Sea / High Seas Corridor (Vessel: MSC SASKIA A)';
+      currentStep = 5;
+      routeTerminal = 'MUNDRA MDCC';
+      routePol = 'Mundra Seaport';
+      routePod = 'ALEXANDRIA - EGYPT';
+      routeLine = 'MSC';
+    } else if (idx === 4) {
+      contNo = 'MNBU4600455';
+      partyInvNo = 'MFF/HR/016/26-27';
+      liveStatus = 'Completed & Discharged at Destination Port';
+      liveGPS = 'ALEXANDRIA - EGYPT Seaport Discharged';
+      currentStep = 6;
+      dischargeDate = '18/09/2026';
+      routeTerminal = 'TRANSWORLD-DADRI';
+      routePol = 'JNPT Nhava Sheva';
+      routePod = 'ALEXANDRIA - EGYPT';
+      routeLine = 'MSC';
+    } else if (isLive) {
       if (idx % 4 === 0) {
         liveStatus = 'Ocean Liner Voyage (Sailing)';
         liveGPS = 'Arabian Sea / Red Sea Corridor (Vessel: MSC SASKIA A)';
@@ -161,9 +218,9 @@ export default function App() {
       }
     }
 
-    return {
+    const itemObj = {
       id: inv.id || `TRIP-${idx}`,
-      contNo: inv.containerNo || `MNBU${908100 + (idx % 80)}`,
+      contNo,
       size: inv.containerSize || '40 FT',
       type: isReefer ? '40 FT REEFER (-18°C)' : (inv.containerType || '40 FT HC'),
       temp: isReefer ? '-18.2°C' : 'Ambient',
@@ -172,27 +229,33 @@ export default function App() {
       sbDate: gateInDate,
       blNo: inv.blNo || `MEDU${1192000 + idx}`,
       bookingNo: inv.invoiceRefNo || `SPJ/D26-27/${10900 + idx}`,
-      jobOrderNo: inv.partyInvNo || inv.invoiceNo || `JO-242973`,
+      jobOrderNo: partyInvNo,
+      partyInvNo,
       invoiceRefNo: inv.invoiceRefNo || `SPJ/D26-27/${10900 + idx}`,
-      shippingLine: inv.shippingLine || 'MSC / MAERSK',
+      shippingLine: routeLine,
       commodity: 'Frozen Cargo / Agro Export',
       origin: `${currentCustomer.name} Processing Plant`,
-      terminal: inv.terminal || 'TRANSWORLD-DADRI',
-      pol: inv.portOfLoading || 'JNPT Nhava Sheva',
-      destination: inv.destinationPort || 'JEBEL ALI - UAE',
+      terminal: routeTerminal,
+      pol: routePol,
+      destination: routePod,
       dischargeDate: dischargeDate,
-      currentStep: isLive ? currentStep : 6,
-      status: isLive ? liveStatus : 'Discharged at Destination Port',
+      currentStep: (isLive && idx !== 4) ? currentStep : 6,
+      status: (isLive && idx !== 4) ? liveStatus : 'Discharged at Destination Port',
       icdInDate: gateInDate,
       trainOutDate: trainDate,
       sailedDate: sailDate,
       lineHandoverDate: trainDate,
       inDate: gateInDate,
-      outDate: isLive ? trainDate : dischargeDate,
-      eta: isLive ? '2026-10-02 10:00 IST' : `Delivered & Discharged (${dischargeDate})`,
-      liveGPS: isLive ? liveGPS : `${inv.destinationPort || 'JEBEL ALI'} Discharged`,
+      outDate: (isLive && idx !== 4) ? trainDate : dischargeDate,
+      eta: (isLive && idx !== 4) ? '2026-10-02 10:00 IST' : `Delivered & Discharged (${dischargeDate || '18/09/2026'})`,
+      liveGPS: (isLive && idx !== 4) ? liveGPS : `${routePod} Discharged`,
       totalAmount: inv.totalAmount || 5570,
-      health: isLive ? 'Live Transit' : 'Completed'
+      health: (isLive && idx !== 4) ? 'Live Transit' : 'Completed'
+    };
+
+    return {
+      ...itemObj,
+      stageInfo: getContainerStageInfo(itemObj)
     };
   });
 
