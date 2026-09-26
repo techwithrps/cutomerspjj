@@ -86,6 +86,24 @@ export default function CustomerTrackingView({
     setSearchedContainer(null);
   };
 
+  const handleExportCSV = () => {
+    if (!filteredOracleSteps || filteredOracleSteps.length === 0) return;
+    const headers = ['SR_NO', 'PHASE', 'ACTIVITY_NAME', 'DOC_NO', 'ACTIVITY_DATE', 'REMARKS', 'CREATED_BY', 'CREATED_ON'];
+    const csvRows = [
+      headers.join(','),
+      ...filteredOracleSteps.map(row => 
+        headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')
+      )
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvRows.join('\n'));
+    const link = document.createElement('a');
+    link.setAttribute('href', csvContent);
+    link.setAttribute('download', `SPJ_45_Movement_${contNo || 'Container'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Helper to normalize strings for relaxed search comparison
   const normalizeForSearch = (str) => {
     return String(str || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
