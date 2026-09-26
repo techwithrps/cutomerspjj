@@ -459,7 +459,7 @@ export default function CustomerTrackingView({
                 }`}
               >
                 <Database className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Oracle 45-Point Ledger (SP_MOVEMENT_HISTORY_PK)</span>
+                <span>MOVEMENT HISTORY</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                   45
                 </span>
@@ -475,7 +475,7 @@ export default function CustomerTrackingView({
                 }`}
               >
                 <Truck className="w-3.5 h-3.5 text-amber-200" />
-                <span>Fleet GR & Bilty (FLEET_GR_MAPPING)</span>
+                <span>Fleet GR & Bilty</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-700/50 text-amber-100 border border-amber-400/40">
                   {fleetGRRecords.length}
                 </span>
@@ -491,7 +491,7 @@ export default function CustomerTrackingView({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Invoice Cursor (SP_MOVEMENT_HISTORY_SUMMARY)</span>
+                <span>Invoice Cursor</span>
               </button>
             </div>
 
@@ -726,7 +726,7 @@ export default function CustomerTrackingView({
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                       <Database className="w-4 h-4 text-blue-600" />
-                      Oracle SP_MOVEMENT_HISTORY_PK (45-Step Master Ledger)
+                      Movement History (45-Step Master Ledger)
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                       Direct Procedure View
@@ -912,7 +912,7 @@ export default function CustomerTrackingView({
                       </div>
                       <div>
                         <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                          Fleet GR & Consignment Bilty Ledger (FLEET_GR_MAPPING)
+                          Fleet GR & Consignment Bilty Ledger
                         </h3>
                         <p className="text-xs text-slate-500">
                           Official Transporter Goods Receipt (GR / LR Bilty) issued for Container <strong className="font-mono text-slate-800">{contNo}</strong>
@@ -1246,7 +1246,7 @@ export default function CustomerTrackingView({
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-indigo-600" />
-                      Oracle SP_MOVEMENT_HISTORY_SUMMARY Cursor
+                      Invoice Cursor Summary
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
                       Party Invoice Cursor
