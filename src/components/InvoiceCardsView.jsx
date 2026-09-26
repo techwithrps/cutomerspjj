@@ -49,7 +49,7 @@ export default function InvoiceCardsView({
       setLoading(true);
       try {
         const custParam = customer?.name || customer?.code || customer?.id || 'HMA';
-        const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=100`);
+        const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=1000`);
         if (res.ok) {
           const json = await res.json();
           const records = json.records || json.rows || [];
@@ -193,8 +193,8 @@ export default function InvoiceCardsView({
   const countPending = allInvoices.filter(i => (i.status || '').toLowerCase().includes('pending') || (i.status || '').toLowerCase().includes('due') || (i.status || '').toLowerCase().includes('hold')).length;
   const countCredit = allInvoices.filter(i => (i.status || '').toLowerCase().includes('credit') || (i.status || '').toLowerCase().includes('refund') || (i.status || '').toLowerCase().includes('rebate') || (i.status || '').toLowerCase().includes('adjust')).length;
 
-  const totalPaid = allInvoices.filter(i => (i.status || '').toLowerCase() === 'paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0) || Math.round((totalBilled * 0.85));
-  const totalPending = allInvoices.filter(i => (i.status || '').toLowerCase().includes('pending') || (i.status || '').toLowerCase().includes('due')).reduce((sum, i) => sum + (i.totalAmount || 0), 0) || Math.round((totalBilled - totalPaid));
+  const totalPaid = allInvoices.filter(i => (i.status || '').toLowerCase() === 'paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalPending = allInvoices.filter(i => (i.status || '').toLowerCase().includes('pending') || (i.status || '').toLowerCase().includes('due')).reduce((sum, i) => sum + (i.totalAmount || 0), 0) || (countPending > 0 ? totalBilled : 0);
   const totalContainers = new Set(allInvoices.map(i => i.containerNo).filter(Boolean)).size || Math.round(allInvoices.length * 0.8);
 
   // Exact pagination based on real filtered items
@@ -243,8 +243,8 @@ export default function InvoiceCardsView({
             {formatCurrency(totalPaid)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Base Realization</span>
-            <span className="font-bold text-emerald-600">Reconciled</span>
+            <span>Cleared Invoices</span>
+            <span className="font-bold text-emerald-600">{countPaid} Paid</span>
           </div>
         </div>
 
@@ -262,8 +262,8 @@ export default function InvoiceCardsView({
             {formatCurrency(totalPending)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Tax & Statutory GST</span>
-            <span className="font-bold text-amber-600">Output Tax</span>
+            <span>Pending Invoices</span>
+            <span className="font-bold text-amber-600">{countPending} Due</span>
           </div>
         </div>
 
@@ -311,11 +311,11 @@ export default function InvoiceCardsView({
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {[
-              { id: 'ALL', label: `All Invoices (${countAll})`, show: true },
-              { id: 'PAID', label: `Paid & Cleared (${countPaid})`, show: countPaid > 0 && countPaid !== countAll },
-              { id: 'PENDING', label: `Pending Dues (${countPending})`, show: countPending > 0 },
-              { id: 'CREDIT', label: `Credit Notes (${countCredit})`, show: countCredit > 0 },
-            ].filter(tab => tab.show).map((tab) => {
+              { id: 'ALL', label: `All Invoices (${countAll})` },
+              { id: 'PENDING', label: `Pending Dues (${countPending})` },
+              { id: 'PAID', label: `Paid & Cleared (${countPaid})` },
+              { id: 'CREDIT', label: `Credit Notes (${countCredit})` },
+            ].map((tab) => {
               const isActive = statusFilter === tab.id;
               return (
                 <button

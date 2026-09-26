@@ -107,8 +107,16 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
     customerId: inv.customerId || inv.CUSTOMER_ID || defaultCustomer?.customerId || 1813,
     totalAmount,
     billAmount,
-    taxAmount,
-    status: (inv.status || inv.STATUS || 'Paid').includes('Cancel') ? 'Pending' : (inv.status || 'Paid'),
+    status: (() => {
+      const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || '').trim();
+      if (st.toLowerCase() === 'paid' || st.toLowerCase() === 'cleared' || st.toLowerCase() === 'settled') {
+        return 'Paid';
+      }
+      if (st.toLowerCase().includes('credit') || st.toLowerCase().includes('refund') || st.toLowerCase().includes('cn')) {
+        return 'Credit Note';
+      }
+      return 'Pending';
+    })(),
     containerNo: cNo,
     containerSize: size,
     containerType: type,
