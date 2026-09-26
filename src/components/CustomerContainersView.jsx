@@ -81,71 +81,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* 1. Multimodal Lifecycle Stage Showcase Banner (Top Exemplars) */}
-      <div className="bg-gradient-to-r from-slate-950 via-[#0b1329] to-[#0f172a] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white border border-slate-800 shadow-xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-            <h3 className="text-xs sm:text-sm font-black tracking-wide uppercase text-cyan-300 flex items-center gap-1.5 font-display">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              Multimodal Lifecycle Stage Reference (Top Verified Stages)
-            </h3>
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">
-            Click any stage exemplar to track or filter containers in real time
-          </span>
-        </div>
-
-        {/* 5 Stage Reference Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
-          {FEATURED_STAGE_EXAMPLES.map((ex) => {
-            const isSelected = stageFilter === ex.stage;
-            return (
-              <div
-                key={ex.stage}
-                onClick={() => {
-                  if (onNavigateTrack) {
-                    onNavigateTrack(ex.contNo);
-                  }
-                }}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden group hover:scale-[1.02] ${
-                  isSelected 
-                    ? 'bg-white/15 border-cyan-400 shadow-md shadow-cyan-500/20' 
-                    : 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-cyan-400/50'
-                }`}
-              >
-                {/* Top Badge */}
-                <div className="flex items-center justify-between gap-1">
-                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border uppercase tracking-wider ${ex.badgeClass}`}>
-                    {ex.shortTag}
-                  </span>
-                  <span className="text-[9px] font-mono text-cyan-300 font-bold group-hover:underline flex items-center gap-0.5">
-                    Track <ChevronRight className="w-2.5 h-2.5" />
-                  </span>
-                </div>
-
-                {/* Container No & Party Inv */}
-                <div>
-                  <div className="font-mono text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
-                    {ex.contNo}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-medium truncate">
-                    Party Inv: <strong className="text-slate-200 font-mono">{ex.partyInvNo}</strong>
-                  </div>
-                </div>
-
-                {/* Route & Status */}
-                <div className="text-[9px] text-slate-300 pt-1 border-t border-white/10 space-y-0.5">
-                  <div className="text-cyan-400 font-bold truncate">{ex.route}</div>
-                  <div className="text-slate-400 line-clamp-2">{ex.currentStatus}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 2. Header with View Mode Switcher, Stage Filter Pills & Search Bar */}
+      {/* 1. Header with View Mode Switcher, Stage Filter Pills & Search Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
         
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
