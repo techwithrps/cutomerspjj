@@ -79,12 +79,38 @@ export default function App() {
     return parseD(b) - parseD(a);
   });
 
-  // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across all customer invoices/jobs)
+  // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across full FY timeline)
   const allContainerTrips = sortedCustomerInvoices.map((inv, idx) => {
-    // Discharge Rule: Containers without a discharge date are actively in-transit (LIVE)
-    // First 47 containers are in active transit stages (before final discharge)
     const isLive = idx < 47 && !inv.dischargeDate;
-    const dischargeDate = isLive ? null : (inv.dischargeDate || inv.podDischargeDate || `2026-09-${String(10 + (idx % 12)).padStart(2, '0')}`);
+
+    // Helper for formatting DD/MM/YYYY
+    const formatD = (d) => {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    let gateInDate, trainDate, sailDate, dischargeDate;
+
+    if (isLive) {
+      // Recent Live Containers (Mid to late September 2026)
+      const daysAgo = Math.floor(idx * 0.2); // 0 to 9 days ago
+      const gDate = new Date(2026, 8, 25 - daysAgo);
+      gateInDate = inv.icdInDate || formatD(gDate);
+      trainDate = inv.trainOutDate || formatD(new Date(gDate.getTime() + 1 * 86400000));
+      sailDate = inv.sailedDate || formatD(new Date(gDate.getTime() + 3 * 86400000));
+      dischargeDate = null;
+    } else {
+      // Historical Completed Trips distributed progressively across Aug, Jul, Jun, May, Apr 2026
+      const daysAgo = 15 + Math.floor((idx - 47) * 2.8); // 15 to 160 days ago
+      const gDate = new Date(2026, 8, 25 - daysAgo);
+      gateInDate = formatD(gDate);
+      trainDate = formatD(new Date(gDate.getTime() + 2 * 86400000));
+      sailDate = formatD(new Date(gDate.getTime() + 5 * 86400000));
+      const dDate = new Date(gDate.getTime() + 14 * 86400000);
+      dischargeDate = inv.dischargeDate || formatD(dDate);
+    }
 
     const isReefer = (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer') || (inv.containerType || '').includes('REEFER'));
 
@@ -121,7 +147,7 @@ export default function App() {
       temp: isReefer ? '-18.2°C' : 'Ambient',
       tempStatus: isReefer ? 'Active Cold Chain Plugged' : 'Standard Stacking',
       sbNo: inv.sbNo || `SB-${6741000 + idx}`,
-      sbDate: inv.sbDate || inv.date || '21/09/2026',
+      sbDate: gateInDate,
       blNo: inv.blNo || `MEDU${1192000 + idx}`,
       bookingNo: inv.invoiceRefNo || `SPJ/D26-27/${10900 + idx}`,
       jobOrderNo: inv.partyInvNo || inv.invoiceNo || `JO-242973`,
@@ -135,14 +161,14 @@ export default function App() {
       dischargeDate: dischargeDate,
       currentStep: isLive ? currentStep : 6,
       status: isLive ? liveStatus : 'Discharged at Destination Port',
-      icdInDate: inv.icdInDate || inv.date || '21/09/2026',
-      trainOutDate: inv.trainOutDate || inv.date || '22/09/2026',
-      sailedDate: inv.sailedDate || inv.date || '24/09/2026',
-      lineHandoverDate: inv.lineHandoverDate || inv.date || '25/09/2026',
-      inDate: inv.icdInDate || inv.date || '21/09/2026',
-      outDate: inv.trainOutDate || (inv.status === 'Paid' ? inv.date : '-'),
-      eta: isLive ? '2026-10-02 10:00 IST' : 'Delivered & Discharged',
-      liveGPS: isLive ? liveGPS : `${inv.destinationPort || 'JEBEL ALI'} Port Discharged`,
+      icdInDate: gateInDate,
+      trainOutDate: trainDate,
+      sailedDate: sailDate,
+      lineHandoverDate: trainDate,
+      inDate: gateInDate,
+      outDate: isLive ? trainDate : dischargeDate,
+      eta: isLive ? '2026-10-02 10:00 IST' : `Delivered & Discharged (${dischargeDate})`,
+      liveGPS: isLive ? liveGPS : `${inv.destinationPort || 'JEBEL ALI'} Discharged`,
       totalAmount: inv.totalAmount || 5570,
       health: isLive ? 'Live Transit' : 'Completed'
     };
