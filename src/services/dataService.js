@@ -108,11 +108,21 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
     totalAmount,
     billAmount,
     status: (() => {
-      const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || '').trim().toLowerCase();
-      if (st.includes('credit') || st.includes('refund') || st.includes('cn')) {
+      const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || inv.paymentStatus || '').trim().toLowerCase();
+      if (st.includes('credit') || st.includes('refund') || st.includes('cn') || st.includes('rebate')) {
         return 'Credit Note';
       }
-      if (inv.isSettled === true || inv.isPaid === true) {
+      if (
+        st === 'paid' || 
+        st === 'cleared' || 
+        st === 'settled' || 
+        st === 'p' ||
+        st.includes('paid') ||
+        inv.isSettled === true || 
+        inv.isPaid === true ||
+        inv.paymentStatus === 'P' ||
+        inv.PAYMENT_STATUS === 'P'
+      ) {
         return 'Paid';
       }
       return 'Pending';
@@ -206,20 +216,26 @@ export async function fetchCustomerInvoices(inputKey) {
   const key = normalizeCustomerKey(inputKey);
   const account = getCustomerAccount(key);
 
-  // Attempt live API fetch if reachable
+  // Attempt live API fetch if reachable and authenticated
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
+    if (token) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-    const url = `https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(account.name || account.customerId)}&limit=500`;
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
+      const url = `https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(account.name || account.customerId)}&limit=500`;
+      const res = await fetch(url, { 
+        signal: controller.signal,
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      clearTimeout(timeoutId);
 
-    if (res.ok) {
-      const data = await res.json();
-      const records = data.records || data.rows || [];
-      if (records.length > 0) {
-        return records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+      if (res.ok) {
+        const data = await res.json();
+        const records = data.records || data.rows || [];
+        if (records.length > 0) {
+          return records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+        }
       }
     }
   } catch (e) {

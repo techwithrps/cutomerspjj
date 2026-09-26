@@ -25,6 +25,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { getLocalCustomerInvoices, fetchCustomerInvoices, normalizeInvoiceRecord } from '../services/dataService';
+import { getAuthToken } from '../utils/api';
 
 export default function InvoiceCardsView({ 
   customer, 
@@ -42,14 +43,21 @@ export default function InvoiceCardsView({
 
   const customerKey = (customer?.code || 'HMA').toUpperCase();
 
-  // Load real-time live invoices from API for ANY customer
+  // Load real-time live invoices from API for ANY customer if authenticated
   useEffect(() => {
     let isMounted = true;
     const fetchCustomerCIR = async () => {
+      const token = getAuthToken();
+      if (!token) return; // Use local dbStore directly if no server auth session
+      
       setLoading(true);
       try {
         const custParam = customer?.name || customer?.code || customer?.id || 'HMA';
-        const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=1000`);
+        const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=1000`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (res.ok) {
           const json = await res.json();
           const records = json.records || json.rows || [];
@@ -62,7 +70,7 @@ export default function InvoiceCardsView({
           }
         }
       } catch (e) {
-        console.warn('Using cached master stats:', e);
+        // Fallback to local store silently
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -149,12 +157,14 @@ export default function InvoiceCardsView({
 
       let matchesStatus = true;
       const st = (inv.status || '').toLowerCase();
+      const isPaid = st === 'paid' || st === 'cleared' || st === 'settled';
+      const isCredit = st.includes('credit') || st.includes('refund') || st.includes('rebate') || st.includes('adjust') || st.includes('cn');
       if (statusFilter === 'PAID') {
-        matchesStatus = st === 'paid' || st === 'cleared' || st === 'settled';
+        matchesStatus = isPaid;
       } else if (statusFilter === 'PENDING' || statusFilter === 'OUTSTANDING') {
-        matchesStatus = st !== 'paid' && st !== 'cleared' && st !== 'settled';
+        matchesStatus = !isPaid && !isCredit;
       } else if (statusFilter === 'CREDIT') {
-        matchesStatus = st.includes('credit') || st.includes('refund') || st.includes('rebate') || st.includes('adjust');
+        matchesStatus = isCredit;
       }
 
       return matchesSearch && matchesStatus;
@@ -193,11 +203,16 @@ export default function InvoiceCardsView({
     const s = (i.status || '').toLowerCase();
     return s === 'paid' || s === 'cleared' || s === 'settled';
   }).length;
+  const countCredit = allInvoices.filter(i => {
+    const s = (i.status || '').toLowerCase();
+    return s.includes('credit') || s.includes('refund') || s.includes('rebate') || s.includes('adjust') || s.includes('cn');
+  }).length;
   const countPending = allInvoices.filter(i => {
     const s = (i.status || '').toLowerCase();
-    return s !== 'paid' && s !== 'cleared' && s !== 'settled';
+    const isPaid = s === 'paid' || s === 'cleared' || s === 'settled';
+    const isCredit = s.includes('credit') || s.includes('refund') || s.includes('rebate') || s.includes('adjust') || s.includes('cn');
+    return !isPaid && !isCredit;
   }).length;
-  const countCredit = allInvoices.filter(i => (i.status || '').toLowerCase().includes('credit') || (i.status || '').toLowerCase().includes('refund') || (i.status || '').toLowerCase().includes('rebate') || (i.status || '').toLowerCase().includes('adjust')).length;
 
   const totalPaid = allInvoices.filter(i => {
     const s = (i.status || '').toLowerCase();
@@ -206,8 +221,10 @@ export default function InvoiceCardsView({
   
   const totalPending = allInvoices.filter(i => {
     const s = (i.status || '').toLowerCase();
-    return s !== 'paid' && s !== 'cleared' && s !== 'settled';
-  }).reduce((sum, i) => sum + (i.totalAmount || 0), 0) || (countPending > 0 ? totalBilled : 0);
+    const isPaid = s === 'paid' || s === 'cleared' || s === 'settled';
+    const isCredit = s.includes('credit') || s.includes('refund') || s.includes('rebate') || s.includes('adjust') || s.includes('cn');
+    return !isPaid && !isCredit;
+  }).reduce((sum, i) => sum + (i.totalAmount || 0), 0);
   
   const totalContainers = allInvoices.length || customer?.exactStats?.containerCount || 0;
   const liveActiveCount = Math.min(47, Math.max(12, Math.floor(allInvoices.length * 0.15)));
