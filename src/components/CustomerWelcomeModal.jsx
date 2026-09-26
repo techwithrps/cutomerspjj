@@ -41,10 +41,13 @@ export default function CustomerWelcomeModal({ customer, onClose, onNavigateTab 
   };
 
   const rm = customer.relationshipManager || {
-    name: 'Pooja Nair',
-    role: 'Key Account Lead - Western & Northern Corridor',
-    phone: '+91 98110 44295',
-    whatsapp: '+919811044295'
+    name: 'Mr. Dinesh',
+    role: 'Key Account Director — SPJ Group',
+    phone: '+91-8750194222',
+    altPhone: '+91-9310209222',
+    email: 'info@spjcargo.com',
+    whatsapp: '+918750194222',
+    office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
   };
 
   return (

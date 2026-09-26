@@ -50,40 +50,63 @@ export default function CustomerSupportView({ customer }) {
               Assigned Key Account Director
             </div>
 
-            <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-100 space-y-1">
+            <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-100 space-y-1.5">
               <span className="text-base font-extrabold text-[#2b1f55] block">{rm.name}</span>
               <span className="text-xs text-purple-800 font-semibold block">{rm.role}</span>
-              <span className="text-[11px] text-slate-500 block">{rm.office}</span>
+              <span className="text-[11px] text-slate-600 block leading-relaxed">
+                📍 {rm.office}
+              </span>
             </div>
 
             <div className="space-y-2 text-xs">
-              <a 
-                href={`tel:${rm.phone}`}
-                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Phone className="w-4 h-4 text-emerald-600" />
-                  <span>Call Direct: {rm.phone}</span>
-                </div>
-                <span className="text-[10px] text-slate-400">Direct Line</span>
-              </a>
+              {/* Phone Lines */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a 
+                  href={`tel:${rm.phone || '+91-8750194222'}`}
+                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[11px]">{rm.phone || '+91-8750194222'}</span>
+                  </div>
+                  <span className="text-[9px] text-slate-400">Primary</span>
+                </a>
 
-              <a 
-                href={`mailto:${rm.email}`}
-                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-blue-600" />
-                  <span className="truncate">{rm.email}</span>
-                </div>
-                <span className="text-[10px] text-slate-400">Email</span>
-              </a>
+                <a 
+                  href={`tel:${rm.altPhone || '+91-9310209222'}`}
+                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[11px]">{rm.altPhone || '+91-9310209222'}</span>
+                  </div>
+                  <span className="text-[9px] text-slate-400">Direct</span>
+                </a>
+              </div>
 
+              {/* Email Addresses */}
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Corporate RM Desks</span>
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  {['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'].map((em) => (
+                    <a
+                      key={em}
+                      href={`mailto:${em}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white hover:bg-blue-50 text-blue-700 font-bold border border-slate-200 transition-colors shadow-2xs"
+                    >
+                      <Mail className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span>{em}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* WhatsApp CTA */}
               <a 
-                href={`https://wa.me/${rm.whatsapp.replace(/[^0-9]/g, '')}`}
+                href={`https://wa.me/${(rm.whatsapp || '+918750194222').replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md"
+                className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md cursor-pointer"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Instant WhatsApp Communication</span>
@@ -104,9 +127,9 @@ export default function CustomerSupportView({ customer }) {
               <span className="font-bold text-slate-900 block text-xs">National Freight Invoicing Desk</span>
               <span className="text-slate-500 text-[11px] block mt-0.5">For e-invoicing queries, GST reconciliations & ledger statements</span>
               <div className="flex items-center gap-3 mt-2 text-blue-700 font-bold">
-                <span>billing@spjcargo.com</span>
+                <a href="mailto:info@spjcargo.com" className="hover:underline">info@spjcargo.com</a>
                 <span>•</span>
-                <span>+91 11 4100 8899</span>
+                <a href="tel:+918750194222" className="hover:underline">+91-8750194222</a>
               </div>
             </div>
 
@@ -114,14 +137,14 @@ export default function CustomerSupportView({ customer }) {
               <span className="font-bold text-slate-900 block text-xs">24x7 Yard Gate & Reefer Cold Chain Control</span>
               <span className="text-slate-500 text-[11px] block mt-0.5">Emergency temperature monitoring, seal verification & rake updates</span>
               <div className="flex items-center gap-3 mt-2 text-emerald-700 font-bold">
-                <span>operations.dadri@spjcargo.com</span>
+                <a href="mailto:ashish@spjcargo.com" className="hover:underline">ashish@spjcargo.com</a>
                 <span>•</span>
-                <span>+91 98110 00192</span>
+                <a href="tel:+919310209222" className="hover:underline">+91-9310209222</a>
               </div>
             </div>
 
-            <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100 text-[11px] text-purple-900 font-medium">
-              📍 <strong>SPJ Corporate Headquarters:</strong> E-6, Third Floor, Kalkaji, New Delhi-110019, India
+            <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100 text-[11px] text-purple-900 font-medium leading-relaxed">
+              📍 <strong>SPJ Corporate Headquarters:</strong> D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India
             </div>
           </div>
         </div>

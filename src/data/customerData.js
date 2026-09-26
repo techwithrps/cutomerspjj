@@ -22,12 +22,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'shipping@fairexports.net',
     phone: '+91 22 2683 8800',
     relationshipManager: {
-      name: 'Pooja Nair',
-      role: 'Key Account Lead — Western & Northern Corridor',
-      phone: '+91 98110 44295',
-      email: 'p.nair@spjcargo.com',
-      whatsapp: '+919811044295',
-      office: 'SPJ Seaport Wing, Nhava Sheva, Navi Mumbai'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 20460,
@@ -60,12 +62,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'logistics@ifffoods.com',
     phone: '+91 565 240 8820',
     relationshipManager: {
-      name: 'Vikramaditya Chauhan',
-      role: 'Sr. Key Account Director — SPJ Group',
-      phone: '+91 98110 44290',
-      email: 'v.chauhan@spjcargo.com',
-      whatsapp: '+919811044290',
-      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 14761,
@@ -98,12 +102,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'exports@marhabafoods.in',
     phone: '+91 571 249 1100',
     relationshipManager: {
-      name: 'Rohit Verma',
-      role: 'Key Account Manager — UP Central',
-      phone: '+91 98110 44292',
-      email: 'r.verma@spjcargo.com',
-      whatsapp: '+919811044292',
-      office: 'SPJ Hub, Panki, Kanpur'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 10098,
@@ -136,12 +142,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'contact@rustamfoods.com',
     phone: '+91 515 282 0451',
     relationshipManager: {
-      name: 'Rohit Verma',
-      role: 'Key Account Manager — UP Central',
-      phone: '+91 98110 44292',
-      email: 'r.verma@spjcargo.com',
-      whatsapp: '+919811044292',
-      office: 'SPJ Hub, Panki, Kanpur'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 8974,
@@ -174,12 +182,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'alammar@alammarfoods.com',
     phone: '+91 98714 88001',
     relationshipManager: {
-      name: 'Vikramaditya Chauhan',
-      role: 'Sr. Key Account Director — SPJ Group',
-      phone: '+91 98110 44290',
-      email: 'v.chauhan@spjcargo.com',
-      whatsapp: '+919811044290',
-      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 9895,
@@ -212,12 +222,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'exports@hmaagro.com',
     phone: '+91 98102 33491',
     relationshipManager: {
-      name: 'Vikramaditya Chauhan',
-      role: 'Sr. Key Account Director — SPJ Group',
-      phone: '+91 98110 44290',
-      email: 'v.chauhan@spjcargo.com',
-      whatsapp: '+919811044290',
-      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 8608,
@@ -250,12 +262,14 @@ export const CUSTOMER_ACCOUNTS = {
     email: 'logistics@internationalagro.com',
     phone: '+91 120 410 8822',
     relationshipManager: {
-      name: 'Vikramaditya Chauhan',
-      role: 'Sr. Key Account Director — SPJ Group',
-      phone: '+91 98110 44290',
-      email: 'v.chauhan@spjcargo.com',
-      whatsapp: '+919811044290',
-      office: 'SPJ Corporate Tower, Kalkaji, New Delhi'
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
       invoiceCount: 8231,

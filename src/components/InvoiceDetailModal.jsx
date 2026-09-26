@@ -80,7 +80,7 @@ export default function InvoiceDetailModal({ invoice, customer, onClose }) {
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Service Provider</span>
               <span className="font-extrabold text-slate-900 block text-xs">SPJ Cargo & Logistics Pvt. Ltd.</span>
               <p className="text-slate-600 text-[10px] leading-relaxed">
-                E-6, Third Floor, Kalkaji, New Delhi - 110019<br />
+                D-9/3 Okhla , Industrial Estate, Phase -1, New Delhi-110020<br />
                 <strong>GSTIN:</strong> 07AAACS9821K1ZB | <strong>Hub:</strong> {invoice.terminal}
               </p>
             </div>

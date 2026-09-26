@@ -144,31 +144,48 @@ export default function CustomerProfileView({ customer }) {
               <div className="space-y-1">
                 <h4 className="text-base font-black text-white">{rm.name}</h4>
                 <p className="text-xs text-purple-200 font-medium">{rm.role}</p>
-                <p className="text-[11px] text-slate-300">{rm.office}</p>
+                <p className="text-[11px] text-slate-300 leading-relaxed">📍 {rm.office}</p>
               </div>
 
               <div className="space-y-2 pt-2 border-t border-white/10 text-xs">
-                <a 
-                  href={`tel:${rm.phone}`} 
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors"
-                >
-                  <Phone className="w-4 h-4 text-emerald-400" />
-                  <span>{rm.phone}</span>
-                </a>
+                {/* Phone numbers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <a 
+                    href={`tel:${rm.phone || '+91-8750194222'}`} 
+                    className="flex items-center gap-2 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors text-[11px]"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="truncate">{rm.phone || '+91-8750194222'}</span>
+                  </a>
+
+                  <a 
+                    href={`tel:${rm.altPhone || '+91-9310209222'}`} 
+                    className="flex items-center gap-2 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors text-[11px]"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="truncate">{rm.altPhone || '+91-9310209222'}</span>
+                  </a>
+                </div>
+
+                {/* Emails list */}
+                <div className="space-y-1">
+                  {['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'].map((em) => (
+                    <a 
+                      key={em}
+                      href={`mailto:${em}`} 
+                      className="flex items-center gap-2 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-colors text-[11px]"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span className="truncate">{em}</span>
+                    </a>
+                  ))}
+                </div>
 
                 <a 
-                  href={`mailto:${rm.email}`} 
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors"
-                >
-                  <Mail className="w-4 h-4 text-cyan-400" />
-                  <span className="truncate">{rm.email}</span>
-                </a>
-
-                <a 
-                  href={`https://wa.me/${rm.whatsapp.replace(/[^0-9]/g, '')}`} 
+                  href={`https://wa.me/${(rm.whatsapp || '+918750194222').replace(/[^0-9]/g, '')}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md"
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Chat on WhatsApp</span>
