@@ -214,6 +214,7 @@ export default function CustomerTrackingView({
   const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
   const sbNo = matched?.sbNo || '6741363';
   const blNo = matched?.blNo || 'MEDU1192973';
+  const invoiceDate = matched?.inDate || matched?.date || matched?.invoiceDate || '25/09/2026';
   const rawSize = String(matched?.size || matched?.containerSize || '40 FT').trim();
   const rawType = String(matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : (matched?.containerType || 'HIGH CUBE'))).trim();
   const cleanType = rawType.replace(/^(40\s*(FT|FEET)?|20\s*(FT|FEET)?)\s*/i, '').trim();
