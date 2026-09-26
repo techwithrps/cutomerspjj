@@ -311,11 +311,11 @@ export default function InvoiceCardsView({
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {[
-              { id: 'ALL', label: `All Invoices (${countAll})` },
-              { id: 'PAID', label: `Paid & Cleared (${countPaid})` },
-              { id: 'PENDING', label: `Pending Dues (${countPending})` },
-              { id: 'CREDIT', label: `Credit Notes (${countCredit})` },
-            ].map((tab) => {
+              { id: 'ALL', label: `All Invoices (${countAll})`, show: true },
+              { id: 'PAID', label: `Paid & Cleared (${countPaid})`, show: countPaid > 0 && countPaid !== countAll },
+              { id: 'PENDING', label: `Pending Dues (${countPending})`, show: countPending > 0 },
+              { id: 'CREDIT', label: `Credit Notes (${countCredit})`, show: countCredit > 0 },
+            ].filter(tab => tab.show).map((tab) => {
               const isActive = statusFilter === tab.id;
               return (
                 <button
@@ -396,17 +396,20 @@ export default function InvoiceCardsView({
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3.5">
           {paginatedInvoices.map((inv, idx) => {
-            const isPaid = (inv.status || 'Paid').toLowerCase() === 'paid';
-            const isCredit = (inv.status || '').toLowerCase().includes('credit') || (inv.status || '').toLowerCase().includes('adjusted');
-
             // Defensive fallbacks for all fields
             const containerDisplay = inv.containerNo || (inv.containers && inv.containers[0]) || (inv.items && inv.items[0]?.containerNo) || `MNBU0${String(100000 + ((idx * 37) % 900000)).slice(0, 6)}`;
             const portDisplay = inv.destinationPort || inv.port || (inv.items && inv.items[0]?.destinationPort) || (inv.terminal?.includes('KANPUR') ? 'JEDDAH - SAUDI ARABIA' : 'JEBEL ALI - UAE');
             const lineDisplay = inv.shippingLine || (inv.items && inv.items[0]?.shippingLine) || 'MSC';
             const typeDisplay = inv.containerType || (inv.items && inv.items[0]?.size ? `${inv.items[0].size} FT REEFER` : '40 FT RF');
             const terminalDisplay = inv.terminal || (customer?.primaryHub || 'TRANSWORLD-DADRI');
-            const jobDisplay = inv.jobNo || inv.partyInvNo || `EXP/2026-27/${String(4000 + idx).padStart(5, '0')}`;
-            const invNumDisplay = inv.partyInvNo || inv.invoiceNo || `SPJ/INV/${1000 + idx}`;
+            const jobDisplay = inv.jobNo || `EXP/2026-27/${String(4000 + idx).padStart(5, '0')}`;
+            
+            // Format full SPJ commercial invoice number (e.g. SPJ/26-27/243439)
+            const rawInv = String(inv.partyInvNo || inv.invoiceNo || inv.id || (1000 + idx)).trim();
+            const invNumDisplay = (rawInv.toUpperCase().startsWith('SPJ') || rawInv.toUpperCase().startsWith('PJ'))
+              ? rawInv
+              : `SPJ/26-27/${rawInv}`;
+              
             const dateDisplay = inv.date || inv.invoiceDate || '25/09/2026';
 
             return (
@@ -414,12 +417,11 @@ export default function InvoiceCardsView({
                 key={inv.id || idx}
                 className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-cyan-500/60 transition-all p-2 sm:p-3.5 flex flex-col justify-between space-y-1.5 sm:space-y-2.5 hover-lift"
               >
-                {/* Header: Invoice No, Date, Job No */}
+                {/* Header: Full SPJ Invoice No, Copy Button, Job Ref, Date (No Paid Tag Badge) */}
                 <div className="space-y-1 border-b border-slate-100 pb-1.5 sm:pb-2">
-                  {/* Line 1: Invoice No + Copy Button + Status Badge */}
-                  <div className="flex items-start justify-between gap-1">
-                    <div className="min-w-0 flex items-center gap-0.5 sm:gap-1">
-                      <span className="font-mono font-black text-[11px] sm:text-[13px] text-[#0f172a] truncate block">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="min-w-0 flex items-center gap-1">
+                      <span className="font-mono font-black text-[11px] sm:text-[13px] text-[#0f172a] truncate block tracking-tight" title={invNumDisplay}>
                         {invNumDisplay}
                       </span>
                       <button
@@ -431,24 +433,14 @@ export default function InvoiceCardsView({
                       </button>
                     </div>
 
-                    <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[9px] font-black shrink-0 whitespace-nowrap ${
-                      isPaid 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : isCredit 
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      {inv.status || 'Paid'}
+                    <span className="font-mono font-bold text-[8px] sm:text-[10px] text-blue-700 truncate shrink-0">
+                      {jobDisplay}
                     </span>
                   </div>
 
-                  {/* Line 2: Date & Job No in single compact line */}
-                  <div className="flex items-center justify-between gap-1 text-[8px] sm:text-[10px] text-slate-500">
+                  <div className="flex items-center justify-between text-[8px] sm:text-[10px] text-slate-500">
                     <span className="truncate">
                       Date: <strong className="font-mono font-bold text-slate-700">{dateDisplay}</strong>
-                    </span>
-                    <span className="font-mono font-bold text-blue-700 truncate hidden sm:inline">
-                      {jobDisplay}
                     </span>
                   </div>
                 </div>
