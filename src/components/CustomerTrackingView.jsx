@@ -196,8 +196,10 @@ export default function CustomerTrackingView({
   const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
   const sbNo = matched?.sbNo || '6741363';
   const blNo = matched?.blNo || 'MEDU1192973';
-  const invoiceDate = matched?.inDate || matched?.date || '25/09/2026';
-  const sizeType = `${matched?.size || matched?.containerSize || '40 FT'} ${matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : '40 FT HC')}`;
+  const rawSize = String(matched?.size || matched?.containerSize || '40 FT').trim();
+  const rawType = String(matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : (matched?.containerType || 'HIGH CUBE'))).trim();
+  const cleanType = rawType.replace(/^(40\s*(FT|FEET)?|20\s*(FT|FEET)?)\s*/i, '').trim();
+  const sizeType = `${rawSize} ${cleanType || 'REEFER (-18°C)'}`.trim();
   const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
   const isRailRoute = useMemo(() => {
     const term = (terminal || '').toUpperCase();
@@ -367,6 +369,31 @@ export default function CustomerTrackingView({
     });
   }, [contNo, matched, customer, terminal, pol, destination, shippingLine, sbNo, blNo]);
 
+  // Dynamic Location & Date milestone references for top container card
+  const emptyPickupLoc = useMemo(() => {
+    return fleetGRRecords[1]?.pickupPoint || `SPJ Depot / ${terminal}`;
+  }, [fleetGRRecords, terminal]);
+
+  const emptyPickupDate = useMemo(() => {
+    return fleetGRRecords[1]?.grDate || '15/09/2026 10:15';
+  }, [fleetGRRecords]);
+
+  const stuffingLoc = useMemo(() => {
+    return fleetGRRecords[0]?.stuffingPoint || `${customer?.name || 'Shipper Plant'}, Dock 03`;
+  }, [fleetGRRecords, customer]);
+
+  const stuffingDate = useMemo(() => {
+    return fleetGRRecords[0]?.grDate || `${invoiceDate} 14:30`;
+  }, [fleetGRRecords, invoiceDate]);
+
+  const handoverLoc = useMemo(() => {
+    return fleetGRRecords[0]?.deliveryPoint || (isRailRoute ? `ICD Railhead / ${pol} Rake` : `${pol} Gateway Terminal`);
+  }, [fleetGRRecords, isRailRoute, pol]);
+
+  const handoverDate = useMemo(() => {
+    return matched?.trainOutDate ? `${matched.trainOutDate} 19:40` : (matched?.lineHandoverDate ? `${matched.lineHandoverDate} 18:00` : `${invoiceDate} 18:00`);
+  }, [matched, invoiceDate]);
+
   // 3. SP_MOVEMENT_HISTORY_SUMMARY (Party Invoice Summary Cursor)
   const invoiceSummaryRecords = useMemo(() => {
     const invKey = matched?.partyInvNo || matched?.invoiceNo || contNo;
@@ -521,40 +548,60 @@ export default function CustomerTrackingView({
               </div>
             </div>
 
-            {/* 4 Details Columns */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-1">
+            {/* 5 Details Columns (Empty Pickup, Factory Stuffing, Handover Location, Customs & B/L, Route Corridor) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 text-xs pt-1">
+              {/* 1. Empty Pickup */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Movement Status</span>
-                <span className="text-sm font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  {movementStatus}
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Empty Pickup</span>
+                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={emptyPickupLoc}>
+                  {emptyPickupLoc}
                 </span>
-                <span className="text-[11px] text-slate-300 block mt-0.5">
-                  CFS: <strong>{terminal}</strong>
+                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
+                  Date: {emptyPickupDate}
                 </span>
               </div>
 
+              {/* 2. Factory Stuffing */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Route Corridor</span>
-                <span className="font-bold text-slate-200 block mt-0.5">POL: {pol}</span>
-                <span className="font-bold text-cyan-300 block">POD: {destination}</span>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Estimated Delivery (ETA)</span>
-                <span className="text-sm font-black text-amber-300 block font-mono mt-0.5">
-                  2026-10-02 10:00 IST
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Factory Stuffing</span>
+                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={stuffingLoc}>
+                  {stuffingLoc}
                 </span>
-                <span className="text-[11px] text-slate-400 block">Date: {invoiceDate}</span>
+                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
+                  Date: {stuffingDate}
+                </span>
               </div>
 
+              {/* 3. Handover Location */}
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Customs & B/L Ref</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Handover Location</span>
+                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={handoverLoc}>
+                  {handoverLoc}
+                </span>
+                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
+                  Date: {handoverDate}
+                </span>
+              </div>
+
+              {/* 4. Customs & B/L Ref */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Customs & B/L Ref</span>
                 <span className="font-mono text-slate-200 block mt-0.5">
                   SB: <strong className="text-white">{sbNo}</strong>
                 </span>
                 <span className="font-mono text-cyan-300 block">
                   B/L: <strong>{blNo}</strong>
+                </span>
+              </div>
+
+              {/* 5. Route Corridor (POL & POD - Last) */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Route Corridor</span>
+                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={`POL: ${pol}`}>
+                  POL: {pol}
+                </span>
+                <span className="font-bold text-cyan-300 block truncate" title={`POD: ${destination}`}>
+                  POD: {destination}
                 </span>
               </div>
             </div>
