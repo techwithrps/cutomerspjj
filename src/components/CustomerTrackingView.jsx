@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Container, 
-  MapPin, 
-  Truck, 
-  Ship, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Thermometer, 
-  Zap, 
-  ShieldCheck, 
-  Download, 
-  Share2, 
-  Copy, 
-  Check, 
-  Navigation, 
-  Anchor, 
-  Train, 
-  Building2, 
-  Search, 
+import {
+  Container,
+  MapPin,
+  Truck,
+  Ship,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Thermometer,
+  Zap,
+  ShieldCheck,
+  Download,
+  Share2,
+  Copy,
+  Check,
+  Navigation,
+  Anchor,
+  Train,
+  Building2,
+  Search,
   ArrowRight,
   ChevronRight,
   RotateCcw,
@@ -33,10 +33,10 @@ import {
 } from 'lucide-react';
 import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping } from '../services/movementHistoryService';
 
-export default function CustomerTrackingView({ 
-  customer, 
-  prefilledQuery = '', 
-  containers = [], 
+export default function CustomerTrackingView({
+  customer,
+  prefilledQuery = '',
+  containers = [],
   invoices = [],
   initialSubTab = 'pipeline'
 }) {
@@ -77,7 +77,7 @@ export default function CustomerTrackingView({
     if (e) e.preventDefault();
     const clean = searchInput.trim().toUpperCase();
     if (!clean) return;
-    
+
     setIsSearching(true);
     setTimeout(() => {
       setSearchedContainer(clean);
@@ -176,7 +176,7 @@ export default function CustomerTrackingView({
     // 3. Check for matching vehicle or GR pattern
     const sampleCont = (containers && containers[0]?.contNo) || 'MNBU0361774';
     const fleetSample = executeFleetGRMapping(sampleCont, { customer });
-    const matchGR = fleetSample.find(g => 
+    const matchGR = fleetSample.find(g =>
       normalizeForSearch(g.vehicleNo).includes(cleanQ) ||
       cleanQ.includes(normalizeForSearch(g.vehicleNo)) ||
       normalizeForSearch(g.grNo).includes(cleanQ) ||
@@ -363,7 +363,7 @@ export default function CustomerTrackingView({
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
-      
+
       {/* 1. Clean Full-View Search Bar Box */}
       <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
         <div className="text-center max-w-2xl mx-auto space-y-1.5">
@@ -438,10 +438,10 @@ export default function CustomerTrackingView({
       {/* 2. Tracking Details Container (Rendered Only When a Container is Tracked) */}
       {searchedContainer ? (
         <div className="space-y-4 sm:space-y-5 animate-fade-in">
-          
+
           {/* Header Summary Card */}
           <div className="bg-gradient-to-br from-slate-900 via-[#0b1329] to-[#0f172a] text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-slate-800 space-y-4">
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 shadow-inner">
@@ -539,11 +539,10 @@ export default function CustomerTrackingView({
               <button
                 type="button"
                 onClick={() => setActiveTrackingTab('pipeline')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  activeTrackingTab === 'pipeline'
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'pipeline'
                     ? 'bg-white text-slate-950 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <Navigation className="w-3.5 h-3.5 text-blue-600" />
                 <span>Visual Journey & Telemetry</span>
@@ -552,11 +551,10 @@ export default function CustomerTrackingView({
               <button
                 type="button"
                 onClick={() => setActiveTrackingTab('oracle_pk')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  activeTrackingTab === 'oracle_pk'
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'oracle_pk'
                     ? 'bg-[#0b1329] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <Database className="w-3.5 h-3.5 text-cyan-400" />
                 <span>MOVEMENT HISTORY</span>
@@ -568,11 +566,10 @@ export default function CustomerTrackingView({
               <button
                 type="button"
                 onClick={() => setActiveTrackingTab('gr_fleet')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  activeTrackingTab === 'gr_fleet'
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'gr_fleet'
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <Truck className="w-3.5 h-3.5 text-amber-200" />
                 <span>Fleet GR & Bilty</span>
@@ -584,11 +581,10 @@ export default function CustomerTrackingView({
               <button
                 type="button"
                 onClick={() => setActiveTrackingTab('summary')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  activeTrackingTab === 'summary'
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'summary'
                     ? 'bg-white text-slate-950 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Invoice Cursor</span>
@@ -642,22 +638,20 @@ export default function CustomerTrackingView({
 
                     return (
                       <div key={step.id} className="relative flex flex-col justify-between">
-                        
+
                         {/* Arrow Step Card */}
-                        <div className={`p-3 rounded-2xl border text-center transition-all h-full flex flex-col justify-between relative ${
-                          isCurrent
+                        <div className={`p-3 rounded-2xl border text-center transition-all h-full flex flex-col justify-between relative ${isCurrent
                             ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
                             : isCompleted
-                            ? 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
-                            : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
-                        }`}>
-                          
+                              ? 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
+                              : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
+                          }`}>
+
                           <div>
                             {/* Step Number & Icon */}
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
-                                isCurrent ? 'bg-white/20 text-white' : isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'
-                              }`}>
+                              <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${isCurrent ? 'bg-white/20 text-white' : isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'
+                                }`}>
                                 0{step.id}
                               </span>
                               <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-white animate-bounce' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -666,9 +660,8 @@ export default function CustomerTrackingView({
                             <div className="text-xs font-black truncate">{step.label}</div>
                           </div>
 
-                          <div className={`text-[10px] truncate mt-2 font-medium ${
-                            isCurrent ? 'text-blue-100 font-bold' : isCompleted ? 'text-emerald-700' : 'text-slate-400'
-                          }`}>
+                          <div className={`text-[10px] truncate mt-2 font-medium ${isCurrent ? 'text-blue-100 font-bold' : isCompleted ? 'text-emerald-700' : 'text-slate-400'
+                            }`}>
                             {step.sub}
                           </div>
 
@@ -713,24 +706,22 @@ export default function CustomerTrackingView({
                     return (
                       <div key={idx} className="relative group">
                         {/* Badge */}
-                        <div className={`absolute -left-6 sm:-left-8 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
-                          isDone 
-                            ? 'bg-emerald-600 text-white shadow-sm ring-3 ring-emerald-100' 
-                            : isCur 
-                            ? 'bg-blue-600 text-white shadow-md ring-3 ring-blue-100 animate-pulse' 
-                            : 'bg-slate-100 text-slate-400 border border-slate-300'
-                        }`}>
+                        <div className={`absolute -left-6 sm:-left-8 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${isDone
+                            ? 'bg-emerald-600 text-white shadow-sm ring-3 ring-emerald-100'
+                            : isCur
+                              ? 'bg-blue-600 text-white shadow-md ring-3 ring-blue-100 animate-pulse'
+                              : 'bg-slate-100 text-slate-400 border border-slate-300'
+                          }`}>
                           <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
 
                         {/* Step Content */}
-                        <div className={`p-4 rounded-2xl border transition-all ${
-                          isCur 
-                            ? 'bg-blue-50/80 border-blue-200 shadow-sm' 
-                            : isDone 
-                            ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs' 
-                            : 'bg-slate-50/60 border-slate-200 opacity-60'
-                        }`}>
+                        <div className={`p-4 rounded-2xl border transition-all ${isCur
+                            ? 'bg-blue-50/80 border-blue-200 shadow-sm'
+                            : isDone
+                              ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+                              : 'bg-slate-50/60 border-slate-200 opacity-60'
+                          }`}>
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                             <div className="flex items-center gap-2">
                               <span className={`text-xs sm:text-sm font-black ${isCur ? 'text-blue-950' : 'text-slate-900'}`}>
@@ -814,11 +805,10 @@ export default function CustomerTrackingView({
                     key={phase}
                     type="button"
                     onClick={() => setOraclePhaseFilter(phase)}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-[11px] whitespace-nowrap transition-colors cursor-pointer ${
-                      oraclePhaseFilter === phase
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-[11px] whitespace-nowrap transition-colors cursor-pointer ${oraclePhaseFilter === phase
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                    }`}
+                      }`}
                   >
                     {phase === 'ALL' ? 'All 45 Stages' : phase}
                   </button>
@@ -935,7 +925,7 @@ export default function CustomerTrackingView({
           {/* VIEW 4: FLEET GR & BILTY CONSIGNMENT (FLEET_GR_MAPPING) */}
           {activeTrackingTab === 'gr_fleet' && (
             <div className="space-y-4 sm:space-y-6 animate-fade-in">
-              
+
               {/* Header & GR Selector */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-5 sm:p-6 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
@@ -985,19 +975,17 @@ export default function CustomerTrackingView({
                         <div
                           key={gr.grNo}
                           onClick={() => setSelectedGRIndex(idx)}
-                          className={`p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                            isSelected
+                          className={`p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-1.5 ${isSelected
                               ? 'bg-amber-50/80 border-amber-500 shadow-sm ring-2 ring-amber-400/40 -translate-y-0.5'
                               : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-xs'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
                             <span className="font-mono font-black text-[10px] sm:text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 truncate">
                               {gr.grNo}
                             </span>
-                            <span className={`px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-black ${
-                              gr.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                            }`}>
+                            <span className={`px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-black ${gr.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              }`}>
                               ● {gr.status}
                             </span>
                           </div>
@@ -1033,7 +1021,7 @@ export default function CustomerTrackingView({
                 const gr = fleetGRRecords[selectedGRIndex];
                 return (
                   <div className="bg-white rounded-3xl border-2 border-amber-300/80 shadow-card p-6 sm:p-8 space-y-6 relative overflow-hidden">
-                    
+
                     {/* Watermark Logo/Text */}
                     <div className="absolute right-6 top-6 opacity-5 pointer-events-none select-none">
                       <Truck className="w-72 h-72 text-slate-900" />
@@ -1067,7 +1055,7 @@ export default function CustomerTrackingView({
 
                     {/* Grid: 4 Core Sections */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      
+
                       {/* Section 1: Consignor & Consignee */}
                       <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
@@ -1243,12 +1231,11 @@ export default function CustomerTrackingView({
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
                       {fleetGRRecords.map((gr, idx) => (
-                        <tr 
-                          key={gr.grNo} 
+                        <tr
+                          key={gr.grNo}
                           onClick={() => setSelectedGRIndex(idx)}
-                          className={`hover:bg-amber-50/50 cursor-pointer transition-colors ${
-                            selectedGRIndex === idx ? 'bg-amber-50/70 font-bold' : ''
-                          }`}
+                          className={`hover:bg-amber-50/50 cursor-pointer transition-colors ${selectedGRIndex === idx ? 'bg-amber-50/70 font-bold' : ''
+                            }`}
                         >
                           <td className="py-2.5 px-3 font-mono font-bold text-amber-700">{gr.grNo}</td>
                           <td className="py-2.5 px-3 font-mono text-slate-600">{gr.grDate}</td>
