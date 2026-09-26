@@ -13,7 +13,20 @@ import {
 } from 'lucide-react';
 
 export default function CustomerSupportView({ customer }) {
-  const rm = customer?.relationshipManager;
+  const defaultRm = {
+    name: 'Mr. Dinesh',
+    role: 'Key Account Director — SPJ Group',
+    phone: '+91-8750194222',
+    altPhone: '+91-9310209222',
+    email: 'info@spjcargo.com',
+    emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+    whatsapp: '+918750194222',
+    office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
+  };
+
+  const rm = (customer?.relationshipManager && customer.relationshipManager.name && !customer.relationshipManager.name.includes('Pooja'))
+    ? { ...defaultRm, ...customer.relationshipManager }
+    : defaultRm;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">

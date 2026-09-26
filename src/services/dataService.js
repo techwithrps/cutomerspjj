@@ -185,6 +185,18 @@ export function getAllCustomerAccounts() {
 export function getCustomerAccount(inputKey) {
   const key = normalizeCustomerKey(inputKey);
   const acc = dbStore.accounts[key] || dbStore.accounts['MARHABA_FROZEN_FOODS'] || Object.values(dbStore.accounts)[0];
+  if (acc) {
+    acc.relationshipManager = {
+      name: 'Mr. Dinesh',
+      role: 'Key Account Director — SPJ Group',
+      phone: '+91-8750194222',
+      altPhone: '+91-9310209222',
+      email: 'info@spjcargo.com',
+      emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+      whatsapp: '+918750194222',
+      office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
+    };
+  }
   return acc;
 }
 

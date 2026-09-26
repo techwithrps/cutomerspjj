@@ -10,6 +10,7 @@ import {
   Lock
 } from 'lucide-react';
 import { getCustomerAccount } from '../services/dataService';
+import { CUSTOMER_ACCOUNTS } from '../data/customerData';
 
 export default function CustomerLoginPage({ onLoginSuccess }) {
   const [customerCode, setCustomerCode] = useState('');
@@ -49,6 +50,17 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
           const matchedLocal = CUSTOMER_ACCOUNTS[(custScope.customerCode || '').toUpperCase()] || 
             Object.values(CUSTOMER_ACCOUNTS).find(c => c.name === user.name || c.id === user.id);
 
+          const defaultRm = {
+            name: 'Mr. Dinesh',
+            role: 'Key Account Director — SPJ Group',
+            phone: '+91-8750194222',
+            altPhone: '+91-9310209222',
+            email: 'info@spjcargo.com',
+            emails: ['info@spjcargo.com', 'ashish@spjcargo.com', 'hemant@spjcargo.com'],
+            whatsapp: '+918750194222',
+            office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
+          };
+
           const customerObj = {
             id: user.id,
             code: custScope.customerCode || user.username.toUpperCase(),
@@ -58,6 +70,7 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
             primaryHub: matchedLocal?.primaryHub || 'DADRI-ALLCARGO',
             activeTerminals: matchedLocal?.activeTerminals || ['TRANSWORLD-DADRI', 'DADRI-ALLCARGO', 'NHAVA SHEVA'],
             exactStats: matchedLocal?.exactStats || null,
+            relationshipManager: matchedLocal?.relationshipManager || defaultRm,
             token: data.token
           };
 
