@@ -77,12 +77,7 @@ export default function CustomerTrackingView({
     if (e) e.preventDefault();
     const clean = searchInput.trim().toUpperCase();
     if (!clean) return;
-
-    setIsSearching(true);
-    setTimeout(() => {
-      setSearchedContainer(clean);
-      setIsSearching(false);
-    }, 250);
+    setSearchedContainer(clean);
   };
 
   const handleReset = () => {

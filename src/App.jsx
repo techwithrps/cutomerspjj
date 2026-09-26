@@ -254,7 +254,7 @@ export default function App() {
           <CustomerTrackingView
             customer={currentCustomer}
             prefilledQuery={trackingQuery}
-            containers={liveContainers}
+            containers={allContainerTrips}
             invoices={sortedCustomerInvoices}
             initialSubTab="pipeline"
           />
@@ -264,7 +264,7 @@ export default function App() {
           <CustomerTrackingView
             customer={currentCustomer}
             prefilledQuery={trackingQuery}
-            containers={liveContainers}
+            containers={allContainerTrips}
             invoices={sortedCustomerInvoices}
             initialSubTab="gr_fleet"
           />
