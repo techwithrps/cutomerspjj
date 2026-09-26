@@ -150,9 +150,9 @@ export default function InvoiceCardsView({
       let matchesStatus = true;
       const st = (inv.status || '').toLowerCase();
       if (statusFilter === 'PAID') {
-        matchesStatus = st === 'paid';
-      } else if (statusFilter === 'PENDING') {
-        matchesStatus = st.includes('pending') || st.includes('due') || st.includes('hold');
+        matchesStatus = st === 'paid' || st === 'cleared' || st === 'settled';
+      } else if (statusFilter === 'PENDING' || statusFilter === 'OUTSTANDING') {
+        matchesStatus = st !== 'paid' && st !== 'cleared' && st !== 'settled';
       } else if (statusFilter === 'CREDIT') {
         matchesStatus = st.includes('credit') || st.includes('refund') || st.includes('rebate') || st.includes('adjust');
       }
@@ -189,12 +189,26 @@ export default function InvoiceCardsView({
 
   // Exact 100% Dynamic Tab Counts calculated directly from loaded invoices
   const countAll = allInvoices.length;
-  const countPaid = allInvoices.filter(i => (i.status || '').toLowerCase() === 'paid').length;
-  const countPending = allInvoices.filter(i => (i.status || '').toLowerCase().includes('pending') || (i.status || '').toLowerCase().includes('due') || (i.status || '').toLowerCase().includes('hold')).length;
+  const countPaid = allInvoices.filter(i => {
+    const s = (i.status || '').toLowerCase();
+    return s === 'paid' || s === 'cleared' || s === 'settled';
+  }).length;
+  const countPending = allInvoices.filter(i => {
+    const s = (i.status || '').toLowerCase();
+    return s !== 'paid' && s !== 'cleared' && s !== 'settled';
+  }).length;
   const countCredit = allInvoices.filter(i => (i.status || '').toLowerCase().includes('credit') || (i.status || '').toLowerCase().includes('refund') || (i.status || '').toLowerCase().includes('rebate') || (i.status || '').toLowerCase().includes('adjust')).length;
 
-  const totalPaid = allInvoices.filter(i => (i.status || '').toLowerCase() === 'paid').reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-  const totalPending = allInvoices.filter(i => (i.status || '').toLowerCase().includes('pending') || (i.status || '').toLowerCase().includes('due')).reduce((sum, i) => sum + (i.totalAmount || 0), 0) || (countPending > 0 ? totalBilled : 0);
+  const totalPaid = allInvoices.filter(i => {
+    const s = (i.status || '').toLowerCase();
+    return s === 'paid' || s === 'cleared' || s === 'settled';
+  }).reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  
+  const totalPending = allInvoices.filter(i => {
+    const s = (i.status || '').toLowerCase();
+    return s !== 'paid' && s !== 'cleared' && s !== 'settled';
+  }).reduce((sum, i) => sum + (i.totalAmount || 0), 0) || (countPending > 0 ? totalBilled : 0);
+  
   const totalContainers = new Set(allInvoices.map(i => i.containerNo).filter(Boolean)).size || Math.round(allInvoices.length * 0.8);
 
   // Exact pagination based on real filtered items
@@ -248,7 +262,7 @@ export default function InvoiceCardsView({
           </div>
         </div>
 
-        {/* Card 3: Pending Outstanding Payment */}
+        {/* Card 3: Outstanding Dues */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-amber-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -262,7 +276,7 @@ export default function InvoiceCardsView({
             {formatCurrency(totalPending)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Pending Invoices</span>
+            <span>Outstanding Invoices</span>
             <span className="font-bold text-amber-600">{countPending} Due</span>
           </div>
         </div>
@@ -312,7 +326,7 @@ export default function InvoiceCardsView({
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {[
               { id: 'ALL', label: `All Invoices (${countAll})` },
-              { id: 'PENDING', label: `Pending Dues (${countPending})` },
+              { id: 'PENDING', label: `Outstanding Dues (${countPending})` },
               { id: 'PAID', label: `Paid & Cleared (${countPaid})` },
               { id: 'CREDIT', label: `Credit Notes (${countCredit})` },
             ].map((tab) => {
