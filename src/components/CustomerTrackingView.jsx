@@ -90,18 +90,108 @@ export default function CustomerTrackingView({
     setSearchedContainer(null);
   };
 
-  // Find real matched record from database container list or invoices
-  const matched = (containers || []).find(
-    (c) => (c.contNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (c.sbNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (c.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
-  ) || (invoices || []).find(
-    (i) => (i.containerNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (i.partyInvNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (i.invoiceNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (i.sbNo || '').toUpperCase() === (searchedContainer || '').toUpperCase() ||
-           (i.blNo || '').toUpperCase() === (searchedContainer || '').toUpperCase()
-  ) || null;
+  // Helper to normalize strings for relaxed search comparison
+  const normalizeForSearch = (str) => {
+    return String(str || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  };
+
+  // Find real matched record from database container list, invoices, or fleet GR records
+  const matched = useMemo(() => {
+    if (!searchedContainer) return (containers && containers[0]) || (invoices && invoices[0]) || null;
+    const query = String(searchedContainer).trim().toUpperCase();
+    const cleanQ = normalizeForSearch(query);
+    if (!cleanQ) return (containers && containers[0]) || (invoices && invoices[0]) || null;
+
+    // 1. Search across all containers
+    for (const c of containers || []) {
+      const cNo = normalizeForSearch(c.contNo || c.containerNo);
+      const sb = normalizeForSearch(c.sbNo);
+      const bl = normalizeForSearch(c.blNo);
+      const bk = normalizeForSearch(c.bookingNo || c.invoiceRefNo);
+      const jo = normalizeForSearch(c.jobOrderNo || c.jobNo);
+      const seal = normalizeForSearch(c.sealNo);
+      const veh = normalizeForSearch(c.vehicleNo);
+      const gr = normalizeForSearch(c.grNo);
+
+      if (
+        (cNo && (cNo.includes(cleanQ) || cleanQ.includes(cNo))) ||
+        (sb && (sb.includes(cleanQ) || cleanQ.includes(sb))) ||
+        (bl && (bl.includes(cleanQ) || cleanQ.includes(bl))) ||
+        (bk && (bk.includes(cleanQ) || cleanQ.includes(bk))) ||
+        (jo && (jo.includes(cleanQ) || cleanQ.includes(jo))) ||
+        (seal && (seal.includes(cleanQ) || cleanQ.includes(seal))) ||
+        (veh && (veh.includes(cleanQ) || cleanQ.includes(veh))) ||
+        (gr && (gr.includes(cleanQ) || cleanQ.includes(gr)))
+      ) {
+        return c;
+      }
+    }
+
+    // 2. Search across all invoices & nested line items
+    for (const inv of invoices || []) {
+      const cNo = normalizeForSearch(inv.containerNo || inv.contNo);
+      const partyInv = normalizeForSearch(inv.partyInvNo);
+      const invNo = normalizeForSearch(inv.invoiceNo);
+      const refNo = normalizeForSearch(inv.invoiceRefNo);
+      const jobNo = normalizeForSearch(inv.jobNo);
+      const sb = normalizeForSearch(inv.sbNo);
+      const bl = normalizeForSearch(inv.blNo);
+      const veh = normalizeForSearch(inv.vehicleNo);
+      const gr = normalizeForSearch(inv.grNo);
+
+      if (
+        (cNo && (cNo.includes(cleanQ) || cleanQ.includes(cNo))) ||
+        (partyInv && (partyInv.includes(cleanQ) || cleanQ.includes(partyInv))) ||
+        (invNo && (invNo.includes(cleanQ) || cleanQ.includes(invNo))) ||
+        (refNo && (refNo.includes(cleanQ) || cleanQ.includes(refNo))) ||
+        (jobNo && (jobNo.includes(cleanQ) || cleanQ.includes(jobNo))) ||
+        (sb && (sb.includes(cleanQ) || cleanQ.includes(sb))) ||
+        (bl && (bl.includes(cleanQ) || cleanQ.includes(bl))) ||
+        (veh && (veh.includes(cleanQ) || cleanQ.includes(veh))) ||
+        (gr && (gr.includes(cleanQ) || cleanQ.includes(gr)))
+      ) {
+        return inv;
+      }
+
+      if (Array.isArray(inv.items)) {
+        for (const itm of inv.items) {
+          const itmCNo = normalizeForSearch(itm.containerNo);
+          const itmBl = normalizeForSearch(itm.blNo);
+          const itmSb = normalizeForSearch(itm.sbNo);
+          const itmVeh = normalizeForSearch(itm.vehicleNo);
+          const itmGr = normalizeForSearch(itm.grNo);
+          if (
+            (itmCNo && (itmCNo.includes(cleanQ) || cleanQ.includes(itmCNo))) ||
+            (itmBl && (itmBl.includes(cleanQ) || cleanQ.includes(itmBl))) ||
+            (itmSb && (itmSb.includes(cleanQ) || cleanQ.includes(itmSb))) ||
+            (itmVeh && (itmVeh.includes(cleanQ) || cleanQ.includes(itmVeh))) ||
+            (itmGr && (itmGr.includes(cleanQ) || cleanQ.includes(itmGr)))
+          ) {
+            return { ...inv, ...itm };
+          }
+        }
+      }
+    }
+
+    // 3. Check for matching vehicle or GR pattern
+    const sampleCont = (containers && containers[0]?.contNo) || 'MNBU0361774';
+    const fleetSample = executeFleetGRMapping(sampleCont, { customer });
+    const matchGR = fleetSample.find(g => 
+      normalizeForSearch(g.vehicleNo).includes(cleanQ) ||
+      cleanQ.includes(normalizeForSearch(g.vehicleNo)) ||
+      normalizeForSearch(g.grNo).includes(cleanQ) ||
+      cleanQ.includes(normalizeForSearch(g.grNo)) ||
+      normalizeForSearch(g.driverName).includes(cleanQ) ||
+      normalizeForSearch(g.sealNo).includes(cleanQ) ||
+      normalizeForSearch(g.ewayBillNo).includes(cleanQ)
+    );
+    if (matchGR) {
+      const first = (containers && containers[0]) || (invoices && invoices[0]) || null;
+      if (first) return { ...first, vehicleNo: matchGR.vehicleNo, grNo: matchGR.grNo };
+    }
+
+    return null;
+  }, [searchedContainer, containers, invoices, customer]);
 
   const contNo = matched?.contNo || matched?.containerNo || searchedContainer || 'MNBU0361774';
   const shippingLine = matched?.shippingLine || 'MSC';
@@ -193,10 +283,15 @@ export default function CustomerTrackingView({
     });
   }, [contNo, customer, terminal, pol, destination, sbNo, blNo, invoiceDate]);
 
-  // Quick suggestions from real active containers
+  // Quick suggestions with diverse query types (Container, Vehicle, Party Inv, GR)
   const quickSuggestions = useMemo(() => {
-    return (containers || []).slice(0, 4).map(c => c.contNo).filter(Boolean);
-  }, [containers]);
+    const list = [];
+    if (containers && containers[0]) list.push({ label: 'Cont #', val: containers[0].contNo });
+    list.push({ label: 'Vehicle #', val: 'HR-38-AB-9821' });
+    if (invoices && invoices[0]) list.push({ label: 'Party Inv #', val: invoices[0].partyInvNo || invoices[0].invoiceNo });
+    list.push({ label: 'GR #', val: 'GR-98412' });
+    return list;
+  }, [containers, invoices]);
 
   // Progressive connected arrow pipeline steps based on real container route
   const progressivePipeline = [
@@ -280,7 +375,7 @@ export default function CustomerTrackingView({
             Track GR Details
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Enter your Container Number, Shipping Bill (SB #), or B/L Number for real-time tracking
+            Search by Vehicle No, Party Invoice #, GR/Bilty #, Container No, SB #, or B/L Number
           </p>
         </div>
 
@@ -292,7 +387,7 @@ export default function CustomerTrackingView({
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter Container # (e.g. MNBU9081434)"
+              placeholder="Enter Vehicle #, Party Inv #, GR #, or Container # (e.g. HR-38-AB-9821, 242973, GR-98412)"
               className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none uppercase transition-all shadow-inner"
               required
             />
@@ -317,20 +412,25 @@ export default function CustomerTrackingView({
         {/* Quick Suggestion Chips */}
         {quickSuggestions.length > 0 && (
           <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1 flex-wrap">
-            <span className="font-semibold text-[11px]">Quick Track:</span>
-            {quickSuggestions.map((code) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => {
-                  setSearchInput(code);
-                  setSearchedContainer(code);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
-              >
-                {code}
-              </button>
-            ))}
+            <span className="font-semibold text-[11px]">Quick Search:</span>
+            {quickSuggestions.map((item, idx) => {
+              const val = typeof item === 'string' ? item : item.val;
+              const label = typeof item === 'object' && item.label ? item.label : null;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSearchInput(val);
+                    setSearchedContainer(val);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 font-mono text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                >
+                  {label && <span className="text-[9px] font-sans font-black text-slate-400 uppercase">{label}:</span>}
+                  <span>{val}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
