@@ -9,12 +9,16 @@
 import dbStore from '../data/dbStore.json';
 
 /**
- * Deterministic hash seed generator from string
+ * High-entropy deterministic hash generator for container IDs
  */
-function getSeed(str) {
-  return String(str || 'MNBU0361774')
-    .split('')
-    .reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+function getHighEntropyHash(str, salt = 0) {
+  let hash = 5381 + salt;
+  const s = String(str || 'MNBU0361774').toUpperCase().trim();
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) + hash) + s.charCodeAt(i) * (i + 17);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
 }
 
 /**
@@ -45,25 +49,68 @@ function addDaysToDateStr(dateStr, days) {
 }
 
 /**
- * Driver registry for realistic multimodal fleet assignments
+ * 30+ Diverse Registered Commercial Heavy Trailer Drivers
  */
 const DRIVER_POOL = [
-  { name: 'Rameshwar Singh Yadav', phone: '+91 98712 44921', dl: 'DL-04201809281', state: 'HR' },
-  { name: 'Sunil Kumar Gujjar', phone: '+91 98108 55219', dl: 'HR-38201900482', state: 'HR' },
+  { name: 'Rameshwar Singh Yadav', phone: '+91 98712 44921', dl: 'HR-38201809281', state: 'HR' },
+  { name: 'Sunil Kumar Gujjar', phone: '+91 98108 55219', dl: 'HR-55201900482', state: 'HR' },
   { name: 'Manpreet Singh Sandhu', phone: '+91 98761 22910', dl: 'PB-02201600812', state: 'PB' },
   { name: 'Mohd. Irfan Qureshi', phone: '+91 98914 77312', dl: 'UP-78201700941', state: 'UP' },
   { name: 'Rajendra Prasad Meena', phone: '+91 98290 66418', dl: 'RJ-14201800319', state: 'RJ' },
   { name: 'Virender Singh Rawat', phone: '+91 98119 88320', dl: 'UK-07201500249', state: 'UK' },
   { name: 'Dharmendra Yadav', phone: '+91 98188 33419', dl: 'DL-1M202000512', state: 'DL' },
-  { name: 'Gurpreet Singh', phone: '+91 98110 33812', dl: 'UP-78201500392', state: 'UP' },
-  { name: 'Balvinder Singh Gill', phone: '+91 98723 11840', dl: 'PB-65201400192', state: 'PB' },
-  { name: 'Harish Chandra Pant', phone: '+91 98102 99401', dl: 'UP-32201600843', state: 'UP' }
+  { name: 'Gurpreet Singh Dhillon', phone: '+91 98110 33812', dl: 'PB-65201500392', state: 'PB' },
+  { name: 'Balvinder Singh Gill', phone: '+91 98723 11840', dl: 'PB-10201400192', state: 'PB' },
+  { name: 'Harish Chandra Pant', phone: '+91 98102 99401', dl: 'UP-32201600843', state: 'UP' },
+  { name: 'Jagdish Chand Sharma', phone: '+91 98281 44520', dl: 'RJ-02201700291', state: 'RJ' },
+  { name: 'Satyendra Kumar Singh', phone: '+91 98991 77203', dl: 'UP-14201900612', state: 'UP' },
+  { name: 'Kuldeep Singh Chauhan', phone: '+91 98120 55182', dl: 'HR-26201600450', state: 'HR' },
+  { name: 'Naresh Pal Prajapati', phone: '+91 98371 66290', dl: 'UP-81201800921', state: 'UP' },
+  { name: 'Jaswant Singh Brar', phone: '+91 98782 11940', dl: 'PB-03201500731', state: 'PB' },
+  { name: 'Ashok Kumar Saini', phone: '+91 98294 33819', dl: 'RJ-18201700382', state: 'RJ' },
+  { name: 'Mukesh Chandra Joshi', phone: '+91 98370 88210', dl: 'UK-04201900118', state: 'UK' },
+  { name: 'Ravindra Nath Tiwari', phone: '+91 98391 22401', dl: 'UP-70201400582', state: 'UP' },
+  { name: 'Harpreet Singh Sodhi', phone: '+91 98141 77390', dl: 'PB-11201800290', state: 'PB' },
+  { name: 'Devendra Kumar Bhati', phone: '+91 98132 88401', dl: 'HR-30202000419', state: 'HR' },
+  { name: 'Shakeel Ahmed Khan', phone: '+91 98971 33490', dl: 'UP-80201600912', state: 'UP' },
+  { name: 'Bhagwan Das Gurjar', phone: '+91 98299 44102', dl: 'RJ-05201500281', state: 'RJ' },
+  { name: 'Paramjit Singh Kahlon', phone: '+91 98760 33819', dl: 'PB-08201700620', state: 'PB' },
+  { name: 'Manoj Kumar Mishra', phone: '+91 98381 66209', dl: 'UP-53201900741', state: 'UP' },
+  { name: 'Bhupinder Singh Sidhu', phone: '+91 98150 22910', dl: 'PB-30201400381', state: 'PB' },
+  { name: 'Sandeep Kumar Verma', phone: '+91 98124 77319', dl: 'HR-12201800590', state: 'HR' },
+  { name: 'Rajeshwar Dayal', phone: '+91 98115 99420', dl: 'DL-08201600210', state: 'DL' },
+  { name: 'Surinder Pal Singh', phone: '+91 98789 44109', dl: 'PB-12201900812', state: 'PB' },
+  { name: 'Dilbagh Singh Randhawa', phone: '+91 98140 88319', dl: 'PB-06201500492', state: 'PB' },
+  { name: 'Arvind Kumar Maurya', phone: '+91 98399 11402', dl: 'UP-65202000319', state: 'UP' }
 ];
 
 /**
- * Trailer vehicle registry
+ * 12+ Diverse Registered Transporters
  */
-const VEHICLE_PREFIXES = ['HR-38-AB', 'HR-55-E', 'UP-78-BT', 'UP-14-CC', 'NL-01-AF', 'RJ-14-GC', 'DL-1M-AA', 'PB-02-CX'];
+const TRANSPORTERS_POOL = [
+  'SPJ REEFER LOGISTICS FLEET (NORTH CORRIDOR)',
+  'SPJ HEAVY MULTIMODAL FREIGHTWAYS',
+  'TRANSWORLD INTERMODAL CARRIER FLEET',
+  'NORTHERN AGRO COLD CHAIN LOGISTICS',
+  'DELHI-NCR HEAVY ROADWAYS CO.',
+  'GUJARAT-PUNJAB REEFER FREIGHTWAYS',
+  'MUNDRA-JNPT GATEWAY HIGHWAY FLEET',
+  'WESTERN DEDICATED REEFER LINES',
+  'SPEEDWAYS REFRIGERATED TRANSPORT CO.',
+  'SHREE BALAJI MULTIMODAL LOGISTICS',
+  'CAPITAL REEFER CARRIERS LTD',
+  'HARYANA-MUNDRA COLD FREIGHT FLEET'
+];
+
+/**
+ * Trailer vehicle series registration prefixes
+ */
+const VEHICLE_PREFIXES = [
+  'HR-38-AB', 'HR-55-E', 'UP-78-BT', 'UP-14-CC', 
+  'NL-01-AF', 'RJ-14-GC', 'DL-1M-AA', 'PB-02-CX',
+  'GJ-12-AY', 'MH-46-CL', 'UK-07-EA', 'MP-09-GF',
+  'RJ-02-EB', 'HR-26-DA', 'PB-10-DF'
+];
 
 /**
  * Overseas Consignee Resolver based on Seaport Destination
@@ -170,7 +217,7 @@ export function executeMovementHistorySummary(partyInvoiceNo) {
  */
 export function executeMovementHistoryPK(contNo, context = {}) {
   const cNo = (contNo || context.contNo || context.containerNo || 'MNBU0361774').toUpperCase().trim();
-  const seed = getSeed(cNo);
+  const seed = getHighEntropyHash(cNo, 101);
 
   const line = context.shippingLine || (seed % 3 === 0 ? 'MAERSK' : seed % 3 === 1 ? 'MSC' : 'CMA CGM');
   const term = context.terminal || (seed % 2 === 0 ? 'TRANSWORLD-DADRI' : 'KANPUR-JRY');
@@ -186,10 +233,11 @@ export function executeMovementHistoryPK(contNo, context = {}) {
   const bookingNo = context.bookingNo || `BK-${line.slice(0, 3)}-${890000 + (seed % 9999)}`;
   const vesselName = `${line} SASKIA A / VOY ${26 + (seed % 10)}W`;
   
-  // Dynamic vehicle & driver for this container
+  // Dynamic vehicle, driver and transporter for this container
   const vPrefix = VEHICLE_PREFIXES[seed % VEHICLE_PREFIXES.length];
   const vehicleNo = context.vehicleNo || `${vPrefix}-${1000 + (seed % 8999)}`;
   const driver = DRIVER_POOL[seed % DRIVER_POOL.length];
+  const transporter = TRANSPORTERS_POOL[seed % TRANSPORTERS_POOL.length];
   const grNo = context.grNo || `GR-${98000 + (seed % 1900)}`;
 
   // Base dates calculated dynamically
@@ -271,7 +319,7 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       PHASE: 'Fleet Transport',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'ALLOTMENT DATE',
-      DOC_NO: 'SPJ REEFER LOGISTICS FLEET',
+      DOC_NO: transporter,
       ACTIVITY_DATE: dAllot,
       REMARKS: `Gen-set mounted trailer ${vehicleNo} assigned under Driver ${driver.name}`,
       CREATED_BY: 'FLEET_HEAD',
@@ -326,7 +374,7 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       PHASE: 'Factory Movement',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'ICD OUT DATE',
-      DOC_NO: 'SPJ HEAVY LOGISTICS PVT LTD',
+      DOC_NO: transporter,
       ACTIVITY_DATE: `${dPickup} 14:15`,
       REMARKS: `Trailer ${vehicleNo} departed ${term} for Shipper Processing Plant`,
       CREATED_BY: 'GATE_SECURITY',
@@ -392,7 +440,7 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       PHASE: 'Plant Stuffing',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'FACTORY IN DATE',
-      DOC_NO: 'SPJ REEFER FLEET',
+      DOC_NO: transporter,
       ACTIVITY_DATE: `${dStuffing} 14:30`,
       REMARKS: 'Temperature verification: -18.4°C core temperature OK',
       CREATED_BY: 'QC_INSPECTOR',
@@ -403,7 +451,7 @@ export function executeMovementHistoryPK(contNo, context = {}) {
       PHASE: 'Plant Stuffing',
       DOC_TYPE: 'EXPORT',
       ACTIVITY_NAME: 'FACTORY OUT DATE',
-      DOC_NO: 'SPJ REEFER FLEET',
+      DOC_NO: transporter,
       ACTIVITY_DATE: `${dStuffing} 21:00`,
       REMARKS: `Stuffing complete. High-security bottle seal applied: SPJ-SEAL-${890000 + (seed % 99999)}`,
       CREATED_BY: 'QC_INSPECTOR',
@@ -712,43 +760,57 @@ export function executeMovementHistoryPK(contNo, context = {}) {
 }
 
 /**
- * Generates detailed, unique FLEET_GR_MAPPING records for any container or customer
+ * Generates detailed, completely unique FLEET_GR_MAPPING records for any container or customer
  * @param {string} contNo - Container Number
- * @param {Object} context - Optional matched invoice/container context
+ * @param {Object} context - Matched invoice/container context
  * @returns {Array} List of dynamic GR / Bilty Consignment records
  */
 export function executeFleetGRMapping(contNo, context = {}) {
   const cNo = (contNo || context.contNo || context.containerNo || 'MNBU0361774').toUpperCase().trim();
-  const seed = getSeed(cNo);
+  
+  // Independent high-entropy seeds for different trip legs
+  const s1 = getHighEntropyHash(cNo, 211);
+  const s2 = getHighEntropyHash(cNo, 439);
+  const s3 = getHighEntropyHash(cNo, 773);
 
   const shipper = context.customerName || context.customer?.name || 'MARHABA FROZEN FOODS-HR';
-  const terminal = context.terminal || (seed % 2 === 0 ? 'TRANSWORLD-DADRI' : 'KANPUR-JRY');
+  const terminal = context.terminal || (s1 % 2 === 0 ? 'TRANSWORLD-DADRI' : 'KANPUR-JRY');
   const pol = context.pol || context.portOfLoading || (terminal.includes('KANPUR') ? 'MUNDRA MDCC' : 'JNPT Nhava Sheva');
-  const pod = context.destination || context.destinationPort || (seed % 4 === 0 ? 'ALEXANDRIA - EGYPT' : seed % 4 === 1 ? 'JEBEL ALI - UAE' : seed % 4 === 2 ? 'JEDDAH - SAUDI ARABIA' : 'AQABA - JORDAN');
-  const line = context.shippingLine || (seed % 3 === 0 ? 'MAERSK' : seed % 3 === 1 ? 'MSC' : 'CMA CGM');
+  const pod = context.destination || context.destinationPort || (s1 % 4 === 0 ? 'ALEXANDRIA - EGYPT' : s1 % 4 === 1 ? 'JEBEL ALI - UAE' : s1 % 4 === 2 ? 'JEDDAH - SAUDI ARABIA' : 'AQABA - JORDAN');
+  const line = context.shippingLine || (s1 % 3 === 0 ? 'MAERSK' : s1 % 3 === 1 ? 'MSC' : 'CMA CGM');
   const baseDate = context.inDate || context.date || '25/09/2026';
 
-  // Dynamic Driver & Vehicle #1 (Loaded Factory Stuffing Trip)
-  const vPrefix1 = VEHICLE_PREFIXES[seed % VEHICLE_PREFIXES.length];
-  const vehicleNo1 = context.vehicleNo || `${vPrefix1}-${1000 + (seed % 8999)}`;
-  const driver1 = DRIVER_POOL[seed % DRIVER_POOL.length];
-  const grNo1 = context.grNo || `GR-${98000 + (seed % 1900)}`;
+  // 1. Trip Leg 1: Main Export Factory Stuffing & Multimodal Dispatch Leg
+  const vPrefix1 = VEHICLE_PREFIXES[s1 % VEHICLE_PREFIXES.length];
+  const vehicleNo1 = context.vehicleNo || `${vPrefix1}-${1000 + (s1 % 8999)}`;
+  const driver1 = DRIVER_POOL[s1 % DRIVER_POOL.length];
+  const transporter1 = TRANSPORTERS_POOL[s1 % TRANSPORTERS_POOL.length];
+  const grNo1 = context.grNo || `GR-${98000 + (s1 % 1900)}`;
+  const ewayBill1 = `2418 ${9000 + (s1 % 999)} ${1000 + ((s1 * 7) % 8999)}`;
+  const sealNo1 = `SPJ-SEAL-${890000 + (s1 % 99999)} / LINE-${line}-${10000 + ((s1 * 3) % 89999)}`;
+  const grossWeightVal1 = (28.6 + ((s1 % 15) * 0.07)).toFixed(3);
+  const netWeightVal1 = (parseFloat(grossWeightVal1) - 0.72).toFixed(3);
+  const pkgs1 = 1380 + (s1 % 120);
 
-  // Dynamic Driver & Vehicle #2 (Empty Yard Placement Trip)
-  const vPrefix2 = VEHICLE_PREFIXES[(seed + 3) % VEHICLE_PREFIXES.length];
-  const vehicleNo2 = `${vPrefix2}-${1000 + ((seed * 7) % 8999)}`;
-  const driver2 = DRIVER_POOL[(seed + 4) % DRIVER_POOL.length];
-  const grNo2 = `GR-${97000 + ((seed * 3) % 1900)}`;
+  // 2. Trip Leg 2: Gateway Railhead / Port Rake Connecting Transport
+  const vPrefix2 = VEHICLE_PREFIXES[s2 % VEHICLE_PREFIXES.length];
+  const vehicleNo2 = `${vPrefix2}-${1000 + (s2 % 8999)}`;
+  const driver2 = DRIVER_POOL[s2 % DRIVER_POOL.length];
+  const transporter2 = TRANSPORTERS_POOL[s2 % TRANSPORTERS_POOL.length];
+  const grNo2 = `GR-${96000 + (s2 % 1900)}`;
+  const ewayBill2 = `2418 ${9000 + (s2 % 999)} ${1000 + ((s2 * 11) % 8999)}`;
+  const sealNo2 = `SPJ-GATEWAY-${780000 + (s2 % 99999)}`;
 
-  const ewayBill1 = `2418 ${9000 + (seed % 999)} ${1000 + ((seed * 7) % 8999)}`;
-  const ewayBill2 = `2418 ${9000 + ((seed + 5) % 999)} ${1000 + ((seed * 11) % 8999)}`;
-  const sealNo1 = `SPJ-SEAL-${890000 + (seed % 99999)} / LINE-${line}-${10000 + ((seed * 3) % 89999)}`;
-  const sealNo2 = `YARD-SURVEY-PASS-${String(900 + (seed % 99)).padStart(4, '0')}`;
+  // 3. Trip Leg 3: Empty Container Placement & Yard Repositioning
+  const vPrefix3 = VEHICLE_PREFIXES[s3 % VEHICLE_PREFIXES.length];
+  const vehicleNo3 = `${vPrefix3}-${1000 + (s3 % 8999)}`;
+  const driver3 = DRIVER_POOL[s3 % DRIVER_POOL.length];
+  const transporter3 = TRANSPORTERS_POOL[s3 % TRANSPORTERS_POOL.length];
+  const grNo3 = `GR-${94000 + (s3 % 1900)}`;
+  const ewayBill3 = `2418 ${9000 + (s3 % 999)} ${1000 + ((s3 * 13) % 8999)}`;
+  const sealNo3 = `YARD-SURVEY-PASS-${String(900 + (s3 % 99)).padStart(4, '0')}`;
 
   const consignee = resolveConsignee(pod);
-  const grossWeightVal = (28.6 + ((seed % 12) * 0.08)).toFixed(3);
-  const netWeightVal = (parseFloat(grossWeightVal) - 0.72).toFixed(3);
-  const pkgs = 1380 + (seed % 120);
 
   // Status computation for main trip
   let mainStatus = 'In-Transit to Gateway Railhead';
@@ -768,6 +830,7 @@ export function executeFleetGRMapping(contNo, context = {}) {
   }
 
   const dMain = baseDate;
+  const dInter = addDaysToDateStr(baseDate, -4);
   const dEmpty = addDaysToDateStr(baseDate, -10);
 
   return [
@@ -776,10 +839,10 @@ export function executeFleetGRMapping(contNo, context = {}) {
       grDate: `${dMain} 16:30`,
       contNo: cNo,
       contSize: '40 FT HIGH CUBE REEFER',
-      tripType: 'Export Factory Stuffing & Rail Dispatch',
-      transporter: 'SPJ REEFER LOGISTICS FLEET (FLEET-NORTH)',
+      tripType: 'Export Factory Stuffing & Highway Reefer Transit',
+      transporter: transporter1,
       vehicleNo: vehicleNo1,
-      vehicleType: '40FT Multi-Axle Air-Suspension Trailer',
+      vehicleType: '40FT Multi-Axle Air-Suspension Reefer Trailer',
       driverName: driver1.name,
       driverPhone: driver1.phone,
       driverLicense: driver1.dl,
@@ -793,13 +856,13 @@ export function executeFleetGRMapping(contNo, context = {}) {
       ewayBillDate: dMain,
       sealNo: sealNo1,
       cargoDescription: 'Frozen Boneless Buffalo Meat (Halal Certified)',
-      packagesCount: `${pkgs.toLocaleString()} Master Cartons`,
-      netWeight: `${netWeightVal} MT`,
-      grossWeight: `${grossWeightVal} MT`,
+      packagesCount: `${pkgs1.toLocaleString()} Master Cartons`,
+      netWeight: `${netWeightVal1} MT`,
+      grossWeight: `${grossWeightVal1} MT`,
       setTemp: '-18.0°C',
-      actualTemp: `${(-18.0 - ((seed % 7) * 0.1)).toFixed(1)}°C (Optimal)`,
+      actualTemp: `${(-18.0 - ((s1 % 7) * 0.1)).toFixed(1)}°C (Optimal)`,
       gensetType: 'Thermo King / Carrier Clip-on 440V 3-Phase Genset',
-      fuelLevel: `${88 + (seed % 11)}% (Diesel Aux Tank)`,
+      fuelLevel: `${88 + (s1 % 11)}% (Diesel Aux Tank)`,
       status: mainStatus,
       statusCode: mainStatusCode,
       freightBasis: 'Through Multimodal Rate Contract',
@@ -809,25 +872,61 @@ export function executeFleetGRMapping(contNo, context = {}) {
     },
     {
       grNo: grNo2,
-      grDate: `${dEmpty} 10:15`,
+      grDate: `${dInter} 14:10`,
       contNo: cNo,
       contSize: '40 FT HIGH CUBE REEFER',
-      tripType: 'Empty Container Repositioning / Yard Lift',
-      transporter: 'SPJ HEAVY LOGISTICS PVT LTD',
+      tripType: 'ICD Railhead Terminal to Gateway Port Rake Feeder',
+      transporter: transporter2,
       vehicleNo: vehicleNo2,
-      vehicleType: '40FT Semi-Trailer',
+      vehicleType: '40FT Multi-Axle Trailer',
       driverName: driver2.name,
       driverPhone: driver2.phone,
       driverLicense: driver2.dl,
+      consignor: `${shipper} (via ${terminal})`,
+      consignee: consignee,
+      pickupPoint: `${terminal} CFS Staging Area`,
+      stuffingPoint: `${terminal} Customs Inspection Bay`,
+      deliveryPoint: `${pol} Port Staging Yard`,
+      finalPort: pod,
+      ewayBillNo: ewayBill2,
+      ewayBillDate: dInter,
+      sealNo: sealNo2,
+      cargoDescription: 'Frozen Boneless Buffalo Meat (Halal Certified)',
+      packagesCount: `${pkgs1.toLocaleString()} Master Cartons`,
+      netWeight: `${netWeightVal1} MT`,
+      grossWeight: `${grossWeightVal1} MT`,
+      setTemp: '-18.0°C',
+      actualTemp: `${(-18.1 - ((s2 % 6) * 0.1)).toFixed(1)}°C`,
+      gensetType: 'Carrier Transicold Undermount Genset',
+      fuelLevel: `${90 + (s2 % 9)}%`,
+      status: 'Trip Completed & Handed to Rake Wagon',
+      statusCode: 'COMPLETED',
+      freightBasis: 'Through Rate Contract',
+      tollFastag: 'FASTag Verified',
+      epodStatus: 'Terminal EIR Gate-In Cleared',
+      remarks: 'Rail receipt generated under Dedicated Freight Corridor wagon allotment.'
+    },
+    {
+      grNo: grNo3,
+      grDate: `${dEmpty} 10:15`,
+      contNo: cNo,
+      contSize: '40 FT HIGH CUBE REEFER',
+      tripType: 'Empty Container Repositioning & Buffer Yard Lift',
+      transporter: transporter3,
+      vehicleNo: vehicleNo3,
+      vehicleType: '40FT Semi-Trailer',
+      driverName: driver3.name,
+      driverPhone: driver3.phone,
+      driverLicense: driver3.dl,
       consignor: `SPJ CONTAINER DEPOT (${terminal})`,
       consignee: shipper,
       pickupPoint: `${terminal} Empty Buffer Depot`,
       stuffingPoint: `${shipper} Cold Store Plant`,
       deliveryPoint: `${shipper} Dispatch Bay`,
       finalPort: pol,
-      ewayBillNo: ewayBill2,
+      ewayBillNo: ewayBill3,
       ewayBillDate: dEmpty,
-      sealNo: sealNo2,
+      sealNo: sealNo3,
       cargoDescription: 'Empty Pre-Trip Inspected (PTI OK) Reefer Shell',
       packagesCount: 'N/A (Empty)',
       netWeight: '4.820 MT (Tare Weight)',
