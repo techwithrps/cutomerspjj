@@ -200,6 +200,9 @@ export default function CustomerTrackingView({
   const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
   const sbNo = matched?.sbNo || '6741363';
   const blNo = matched?.blNo || 'MEDU1192973';
+  const invoiceDate = matched?.inDate || matched?.date || '25/09/2026';
+  const sizeType = `${matched?.size || matched?.containerSize || '40 FT'} ${matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : '40 FT HC')}`;
+  const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
   const isRailRoute = useMemo(() => {
     const term = (terminal || '').toUpperCase();
     return term.includes('DADRI') || term.includes('KANPUR') || term.includes('PANKI') || term.includes('ICD') || term.includes('JRY') || term.includes('TUGHLAKABAD') || term.includes('SONEPAT');
