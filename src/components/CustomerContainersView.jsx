@@ -60,6 +60,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
       (c.icdInDate || '').toLowerCase().includes(s) ||
       (c.trainOutDate || '').toLowerCase().includes(s) ||
       (c.sailedDate || '').toLowerCase().includes(s) ||
+      (c.dischargeDate || '').toLowerCase().includes(s) ||
       (c.sbDate || '').toLowerCase().includes(s)
     );
   });
@@ -332,6 +333,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                         <th className="py-3.5 px-3">Gate-In Date</th>
                         <th className="py-3.5 px-3">Train Out Date</th>
                         <th className="py-3.5 px-3">Sailed Date</th>
+                        <th className="py-3.5 px-3">Discharge Date</th>
                         <th className="py-3.5 px-3">Shipping Bill #</th>
                         <th className="py-3.5 px-3">Terminal / POL</th>
                         <th className="py-3.5 px-3">Destination</th>
@@ -350,7 +352,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                               </span>
                               <button
                                 onClick={() => handleCopy(item.contNo, item.contNo)}
-                                className="text-slate-400 hover:text-slate-700 p-0.5"
+                                className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
                                 title="Copy"
                               >
                                 {copiedId === item.contNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -379,6 +381,20 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                           </td>
 
                           <td className="py-3.5 px-3">
+                            {item.dischargeDate ? (
+                              <div>
+                                <span className="font-mono font-bold text-slate-900 block">{item.dischargeDate}</span>
+                                <span className="text-[9px] font-bold text-emerald-600 block">Discharged</span>
+                              </div>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                In-Transit (Live)
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-3">
                             <span className="font-mono font-bold text-blue-700 block">{item.sbNo || '-'}</span>
                             <span className="text-[10px] text-slate-400 font-mono">Date: {item.sbDate || item.inDate || '-'}</span>
                           </td>
@@ -399,7 +415,11 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                           </td>
 
                           <td className="py-3.5 px-3">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap inline-block">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap inline-block ${
+                              item.dischargeDate 
+                                ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
                               {item.status}
                             </span>
                           </td>
@@ -411,7 +431,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                                   onNavigateTrack(item.contNo);
                                 }
                               }}
-                              className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs shadow-xs transition-all cursor-pointer inline-flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0b1329] to-[#0284c7] hover:opacity-95 text-white font-black text-xs shadow-xs transition-all cursor-pointer inline-flex items-center gap-1"
                             >
                               <Navigation className="w-3 h-3" />
                               <span>Track</span>
