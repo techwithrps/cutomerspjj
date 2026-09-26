@@ -345,6 +345,57 @@ export default function CustomerTrackingView({
     return list.slice(0, 5);
   }, [containers]);
 
+  // 1. SP_MOVEMENT_HISTORY_PK (45-Step Sequential Ledger)
+  const rawOracleSteps = useMemo(() => {
+    return executeMovementHistoryPK(contNo, {
+      ...matched,
+      customerName: customer?.name,
+      partyInvNo: matched?.partyInvNo || matched?.invoiceNo,
+      sbNo: sbNo,
+      blNo: blNo,
+      destination: destination,
+      shippingLine: shippingLine,
+      terminal: terminal,
+      pol: pol
+    });
+  }, [contNo, matched, customer, sbNo, blNo, destination, shippingLine, terminal, pol]);
+
+  const filteredOracleSteps = useMemo(() => {
+    return rawOracleSteps.filter(step => {
+      const matchPhase = oraclePhaseFilter === 'ALL' || step.PHASE === oraclePhaseFilter;
+      const term = oracleSearchTerm.toLowerCase().trim();
+      const matchSearch = !term || (
+        (step.ACTIVITY_NAME || '').toLowerCase().includes(term) ||
+        (step.EVENT_DETAILS || '').toLowerCase().includes(term) ||
+        (step.DEPARTMENT || '').toLowerCase().includes(term) ||
+        (step.LOCATION || '').toLowerCase().includes(term) ||
+        (step.PHASE || '').toLowerCase().includes(term) ||
+        String(step.SR_NO).includes(term)
+      );
+      return matchPhase && matchSearch;
+    });
+  }, [rawOracleSteps, oraclePhaseFilter, oracleSearchTerm]);
+
+  // 2. SPJ Fleet GR & Bilty Consignment Records
+  const fleetGRRecords = useMemo(() => {
+    return executeFleetGRMapping(contNo, {
+      ...matched,
+      customer,
+      terminal,
+      pol,
+      destination,
+      shippingLine,
+      sbNo,
+      blNo
+    });
+  }, [contNo, matched, customer, terminal, pol, destination, shippingLine, sbNo, blNo]);
+
+  // 3. SP_MOVEMENT_HISTORY_SUMMARY (Party Invoice Summary Cursor)
+  const invoiceSummaryRecords = useMemo(() => {
+    const invKey = matched?.partyInvNo || matched?.invoiceNo || contNo;
+    return executeMovementHistorySummary(invKey);
+  }, [matched, contNo]);
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
 
