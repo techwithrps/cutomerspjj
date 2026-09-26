@@ -277,7 +277,7 @@ export default function CustomerTrackingView({
             SPJ Multimodal Track & Trace
           </div>
           <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 tracking-tight">
-            Track Cargo & Container Status
+            Track GR Details
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Enter your Container Number, Shipping Bill (SB #), or B/L Number for real-time tracking
