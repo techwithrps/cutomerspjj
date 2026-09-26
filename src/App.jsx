@@ -91,24 +91,36 @@ export default function App() {
       return `${day}/${month}/${year}`;
     };
 
+    // Parse invoice date or fallback
+    let parsedDate = null;
+    const rawDateStr = inv.date || inv.createdOn || inv.invoiceDate;
+    if (rawDateStr) {
+      const dmy = String(rawDateStr).trim().match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (dmy) {
+        parsedDate = new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+      } else {
+        const t = new Date(rawDateStr);
+        if (!isNaN(t.getTime())) parsedDate = t;
+      }
+    }
+
     let gateInDate, trainDate, sailDate, dischargeDate;
 
     if (isLive) {
-      // Recent Live Containers (Mid to late September 2026)
+      // Recent Live Containers (Mid to late September 2026, In-Transit)
       const daysAgo = Math.floor(idx * 0.2); // 0 to 9 days ago
-      const gDate = new Date(2026, 8, 25 - daysAgo);
+      const gDate = parsedDate || new Date(2026, 8, 25 - daysAgo);
       gateInDate = inv.icdInDate || formatD(gDate);
       trainDate = inv.trainOutDate || formatD(new Date(gDate.getTime() + 1 * 86400000));
       sailDate = inv.sailedDate || formatD(new Date(gDate.getTime() + 3 * 86400000));
       dischargeDate = null;
     } else {
-      // Historical Completed Trips distributed progressively across Aug, Jul, Jun, May, Apr 2026
-      const daysAgo = 15 + Math.floor((idx - 47) * 2.8); // 15 to 160 days ago
-      const gDate = new Date(2026, 8, 25 - daysAgo);
+      // Historical Completed Trips spanning multi-year archive (2023, 2024, 2025, 2026)
+      const gDate = parsedDate || new Date(2024, 5, 10);
       gateInDate = formatD(gDate);
-      trainDate = formatD(new Date(gDate.getTime() + 2 * 86400000));
-      sailDate = formatD(new Date(gDate.getTime() + 5 * 86400000));
-      const dDate = new Date(gDate.getTime() + 14 * 86400000);
+      trainDate = inv.trainOutDate || formatD(new Date(gDate.getTime() + 2 * 86400000));
+      sailDate = inv.sailedDate || formatD(new Date(gDate.getTime() + 5 * 86400000));
+      const dDate = new Date(gDate.getTime() + 16 * 86400000);
       dischargeDate = inv.dischargeDate || formatD(dDate);
     }
 
