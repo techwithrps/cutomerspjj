@@ -275,13 +275,13 @@ export function getContainerStageInfo(container) {
     };
   }
 
-  // Stage 6: Completed / Discharged at Destination Port
+  // 1. Stage 6: Completed / Discharged at Destination Port
   if (
     container.dischargeDate || 
+    container.currentStep === 6 ||
     (container.status || '').toLowerCase().includes('discharg') || 
     (container.status || '').toLowerCase().includes('deliver') || 
-    (container.health || '').toLowerCase() === 'completed' ||
-    container.currentStep === 6
+    (container.health || '').toLowerCase() === 'completed'
   ) {
     return {
       stage: 6,
@@ -296,26 +296,37 @@ export function getContainerStageInfo(container) {
     };
   }
 
+  // 2. Direct Explicit currentStep Integer Priority (Ground Truth)
   const step = Number(container.currentStep);
-  const st = String(container.status || '').toLowerCase();
-
-  // Stage 5: Ocean Liner Voyage (Sailing on High Seas)
-  if (step === 5 || st.includes('ocean') || st.includes('sail') || st.includes('voyage') || st.includes('high seas')) {
+  if (step === 2) {
     return {
-      stage: 5,
-      stageNumber: 5,
-      label: 'Stage 5: Ocean Liner Voyage',
-      shortTag: 'STAGE 5: OCEAN VOYAGE',
-      statusText: 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)',
-      badgeClass: 'bg-purple-50 text-purple-800 border-purple-300',
-      pillClass: 'bg-purple-600 text-white',
-      accentColor: '#9333ea',
-      lightBg: 'bg-purple-500/10'
+      stage: 2,
+      stageNumber: 2,
+      label: 'Stage 2: Customs Cleared & Rake Staged',
+      shortTag: 'STAGE 2: CUSTOMS CLEARED',
+      statusText: 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+      pillClass: 'bg-amber-600 text-white',
+      accentColor: '#d97706',
+      lightBg: 'bg-amber-500/10'
     };
   }
 
-  // Stage 4: Gateway Port Staging & SOB
-  if (step === 4 || st.includes('port') || st.includes('berth') || st.includes('sob') || st.includes('staging') || st.includes('gateway')) {
+  if (step === 3) {
+    return {
+      stage: 3,
+      stageNumber: 3,
+      label: 'Stage 3: In-Transit (DFC Rail Corridor)',
+      shortTag: 'STAGE 3: DFC RAIL TRANSIT',
+      statusText: 'Loaded on Dedicated Freight Rake (DFC Rail Corridor) — Speed 64 km/h en-route to Gateway Port',
+      badgeClass: 'bg-blue-50 text-blue-800 border-blue-300',
+      pillClass: 'bg-blue-600 text-white',
+      accentColor: '#2563eb',
+      lightBg: 'bg-blue-500/10'
+    };
+  }
+
+  if (step === 4) {
     return {
       stage: 4,
       stageNumber: 4,
@@ -329,8 +340,55 @@ export function getContainerStageInfo(container) {
     };
   }
 
+  if (step === 5) {
+    return {
+      stage: 5,
+      stageNumber: 5,
+      label: 'Stage 5: Ocean Liner Voyage',
+      shortTag: 'STAGE 5: OCEAN VOYAGE',
+      statusText: 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)',
+      badgeClass: 'bg-purple-50 text-purple-800 border-purple-300',
+      pillClass: 'bg-purple-600 text-white',
+      accentColor: '#9333ea',
+      lightBg: 'bg-purple-500/10'
+    };
+  }
+
+  // 3. Fallback String Matching (avoid substring collisions like 'port' in 'export')
+  const st = String(container.status || '').toLowerCase();
+
+  // Stage 5: Ocean Liner Voyage
+  if (st.includes('ocean') || st.includes('sail') || st.includes('voyage') || st.includes('high seas')) {
+    return {
+      stage: 5,
+      stageNumber: 5,
+      label: 'Stage 5: Ocean Liner Voyage',
+      shortTag: 'STAGE 5: OCEAN VOYAGE',
+      statusText: 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)',
+      badgeClass: 'bg-purple-50 text-purple-800 border-purple-300',
+      pillClass: 'bg-purple-600 text-white',
+      accentColor: '#9333ea',
+      lightBg: 'bg-purple-500/10'
+    };
+  }
+
+  // Stage 2: Customs Cleared & Rake Staged
+  if (st.includes('custom') || st.includes('leo') || st.includes('examination')) {
+    return {
+      stage: 2,
+      stageNumber: 2,
+      label: 'Stage 2: Customs Cleared & Rake Staged',
+      shortTag: 'STAGE 2: CUSTOMS CLEARED',
+      statusText: 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+      pillClass: 'bg-amber-600 text-white',
+      accentColor: '#d97706',
+      lightBg: 'bg-amber-500/10'
+    };
+  }
+
   // Stage 3: In-Transit (DFC Rail Rake / Road Trailer)
-  if (step === 3 || st.includes('rail') || st.includes('dfc') || st.includes('rake') || st.includes('transit') || st.includes('trailer') || st.includes('highway') || st.includes('speed')) {
+  if (st.includes('rail') || st.includes('dfc') || st.includes('rake') || st.includes('transit') || st.includes('trailer') || st.includes('highway') || st.includes('speed')) {
     return {
       stage: 3,
       stageNumber: 3,
@@ -344,18 +402,18 @@ export function getContainerStageInfo(container) {
     };
   }
 
-  // Stage 2: Customs Cleared & Rake Staged
-  if (step === 2 || st.includes('custom') || st.includes('leo') || st.includes('clear') || st.includes('yard')) {
+  // Stage 4: Gateway Port Staging & SOB
+  if (st.includes('gateway port') || st.includes('berth') || st.includes('sob') || st.includes('port gate-in')) {
     return {
-      stage: 2,
-      stageNumber: 2,
-      label: 'Stage 2: Customs Cleared & Rake Staged',
-      shortTag: 'STAGE 2: CUSTOMS CLEARED',
-      statusText: 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead',
-      badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
-      pillClass: 'bg-amber-600 text-white',
-      accentColor: '#d97706',
-      lightBg: 'bg-amber-500/10'
+      stage: 4,
+      stageNumber: 4,
+      label: 'Stage 4: Gateway Port Staging & SOB',
+      shortTag: 'STAGE 4: GATEWAY PORT SOB',
+      statusText: 'Gateway Port Gate-In Recorded & Shipped On Board (SOB) Berth Staging',
+      badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-300',
+      pillClass: 'bg-indigo-600 text-white',
+      accentColor: '#4f46e5',
+      lightBg: 'bg-indigo-500/10'
     };
   }
 

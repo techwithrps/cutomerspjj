@@ -204,25 +204,12 @@ export default function CustomerTrackingView({
     return term.includes('DADRI') || term.includes('KANPUR') || term.includes('PANKI') || term.includes('ICD') || term.includes('JRY') || term.includes('TUGHLAKABAD') || term.includes('SONEPAT');
   }, [terminal]);
 
-  // Derive active current step (1 to 6) dynamically from matched container
-  const activeStepNumber = useMemo(() => {
-    if (matched?.dischargeDate || (matched?.status || '').toLowerCase().includes('discharg') || matched?.currentStep === 6) {
-      return 6;
-    }
-    if (matched?.currentStep && matched.currentStep >= 1 && matched.currentStep <= 6) {
-      return matched.currentStep;
-    }
-    const st = (matched?.status || '').toLowerCase();
-    if (st.includes('ocean') || st.includes('sail') || st.includes('voyage')) return 5;
-    if (st.includes('port') || st.includes('berth') || st.includes('sob') || st.includes('staging')) return 4;
-    if (st.includes('rail') || st.includes('dfc') || st.includes('rake') || st.includes('transit') || st.includes('trailer') || st.includes('highway')) return 3;
-    if (st.includes('custom') || st.includes('leo') || st.includes('clear')) return 2;
-    if (st.includes('gate') || st.includes('stuff') || st.includes('depot') || st.includes('plant')) return 1;
-    
-    // Realistic fallback distributed across in-transit stages (Stage 2, 3, 4, 5)
-    const seed = String(contNo).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    return 2 + (seed % 4);
+  // Derive active current step & stage metadata (1 to 6) dynamically from matched container
+  const stageInfo = useMemo(() => {
+    return getContainerStageInfo(matched || { contNo, dischargeDate: matched?.dischargeDate });
   }, [matched, contNo]);
+
+  const activeStepNumber = stageInfo.stageNumber;
 
   // Dynamic movement status label based on actual stage & transit mode
   const movementStatus = useMemo(() => {
@@ -316,16 +303,6 @@ export default function CustomerTrackingView({
       }
     ];
   }, [activeStepNumber, isRailRoute, terminal, invoiceDate, blNo, sbNo, customer, matched, pol, shippingLine, destination]);
-
-  // Dynamic container stage metadata
-  const stageInfo = useMemo(() => {
-    return getContainerStageInfo(matched || {
-      contNo,
-      currentStep: activeStepNumber,
-      status: movementStatus,
-      dischargeDate: matched?.dischargeDate
-    });
-  }, [matched, contNo, activeStepNumber, movementStatus]);
 
   // Quick Suggestions for search bar
   const quickSuggestions = useMemo(() => {
