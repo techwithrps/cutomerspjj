@@ -911,7 +911,7 @@ export default function CustomerTrackingView({
                       </div>
                     </div>
 
-                    {step.SR_NO === 12 ? (
+                    {step.SR_NO === 12 && (
                       <button
                         type="button"
                         onClick={() => setActiveTrackingTab('gr_fleet')}
@@ -920,10 +920,6 @@ export default function CustomerTrackingView({
                         <Truck className="w-2.5 h-2.5" />
                         <span>View Bilty</span>
                       </button>
-                    ) : (
-                      <div className="text-[7px] text-slate-400 truncate pt-0.5 border-t border-slate-100">
-                        By: {step.CREATED_BY}
-                      </div>
                     )}
                   </div>
                 ))}
@@ -941,8 +937,6 @@ export default function CustomerTrackingView({
                       <th className="py-3 px-4">Document / Reference No</th>
                       <th className="py-3 px-3">Activity Date</th>
                       <th className="py-3 px-4">Audit Remarks</th>
-                      <th className="py-3 px-3">Created By</th>
-                      <th className="py-3 px-3">Created On</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
@@ -982,12 +976,6 @@ export default function CustomerTrackingView({
                         </td>
                         <td className="py-2.5 px-4 text-slate-600 max-w-[240px] truncate" title={step.REMARKS}>
                           {step.REMARKS || '-'}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">
-                          {step.CREATED_BY}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">
-                          {step.CREATED_ON}
                         </td>
                       </tr>
                     ))}
