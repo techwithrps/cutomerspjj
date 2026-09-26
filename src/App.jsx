@@ -79,9 +79,11 @@ export default function App() {
     return parseD(b) - parseD(a);
   });
 
-  // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across full FY timeline)
+  // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across full multi-year timeline)
+  const liveCount = Math.min(47, Math.max(12, Math.floor(sortedCustomerInvoices.length * 0.15)));
+
   const allContainerTrips = sortedCustomerInvoices.map((inv, idx) => {
-    const isLive = idx < 47 && !inv.dischargeDate;
+    const isLive = idx < liveCount && !inv.dischargeDate;
 
     // Helper for formatting DD/MM/YYYY
     const formatD = (d) => {
