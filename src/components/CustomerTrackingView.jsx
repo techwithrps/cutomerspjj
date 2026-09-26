@@ -327,6 +327,24 @@ export default function CustomerTrackingView({
     });
   }, [matched, contNo, activeStepNumber, movementStatus]);
 
+  // Quick Suggestions for search bar
+  const quickSuggestions = useMemo(() => {
+    const list = [];
+    if (containers && containers.length > 0) {
+      if (containers[0]?.contNo) list.push({ label: 'Container', val: containers[0].contNo });
+      if (containers[0]?.partyInvNo) list.push({ label: 'Party Inv', val: containers[0].partyInvNo });
+      if (containers[0]?.sbNo) list.push({ label: 'SB #', val: containers[0].sbNo });
+      if (containers[1]?.contNo) list.push({ label: 'Container', val: containers[1].contNo });
+      if (containers[2]?.contNo) list.push({ label: 'Container', val: containers[2].contNo });
+    } else {
+      list.push({ label: 'Container', val: 'TEMU642971' });
+      list.push({ label: 'Party Inv', val: 'D26-27/10949' });
+      list.push({ label: 'Vehicle #', val: 'HR-38-AB-9821' });
+      list.push({ label: 'SB #', val: '6741363' });
+    }
+    return list.slice(0, 5);
+  }, [containers]);
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
 
