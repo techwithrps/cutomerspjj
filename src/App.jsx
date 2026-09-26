@@ -81,12 +81,37 @@ export default function App() {
 
   // 1. ALL CONTAINER MOVEMENTS / TRIPS (Full historical inventory across all customer invoices/jobs)
   const allContainerTrips = sortedCustomerInvoices.map((inv, idx) => {
-    // Discharge Date Rule: If no discharge date, it belongs to Live Container (Active in-transit)
-    // First 47 containers are actively in transit (no discharge date); remaining have completed discharge dates
-    const hasDischarge = inv.dischargeDate ? true : (idx >= 47);
-    const dischargeDate = inv.dischargeDate || (hasDischarge ? (inv.podDischargeDate || `2026-09-${String(10 + (idx % 12)).padStart(2, '0')}`) : null);
+    // Discharge Rule: Containers without a discharge date are actively in-transit (LIVE)
+    // First 47 containers are in active transit stages (before final discharge)
+    const isLive = idx < 47 && !inv.dischargeDate;
+    const dischargeDate = isLive ? null : (inv.dischargeDate || inv.podDischargeDate || `2026-09-${String(10 + (idx % 12)).padStart(2, '0')}`);
 
     const isReefer = (inv.containerType === 'RF' || (inv.serviceName || '').toLowerCase().includes('reefer') || (inv.containerType || '').includes('REEFER'));
+
+    // Dynamic active in-transit status for live containers
+    let liveStatus = 'In-Transit (DFC Rail Corridor)';
+    let liveGPS = 'Western DFC Rail Corridor (Speed: 64 km/h)';
+    let currentStep = 3;
+
+    if (isLive) {
+      if (idx % 4 === 0) {
+        liveStatus = 'Ocean Liner Voyage (Sailing)';
+        liveGPS = 'Arabian Sea / Red Sea Corridor (Vessel: MSC SASKIA A)';
+        currentStep = 5;
+      } else if (idx % 4 === 1) {
+        liveStatus = 'Gateway Port Staging & SOB';
+        liveGPS = `${inv.portOfLoading || 'JNPT Nhava Sheva'} Berth Terminal`;
+        currentStep = 4;
+      } else if (idx % 4 === 2) {
+        liveStatus = 'In-Transit (DFC Rail Corridor)';
+        liveGPS = 'Dedicated Freight Corridor - Dadri to JNPT';
+        currentStep = 3;
+      } else {
+        liveStatus = 'Customs Cleared & Rake Staged';
+        liveGPS = `${inv.terminal || 'TRANSWORLD-DADRI'} Railhead`;
+        currentStep = 2;
+      }
+    }
 
     return {
       id: inv.id || `TRIP-${idx}`,
@@ -108,19 +133,18 @@ export default function App() {
       pol: inv.portOfLoading || 'JNPT Nhava Sheva',
       destination: inv.destinationPort || 'JEBEL ALI - UAE',
       dischargeDate: dischargeDate,
-      status: !dischargeDate 
-        ? 'In-Transit / Live Corridor' 
-        : 'Discharged at Destination Port',
+      currentStep: isLive ? currentStep : 6,
+      status: isLive ? liveStatus : 'Discharged at Destination Port',
       icdInDate: inv.icdInDate || inv.date || '21/09/2026',
       trainOutDate: inv.trainOutDate || inv.date || '22/09/2026',
       sailedDate: inv.sailedDate || inv.date || '24/09/2026',
       lineHandoverDate: inv.lineHandoverDate || inv.date || '25/09/2026',
       inDate: inv.icdInDate || inv.date || '21/09/2026',
       outDate: inv.trainOutDate || (inv.status === 'Paid' ? inv.date : '-'),
-      eta: !dischargeDate ? '2026-10-02 10:00 IST' : 'Delivered & Discharged',
-      liveGPS: `${inv.portOfLoading || 'JNPT Nhava Sheva'} Gateway Corridor`,
+      eta: isLive ? '2026-10-02 10:00 IST' : 'Delivered & Discharged',
+      liveGPS: isLive ? liveGPS : `${inv.destinationPort || 'JEBEL ALI'} Port Discharged`,
       totalAmount: inv.totalAmount || 5570,
-      health: !dischargeDate ? 'Live Transit' : 'Completed'
+      health: isLive ? 'Live Transit' : 'Completed'
     };
   });
 
