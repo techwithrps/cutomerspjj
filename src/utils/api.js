@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://7c454dec9f3420.lhr.life/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://brooks-cigarette-leo-henry.trycloudflare.com/api';
 
 export const getAuthToken = () => {
   try {

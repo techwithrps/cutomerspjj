@@ -229,7 +229,8 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
-      'https://7c454dec9f3420.lhr.life',
+      'https://brooks-cigarette-leo-henry.trycloudflare.com',
+      'https://8f4130114ba1f263-103-107-92-210.serveousercontent.com',
       'https://spj-backend.onrender.com',
       'http://localhost:5001'
     ];

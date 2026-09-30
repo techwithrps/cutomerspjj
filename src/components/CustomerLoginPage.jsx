@@ -37,7 +37,8 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
     try {
       // 1. Try Live Server Authentication
       const CANDIDATE_AUTH_HOSTS = [
-        'https://7c454dec9f3420.lhr.life',
+        'https://brooks-cigarette-leo-henry.trycloudflare.com',
+        'https://8f4130114ba1f263-103-107-92-210.serveousercontent.com',
         'https://spj-backend.onrender.com',
         'http://localhost:5001'
       ];
