@@ -369,20 +369,22 @@ export default function CustomerTrackingView({
     ];
   }, [activeStepNumber, isRailRoute, terminal, invoiceDate, blNo, sbNo, customer, matched, pol, shippingLine, destination]);
 
-  // Quick Suggestions for search bar
+  // Quick Suggestions for search bar (Dedicated Container Tracking)
   const quickSuggestions = useMemo(() => {
     const list = [];
     if (containers && containers.length > 0) {
-      if (containers[0]?.contNo) list.push({ label: 'Container', val: containers[0].contNo });
-      if (containers[0]?.partyInvNo) list.push({ label: 'Party Inv', val: containers[0].partyInvNo });
-      if (containers[0]?.sbNo) list.push({ label: 'SB #', val: containers[0].sbNo });
-      if (containers[1]?.contNo) list.push({ label: 'Container', val: containers[1].contNo });
-      if (containers[2]?.contNo) list.push({ label: 'Container', val: containers[2].contNo });
-    } else {
-      list.push({ label: 'Container', val: 'TEMU642971' });
-      list.push({ label: 'Party Inv', val: 'D26-27/10949' });
-      list.push({ label: 'Vehicle #', val: 'HR-38-AB-9821' });
-      list.push({ label: 'SB #', val: '6741363' });
+      containers.forEach(c => {
+        if (c?.contNo && !list.some(x => x.val === c.contNo)) {
+          list.push({ label: 'Container', val: c.contNo });
+        }
+      });
+    }
+    if (list.length === 0) {
+      list.push({ label: 'Container', val: 'MNBU9081434' });
+      list.push({ label: 'Container', val: 'SUDU5222822' });
+      list.push({ label: 'Container', val: 'SEGU9974089' });
+      list.push({ label: 'Container', val: 'SEGU9362294' });
+      list.push({ label: 'Container', val: 'MNBU4197210' });
     }
     return list.slice(0, 5);
   }, [containers]);
@@ -545,7 +547,7 @@ export default function CustomerTrackingView({
             Container Tracking
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Search by Vehicle No, Party Invoice #, GR/Bilty #, Container No, SB #, or B/L Number
+            Search by Container Number
           </p>
         </div>
 
@@ -557,7 +559,7 @@ export default function CustomerTrackingView({
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter Vehicle #, Party Inv #, GR #, or Container # (e.g. TEMU642971, D26-27/10949, HR-38-AB-9821)"
+              placeholder="Enter Container Number (e.g. MNBU9081434, SUDU5222822, SEGU9974089)"
               className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none uppercase transition-all shadow-inner"
               required
             />
