@@ -215,6 +215,12 @@ export default function InvoiceCardsView({
   const totalContainers = allInvoices.length || customer?.exactStats?.containerCount || 0;
   const liveActiveCount = Math.min(47, Math.max(12, Math.floor(allInvoices.length * 0.15)));
 
+  // 100% Real-Time Procedure Aggregations directly calculated from loaded Oracle records
+  const totalBaseAmount = allInvoices.reduce((sum, i) => sum + (Number(i.billAmount || i.AMOUNT || 0)), 0);
+  const totalTaxAmount = allInvoices.reduce((sum, i) => sum + (Number(i.taxAmount || ((i.igst || 0) + (i.cgst || 0) + (i.sgst || 0)) || 0)), 0);
+  const totalGrossAmount = allInvoices.reduce((sum, i) => sum + (Number(i.totalAmount || i.INVOICE_AMOUNT || 0)), 0);
+  const totalContainersCount = allInvoices.length;
+
   // Exact pagination based on real filtered items
   const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1;
   const paginatedInvoices = useMemo(() => {
@@ -225,87 +231,88 @@ export default function InvoiceCardsView({
   return (
     <div className="space-y-3 sm:space-y-4 animate-fade-in">
       
-      {/* 1. Customer-Centric Billing & Account KPIs */}
+      {/* 1. Real-Time Oracle Database Procedure KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         
-        {/* Card 1: Total Invoices Billed */}
+        {/* Card 1: BASE AMOUNT */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-blue-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Total Invoices Billed
+              BASE AMOUNT
             </span>
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
               <Receipt className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-base sm:text-2xl font-black font-display text-[#0f172a] mt-1">
-            {formatCurrency(totalBilled)}
+            {formatCurrency(totalBaseAmount)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Total Invoices</span>
-            <span className="font-bold text-blue-700">{totalInvoicesCount.toLocaleString('en-IN')} Bills</span>
+            <span>Taxable Rate Subtotal</span>
+            <span className="font-bold text-blue-700">Base Value</span>
           </div>
         </div>
 
-        {/* Card 2: Paid & Settled */}
+        {/* Card 2: TAX (IGST + CGST + SGST) */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-indigo-400 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              TAX
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Percent className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-base sm:text-2xl font-black font-display text-indigo-600 mt-1">
+            {formatCurrency(totalTaxAmount)}
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
+            <span>Total GST Tax</span>
+            <span className="font-bold text-indigo-600">IGST + CGST + SGST</span>
+          </div>
+        </div>
+
+        {/* Card 3: GROSS AMOUNT */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-emerald-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Paid & Cleared
+              GROSS AMOUNT
             </span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <TrendingUp className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-base sm:text-2xl font-black font-display text-emerald-600 mt-1">
-            {formatCurrency(totalPaid)}
+            {formatCurrency(totalGrossAmount)}
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Cleared Invoices</span>
-            <span className="font-bold text-emerald-600">{countPaid} Paid</span>
+            <span>Total Invoiced Value</span>
+            <span className="font-bold text-emerald-600">Gross Total</span>
           </div>
         </div>
 
-        {/* Card 3: Outstanding Dues */}
-        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-amber-400 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Outstanding Dues
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="text-base sm:text-2xl font-black font-display text-amber-600 mt-1">
-            {formatCurrency(totalPending)}
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Outstanding Invoices</span>
-            <span className="font-bold text-amber-600">{countPending} Due</span>
-          </div>
-        </div>
-
-        {/* Card 4: Total Containers & Shipments */}
+        {/* Card 4: TOTAL CONTAINER */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:border-purple-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Containers Shipped
+              TOTAL CONTAINER
             </span>
             <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
               <Container className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-base sm:text-2xl font-black font-display text-[#0f172a] mt-1">
-            {totalContainers.toLocaleString('en-IN')}{' '}
+            {totalContainersCount.toLocaleString('en-IN')}{' '}
             <span className="text-xs font-normal text-slate-400">Containers</span>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-100">
-            <span>Live In-Transit</span>
-            <span className="font-bold text-purple-700">{liveActiveCount} Active</span>
+            <span>Total Shipped Units</span>
+            <span className="font-bold text-purple-700">Real-Time Count</span>
           </div>
         </div>
 
       </div>
+
 
       {/* 2. Compact Search & Filter Control Bar */}
       <div className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -327,31 +334,10 @@ export default function InvoiceCardsView({
 
         {/* Status Filter Tabs & Sort Selector */}
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-            {[
-              { id: 'ALL', label: `All Invoices (${countAll})` },
-              { id: 'PENDING', label: `Outstanding Dues (${countPending})` },
-              { id: 'PAID', label: `Paid & Cleared (${countPaid})` },
-              { id: 'CREDIT', label: `Credit Notes (${countCredit})` },
-            ].map((tab) => {
-              const isActive = statusFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setStatusFilter(tab.id);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? 'bg-[#0f172a] text-white shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-1">
+            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#0f172a] text-white shadow-xs">
+              All Invoices ({countAll})
+            </span>
           </div>
 
           {/* Sort Selector */}
