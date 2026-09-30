@@ -90,23 +90,31 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
   let invoiceRefNo = inv.invoiceRefNo || inv.INVOICE_REF_NO || inv.BILL_NO || `SPJ/TP26-27/${4500 + idx}`;
   let date = inv.date || inv.INVOICE_DATE || inv.DATE || inv.invoiceDate || '25/09/2026';
 
-  const totalAmount = Number(inv.totalAmount || inv.AMOUNT || inv.TOTAL_AMOUNT || inv.INVOICE_AMOUNT || inv.billAmount || 0);
-  const billAmount = Number(inv.billAmount || inv.BILL_AMOUNT || (totalAmount > 0 ? totalAmount / 1.18 : 0));
-  const taxAmount = Number(inv.taxAmount || inv.TAX_AMOUNT || inv.TAX || (totalAmount - billAmount));
+  const totalAmount = Number(inv.INVOICE_AMOUNT || inv.totalAmount || inv.AMOUNT || inv.TOTAL_AMOUNT || inv.billAmount || 0);
+  const billAmount = Number(inv.AMOUNT || inv.billAmount || inv.BILL_AMOUNT || (totalAmount > 0 ? totalAmount / 1.18 : 0));
+  const igst = Number(inv.IGST || inv.igst || 0);
+  const cgst = Number(inv.CGST || inv.cgst || 0);
+  const sgst = Number(inv.SGST || inv.sgst || 0);
+  const taxAmount = Number(inv.taxAmount || inv.TAX_AMOUNT || (igst + cgst + sgst) || (totalAmount - billAmount));
 
   return {
     ...inv,
-    id: inv.id || inv.INVOICE_ID || `INV-${idx}`,
-    invoiceNo: inv.invoiceNo || partyInvNo,
-    partyInvNo,
-    invoiceRefNo,
-    jobNo,
+    id: inv.id || inv.INVOICE_ID || inv.INVOICE_NO || `INV-${idx}`,
+    invoiceNo: inv.invoiceNo || inv.INVOICE_NO || partyInvNo,
+    partyInvNo: inv.PARTY_INV_NO || partyInvNo,
+    invoiceRefNo: inv.INVOICE_REF_NO || invoiceRefNo,
+    jobNo: inv.INVOICE_REF_NO || jobNo,
     date,
     createdOn: inv.createdOn || inv.CREATED_ON || date,
     customerName: inv.customerName || inv.CUSTOMER_NAME || defaultCustomer?.name || 'Enterprise Client',
     customerId: inv.customerId || inv.CUSTOMER_ID || defaultCustomer?.customerId || 1813,
     totalAmount,
     billAmount,
+    igst,
+    cgst,
+    sgst,
+    taxAmount,
+
     status: (() => {
       const st = String(inv.status || inv.STATUS || inv.PAYMENT_STATUS || inv.paymentStatus || '').trim().toLowerCase();
       if (st.includes('credit') || st.includes('refund') || st.includes('cn') || st.includes('rebate')) {
