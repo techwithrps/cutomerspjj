@@ -944,3 +944,31 @@ export function executeFleetGRMapping(contNo, context = {}) {
     }
   ];
 }
+
+/**
+ * Async live fetcher for 45-step movement history from Oracle SPJLIVE DB
+ */
+export async function fetchLiveMovementHistory(contNo) {
+  if (!contNo) return null;
+  const clean = String(contNo).trim().toUpperCase();
+  try {
+    let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
+    const url = `https://spj-mauve.vercel.app/api/movement-history?contNo=${encodeURIComponent(clean)}`;
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    clearTimeout(tid);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data) {
+        return data.data; // { summary: {...}, history: [...] }
+      }
+    }
+  } catch (e) {
+    console.warn('[MovementHistoryService] Live Oracle DB fetch error, falling back:', e.message);
+  }
+  return null;
+}
