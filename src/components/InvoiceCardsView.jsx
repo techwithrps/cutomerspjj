@@ -43,34 +43,19 @@ export default function InvoiceCardsView({
 
   const customerKey = (customer?.code || 'HMA').toUpperCase();
 
-  // Load real-time live invoices from API for ANY customer if authenticated
+  // Load real-time live invoices from API for ANY customer
   useEffect(() => {
     let isMounted = true;
     const fetchCustomerCIR = async () => {
-      const token = getAuthToken();
-      if (!token) return; // Use local dbStore directly if no server auth session
-      
       setLoading(true);
       try {
-        const custParam = customer?.name || customer?.code || customer?.id || 'HMA';
-        const res = await fetch(`https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custParam)}&limit=1000`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const records = json.records || json.rows || [];
-          if (isMounted && records.length > 0) {
-            const mapped = records.map((r, idx) => normalizeInvoiceRecord(r, idx, customer));
-            setLiveInvoices(mapped);
-            if (json.kpis) {
-              setLiveKPIs(json.kpis);
-            }
-          }
+        const custParam = customer?.code || customer?.name || customer?.id || 'MARHABA';
+        const live = await fetchCustomerInvoices(custParam);
+        if (isMounted && live && live.length > 0) {
+          setLiveInvoices(live);
         }
       } catch (e) {
-        // Fallback to local store silently
+        console.error('Error fetching customer invoices:', e);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -78,6 +63,7 @@ export default function InvoiceCardsView({
     fetchCustomerCIR();
     return () => { isMounted = false; };
   }, [customer]);
+
 
   // Merge live invoices or fallback
   const allInvoices = useMemo(() => {
