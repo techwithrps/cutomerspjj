@@ -31,7 +31,7 @@ import {
   Table,
   CheckCircle
 } from 'lucide-react';
-import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping } from '../services/movementHistoryService';
+import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping, fetchLiveMovementHistory } from '../services/movementHistoryService';
 import { getContainerStageInfo, FEATURED_STAGE_EXAMPLES } from '../services/dataService';
 
 export default function CustomerTrackingView({
@@ -52,6 +52,8 @@ export default function CustomerTrackingView({
   const [selectedGRIndex, setSelectedGRIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [liveOracleSteps, setLiveOracleSteps] = useState(null);
+  const [isLoadingLive, setIsLoadingLive] = useState(false);
 
   useEffect(() => {
     if (initialSubTab) {
@@ -343,7 +345,56 @@ export default function CustomerTrackingView({
     return list.slice(0, 5);
   }, [containers]);
 
-  // 1. SP_MOVEMENT_HISTORY_PK (45-Step Sequential Ledger)
+  // Helper to map SR_NO / Activity to a logical Phase
+  const getPhaseName = (srNo, name = '') => {
+    const n = Number(srNo);
+    const act = String(name).toUpperCase();
+    if (n <= 5 || act.includes('EMPTY') || act.includes('ALLOTMENT')) return 'Empty Allocation';
+    if (n <= 10 || act.includes('PICK-UP') || act.includes('STUFFING')) return 'Fleet Transport';
+    if (n <= 14 || act.includes('GR DETAILS') || act.includes('EDI') || act.includes('INVOICE NO/REF')) return 'Road Transit & GR';
+    if (n <= 20 || act.includes('FACTORY') || act.includes('BUFFER')) return 'Plant Stuffing';
+    if (n <= 26 || act.includes('ICD IN') || act.includes('BOOKING') || act.includes('BL')) return 'Booking & Space Allotment';
+    if (n <= 33 || act.includes('RAILOUT') || act.includes('TR STATUS') || act.includes('TELEX') || act.includes('HANDOVER')) return 'Rail Corridor';
+    if (n <= 38 || act.includes('SOB') || act.includes('TRAN SHIPMENT') || act.includes('POL')) return 'Shipped On Board';
+    if (n <= 41 || act.includes('DISCHARGE') || act.includes('GATE OUT') || act.includes('RETURN')) return 'Destination Discharge';
+    return 'SPJ Billing';
+  };
+
+  // Fetch Live Movement History directly from Oracle SPJLIVE DB
+  useEffect(() => {
+    let isSubscribed = true;
+    async function loadLiveMovement() {
+      if (!contNo) return;
+      setIsLoadingLive(true);
+      try {
+        const liveData = await fetchLiveMovementHistory(contNo);
+        if (isSubscribed && liveData && Array.isArray(liveData.history) && liveData.history.length > 0) {
+          const mapped = liveData.history.map(item => ({
+            SR_NO: item.srNo,
+            PHASE: getPhaseName(item.srNo, item.activityName),
+            DOC_TYPE: item.docType || '',
+            ACTIVITY_NAME: item.activityName || '',
+            DOC_NO: item.docNo || '',
+            ACTIVITY_DATE: item.activityDate || '',
+            REMARKS: item.remarks || '',
+            CREATED_BY: item.createdBy || '',
+            CREATED_ON: item.createdOn || ''
+          }));
+          setLiveOracleSteps(mapped);
+        } else if (isSubscribed) {
+          setLiveOracleSteps(null);
+        }
+      } catch (e) {
+        if (isSubscribed) setLiveOracleSteps(null);
+      } finally {
+        if (isSubscribed) setIsLoadingLive(false);
+      }
+    }
+    loadLiveMovement();
+    return () => { isSubscribed = false; };
+  }, [contNo]);
+
+  // 1. SP_MOVEMENT_HISTORY_PK (Dynamic Oracle Master Ledger)
   const rawOracleSteps = useMemo(() => {
     return executeMovementHistoryPK(contNo, {
       ...matched,
@@ -358,8 +409,12 @@ export default function CustomerTrackingView({
     });
   }, [contNo, matched, customer, sbNo, blNo, destination, shippingLine, terminal, pol]);
 
+  const effectiveOracleSteps = useMemo(() => {
+    return (liveOracleSteps && liveOracleSteps.length > 0) ? liveOracleSteps : rawOracleSteps;
+  }, [liveOracleSteps, rawOracleSteps]);
+
   const filteredOracleSteps = useMemo(() => {
-    return rawOracleSteps.filter(step => {
+    return effectiveOracleSteps.filter(step => {
       const matchPhase = oraclePhaseFilter === 'ALL' || step.PHASE === oraclePhaseFilter;
       const term = oracleSearchTerm.toLowerCase().trim();
       const matchSearch = !term || (
@@ -368,11 +423,13 @@ export default function CustomerTrackingView({
         (step.DEPARTMENT || '').toLowerCase().includes(term) ||
         (step.LOCATION || '').toLowerCase().includes(term) ||
         (step.PHASE || '').toLowerCase().includes(term) ||
+        (step.DOC_NO || '').toLowerCase().includes(term) ||
+        (step.REMARKS || '').toLowerCase().includes(term) ||
         String(step.SR_NO).includes(term)
       );
       return matchPhase && matchSearch;
     });
-  }, [rawOracleSteps, oraclePhaseFilter, oracleSearchTerm]);
+  }, [effectiveOracleSteps, oraclePhaseFilter, oracleSearchTerm]);
 
   // 2. SPJ Fleet GR & Bilty Consignment Records
   const fleetGRRecords = useMemo(() => {
@@ -653,7 +710,7 @@ export default function CustomerTrackingView({
                 <Database className="w-3.5 h-3.5 text-cyan-400" />
                 <span>MOVEMENT HISTORY</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                  45
+                  {effectiveOracleSteps.length}
                 </span>
               </button>
 
@@ -692,7 +749,7 @@ export default function CustomerTrackingView({
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Export 45 Steps CSV</span>
+                <span>Export {effectiveOracleSteps.length} Steps CSV</span>
               </button>
             )}
 
@@ -857,10 +914,10 @@ export default function CustomerTrackingView({
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                       <Database className="w-4 h-4 text-blue-600" />
-                      Movement History (45-Step Master Ledger)
+                      Movement History ({effectiveOracleSteps.length}-Step Master Ledger)
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      Direct Procedure View
+                      Direct Procedure View {isLoadingLive ? '(Syncing Oracle DB...)' : '(Live Oracle DB)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -876,7 +933,7 @@ export default function CustomerTrackingView({
                       type="text"
                       value={oracleSearchTerm}
                       onChange={(e) => setOracleSearchTerm(e.target.value)}
-                      placeholder="Search 45 events..."
+                      placeholder={`Search ${effectiveOracleSteps.length} events...`}
                       className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"
                     />
                   </div>
@@ -904,7 +961,7 @@ export default function CustomerTrackingView({
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                       }`}
                   >
-                    {phase === 'ALL' ? 'All 45 Stages' : phase}
+                    {phase === 'ALL' ? `All Stages (${effectiveOracleSteps.length})` : phase}
                   </button>
                 ))}
               </div>
