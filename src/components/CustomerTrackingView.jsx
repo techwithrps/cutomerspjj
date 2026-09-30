@@ -580,31 +580,6 @@ export default function CustomerTrackingView({
             )}
           </button>
         </form>
-
-        {/* Quick Suggestion Chips */}
-        {quickSuggestions.length > 0 && (
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1 flex-wrap">
-            <span className="font-semibold text-[11px]">Quick Search:</span>
-            {quickSuggestions.map((item, idx) => {
-              const val = typeof item === 'string' ? item : item.val;
-              const label = typeof item === 'object' && item.label ? item.label : null;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setSearchInput(val);
-                    setSearchedContainer(val);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-700 font-mono text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
-                >
-                  {label && <span className="text-[9px] font-sans font-black text-slate-400 uppercase">{label}:</span>}
-                  <span>{val}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* 2. Tracking Details Container (Rendered Only When a Container is Tracked) */}
