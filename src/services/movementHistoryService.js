@@ -951,24 +951,39 @@ export function executeFleetGRMapping(contNo, context = {}) {
 export async function fetchLiveMovementHistory(contNo) {
   if (!contNo) return null;
   const clean = String(contNo).trim().toUpperCase();
-  try {
-    let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
-    const url = `https://spj-mauve.vercel.app/api/movement-history?contNo=${encodeURIComponent(clean)}`;
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    });
-    clearTimeout(tid);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.data) {
-        return data.data; // { summary: {...}, history: [...] }
+
+  const CANDIDATE_HOSTS = [
+    'https://7c454dec9f3420.lhr.life',
+    'https://spj-backend.onrender.com',
+    'http://localhost:5001'
+  ];
+
+  let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
+
+  for (const host of CANDIDATE_HOSTS) {
+    try {
+      const url = `${host}/api/movement-history?contNo=${encodeURIComponent(clean)}`;
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 12000);
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      clearTimeout(tid);
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          console.log(`[MovementHistoryService] Loaded live Oracle DB data from ${host} for container:`, clean);
+          return data.data; // { summary: {...}, history: [...] }
+        }
       }
+    } catch (e) {
+      // try next candidate host
+      console.warn(`[MovementHistoryService] Could not fetch from ${host}:`, e.message);
     }
-  } catch (e) {
-    console.warn('[MovementHistoryService] Live Oracle DB fetch error, falling back:', e.message);
   }
+
   return null;
 }

@@ -228,44 +228,57 @@ export async function fetchCustomerInvoices(inputKey) {
   try {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
-    // If no session token is present, auto-authenticate guest customer session
-    if (!token) {
+    const CANDIDATE_HOSTS = [
+      'https://7c454dec9f3420.lhr.life',
+      'https://spj-backend.onrender.com',
+      'http://localhost:5001'
+    ];
+
+    for (const host of CANDIDATE_HOSTS) {
       try {
-        const cleanUser = (account.code || key || 'MARHABA').toLowerCase();
-        const authRes = await fetch('https://spj-mauve.vercel.app/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: cleanUser, password: `${cleanUser}@123` })
-        });
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          if (authData.token) {
-            token = authData.token;
-            if (typeof localStorage !== 'undefined') {
-              localStorage.setItem('spj_customer_jwt', token);
+        // If no session token is present, auto-authenticate guest customer session
+        if (!token) {
+          try {
+            const cleanUser = (account.code || key || 'MARHABA').toLowerCase();
+            const authRes = await fetch(`${host}/api/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: cleanUser, password: `${cleanUser}@123` })
+            });
+            if (authRes.ok) {
+              const authData = await authRes.json();
+              if (authData.token) {
+                token = authData.token;
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('spj_customer_jwt', token);
+                }
+              }
             }
+          } catch (e) {}
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const custSearch = account.name || account.customerId || key;
+        const url = `${host}/api/cir-report?customerId=${encodeURIComponent(custSearch)}&limit=2000`;
+        
+        const res = await fetch(url, { 
+          signal: controller.signal,
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        clearTimeout(timeoutId);
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json();
+          const records = data.records || data.rows || [];
+          if (records.length > 0) {
+            return records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
           }
         }
-      } catch (e) {}
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for live Oracle DB query
-
-    const custSearch = account.name || account.customerId || key;
-    const url = `https://spj-mauve.vercel.app/api/cir-report?customerId=${encodeURIComponent(custSearch)}&limit=2000`;
-    
-    const res = await fetch(url, { 
-      signal: controller.signal,
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const data = await res.json();
-      const records = data.records || data.rows || [];
-      if (records.length > 0) {
-        return records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+      } catch (e) {
+        // try next host
       }
     }
   } catch (e) {

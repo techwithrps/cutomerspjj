@@ -36,11 +36,25 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
 
     try {
       // 1. Try Live Server Authentication
-      const res = await fetch('https://spj-mauve.vercel.app/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: cleanInput, password: cleanPass })
-      }).catch(() => null);
+      const CANDIDATE_AUTH_HOSTS = [
+        'https://7c454dec9f3420.lhr.life',
+        'https://spj-backend.onrender.com',
+        'http://localhost:5001'
+      ];
+      let res = null;
+      for (const h of CANDIDATE_AUTH_HOSTS) {
+        try {
+          const r = await fetch(`${h}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: cleanInput, password: cleanPass })
+          });
+          if (r.ok) {
+            res = r;
+            break;
+          }
+        } catch (err) {}
+      }
 
       if (res && res.ok) {
         const data = await res.json();

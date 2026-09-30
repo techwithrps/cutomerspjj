@@ -53,6 +53,7 @@ export default function CustomerTrackingView({
   const [copied, setCopied] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [liveOracleSteps, setLiveOracleSteps] = useState(null);
+  const [liveSummary, setLiveSummary] = useState(null);
   const [isLoadingLive, setIsLoadingLive] = useState(false);
 
   useEffect(() => {
@@ -209,16 +210,44 @@ export default function CustomerTrackingView({
     return null;
   }, [searchedContainer, containers, invoices, customer]);
 
-  const contNo = matched?.contNo || matched?.containerNo || searchedContainer || 'MNBU0361774';
-  const shippingLine = matched?.shippingLine || 'MSC';
-  const terminal = matched?.terminal || 'TRANSWORLD-DADRI';
-  const pol = matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva';
-  const destination = matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
-  const sbNo = matched?.sbNo || '6741363';
-  const blNo = matched?.blNo || 'MEDU1192973';
+  const contNo = searchedContainer || matched?.contNo || matched?.containerNo || 'MNBU0361774';
+
+  // Helper to extract specific activity or phase row from live Oracle DB audit trail
+  const findOracleStep = (keywords) => {
+    if (!liveOracleSteps || !Array.isArray(liveOracleSteps)) return null;
+    const kwList = Array.isArray(keywords) ? keywords : [keywords];
+    return liveOracleSteps.find(step => {
+      const act = (step.ACTIVITY_NAME || '').toUpperCase();
+      const ph = (step.PHASE || '').toUpperCase();
+      return kwList.some(kw => act.includes(kw.toUpperCase()) || ph.includes(kw.toUpperCase()));
+    });
+  };
+
+  const oraclePickup = findOracleStep(['CONTAINER PICK-UP', 'ICD NAME', 'EMPTY JOB']);
+  const oracleShipper = findOracleStep(['SHIPPER AT PICK-UP', 'SHIPPER']);
+  const oracleFactoryLoc = findOracleStep(['FACTORY LOCATION']);
+  const oracleFactoryIn = findOracleStep(['FACTORY IN DATE', 'FACTORY OUT DATE']);
+  const oracleEDI = findOracleStep(['EDI DETAILS', 'CUSTOMS ICEGATE']);
+  const oracleBooking = findOracleStep(['BOOKING NO']);
+  const oracleBL = findOracleStep(['BL NO', 'BILL OF LADING']);
+  const oracleHandover = findOracleStep(['HANDOVER LOCATION', 'CFS AT HANDOVER', 'ICD IN DATE']);
+  const oracleRail = findOracleStep(['RAILOUT DETAILS', 'TR STATUS']);
+  const oracleSob = findOracleStep(['SHIPPED ON BOARD', 'VESSEL PLAN AT SOB', 'VESSEL PLAN AT POL']);
+  const oracleDischarge = findOracleStep(['DISCHARGE DATE', 'GATE OUT DATE', 'DESTINATION DISCHARGE']);
+  const oraclePol = findOracleStep(['PORT OF LOADING DURING STUFFING']);
+  const oraclePod = findOracleStep(['PORT OF DESTINATION DURING STUFFING', 'FINAL DESTINATION']);
+
+  const shippingLine = liveSummary?.line || matched?.shippingLine || 'MSC';
+  const terminal = liveSummary?.terminal || oraclePickup?.DOC_NO || matched?.terminal || 'TRANSWORLD-DADRI';
+  const pol = liveSummary?.pol || oraclePol?.DOC_NO || matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva';
+  const destination = liveSummary?.pod || oraclePod?.DOC_NO || matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
+  const sbNo = oracleEDI?.DOC_NO || liveSummary?.sbNo || matched?.sbNo || '6741363';
+  const blNo = oracleBL?.DOC_NO || oracleBooking?.DOC_NO || liveSummary?.blNo || matched?.blNo || 'MEDU1192973';
+  const partyInvNo = liveSummary?.partyInvNo || oracleEDI?.DOC_NO || matched?.partyInvNo || matched?.invoiceNo || 'D26-27/10949';
   const invoiceDate = matched?.inDate || matched?.date || matched?.invoiceDate || '25/09/2026';
-  const rawSize = String(matched?.size || matched?.containerSize || '40 FT').trim();
-  const rawType = String(matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : (matched?.containerType || 'HIGH CUBE'))).trim();
+
+  const rawSize = liveSummary?.contSize ? (liveSummary.contSize.includes('40') ? '40 FT' : '20 FT') : String(matched?.size || matched?.containerSize || '40 FT').trim();
+  const rawType = liveSummary?.contSize ? (liveSummary.contSize.includes('RF') ? 'REEFER (-18°C)' : 'HIGH CUBE') : String(matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : (matched?.containerType || 'HIGH CUBE'))).trim();
   const cleanType = rawType.replace(/^(40\s*(FT|FEET)?|20\s*(FT|FEET)?)\s*/i, '').trim();
   const sizeType = `${rawSize} ${cleanType || 'REEFER (-18°C)'}`.trim();
   const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
@@ -227,22 +256,35 @@ export default function CustomerTrackingView({
     return term.includes('DADRI') || term.includes('KANPUR') || term.includes('PANKI') || term.includes('ICD') || term.includes('JRY') || term.includes('TUGHLAKABAD') || term.includes('SONEPAT');
   }, [terminal]);
 
-  // Derive active current step & stage metadata (1 to 6) dynamically from matched container
+  // Derive active current step & stage metadata (1 to 6) dynamically from matched container or Oracle DB trail
   const stageInfo = useMemo(() => {
     return getContainerStageInfo(matched || { contNo, dischargeDate: matched?.dischargeDate });
   }, [matched, contNo]);
 
-  const activeStepNumber = stageInfo.stageNumber;
+  const activeStepNumber = useMemo(() => {
+    if (liveOracleSteps && liveOracleSteps.length > 0) {
+      if (oracleDischarge && oracleDischarge.ACTIVITY_DATE) return 6;
+      if (oracleSob && oracleSob.ACTIVITY_DATE) return 5;
+      if (oracleHandover && oracleHandover.ACTIVITY_DATE) return 4;
+      if (oracleRail && oracleRail.ACTIVITY_DATE) return 3;
+      if (liveOracleSteps.some(s => s.ACTIVITY_NAME?.includes('ICD IN') && s.ACTIVITY_DATE)) return 2;
+      return 1;
+    }
+    return stageInfo.stageNumber;
+  }, [liveOracleSteps, stageInfo, oracleDischarge, oracleSob, oracleHandover, oracleRail]);
 
   // Dynamic movement status label based on actual stage & transit mode
   const movementStatus = useMemo(() => {
     if (activeStepNumber === 6) return 'Discharged at Destination Port';
     if (activeStepNumber === 5) return `Ocean Liner Voyage (Sailing - ${shippingLine})`;
     if (activeStepNumber === 4) return `Gateway Port Staging & SOB (${pol})`;
-    if (activeStepNumber === 3) return isRailRoute ? 'In-Transit (Dedicated Freight Rail Corridor)' : 'In-Transit (Direct Road Fleet / Reefer Trailer)';
+    if (activeStepNumber === 3) {
+      const rakeRef = oracleRail?.DOC_NO ? `Rake ${oracleRail.DOC_NO}` : 'Dedicated Freight Rail Corridor';
+      return `In-Transit (${rakeRef})`;
+    }
     if (activeStepNumber === 2) return isRailRoute ? 'Customs ICD Cleared & Rake Staged' : 'Customs Cleared & Trailer Dispatched';
-    return 'Origin Factory Stuffing & Gate-In Recorded';
-  }, [activeStepNumber, isRailRoute, shippingLine, pol]);
+    return 'Origin Factory Stuffing Completed & Gate-In Recorded';
+  }, [activeStepNumber, isRailRoute, shippingLine, pol, oracleRail]);
 
   // Progressive connected arrow pipeline steps dynamically mapped to activeStepNumber and transport mode
   const progressivePipeline = useMemo(() => {
@@ -381,11 +423,16 @@ export default function CustomerTrackingView({
             CREATED_ON: item.createdOn || ''
           }));
           setLiveOracleSteps(mapped);
+          setLiveSummary(liveData.summary || null);
         } else if (isSubscribed) {
           setLiveOracleSteps(null);
+          setLiveSummary(null);
         }
       } catch (e) {
-        if (isSubscribed) setLiveOracleSteps(null);
+        if (isSubscribed) {
+          setLiveOracleSteps(null);
+          setLiveSummary(null);
+        }
       } finally {
         if (isSubscribed) setIsLoadingLive(false);
       }
@@ -447,34 +494,42 @@ export default function CustomerTrackingView({
 
   // Dynamic Location & Date milestone references for top container card
   const emptyPickupLoc = useMemo(() => {
+    if (oraclePickup?.DOC_NO) return oraclePickup.DOC_NO;
     return fleetGRRecords[1]?.pickupPoint || `SPJ Depot / ${terminal}`;
-  }, [fleetGRRecords, terminal]);
+  }, [oraclePickup, fleetGRRecords, terminal]);
 
   const emptyPickupDate = useMemo(() => {
+    if (oraclePickup?.ACTIVITY_DATE) return oraclePickup.ACTIVITY_DATE;
     return fleetGRRecords[1]?.grDate || '15/09/2026 10:15';
-  }, [fleetGRRecords]);
+  }, [oraclePickup, fleetGRRecords]);
 
   const stuffingLoc = useMemo(() => {
+    if (oracleFactoryLoc?.DOC_NO) return `${oracleFactoryLoc.DOC_NO} (${oracleShipper?.DOC_NO || customer?.name || 'Shipper Plant'})`;
+    if (oracleShipper?.DOC_NO) return `${oracleShipper.DOC_NO} Processing Plant`;
     return fleetGRRecords[0]?.stuffingPoint || `${customer?.name || 'Shipper Plant'}, Dock 03`;
-  }, [fleetGRRecords, customer]);
+  }, [oracleFactoryLoc, oracleShipper, fleetGRRecords, customer]);
 
   const stuffingDate = useMemo(() => {
+    if (oracleFactoryIn?.ACTIVITY_DATE) return oracleFactoryIn.ACTIVITY_DATE;
     return fleetGRRecords[0]?.grDate || `${invoiceDate} 14:30`;
-  }, [fleetGRRecords, invoiceDate]);
+  }, [oracleFactoryIn, fleetGRRecords, invoiceDate]);
 
   const handoverLoc = useMemo(() => {
+    if (oracleHandover?.DOC_NO) return oracleHandover.DOC_NO;
     return fleetGRRecords[0]?.deliveryPoint || (isRailRoute ? `ICD Railhead / ${pol} Rake` : `${pol} Gateway Terminal`);
-  }, [fleetGRRecords, isRailRoute, pol]);
+  }, [oracleHandover, fleetGRRecords, isRailRoute, pol]);
 
   const handoverDate = useMemo(() => {
+    if (oracleHandover?.ACTIVITY_DATE) return oracleHandover.ACTIVITY_DATE;
+    if (oracleRail?.ACTIVITY_DATE) return oracleRail.ACTIVITY_DATE;
     return matched?.trainOutDate ? `${matched.trainOutDate} 19:40` : (matched?.lineHandoverDate ? `${matched.lineHandoverDate} 18:00` : `${invoiceDate} 18:00`);
-  }, [matched, invoiceDate]);
+  }, [oracleHandover, oracleRail, matched, invoiceDate]);
 
   // 3. SP_MOVEMENT_HISTORY_SUMMARY (Party Invoice Summary Cursor)
   const invoiceSummaryRecords = useMemo(() => {
-    const invKey = matched?.partyInvNo || matched?.invoiceNo || contNo;
+    const invKey = partyInvNo || matched?.partyInvNo || matched?.invoiceNo || contNo;
     return executeMovementHistorySummary(invKey);
-  }, [matched, contNo]);
+  }, [partyInvNo, matched, contNo]);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
@@ -562,14 +617,14 @@ export default function CustomerTrackingView({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-sm ${stageInfo.badgeClass}`}>
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: stageInfo.accentColor }}></span>
-                  {stageInfo.shortTag}
+                  STAGE {activeStepNumber}: {activeStepNumber === 6 ? 'DISCHARGED' : activeStepNumber === 5 ? 'OCEAN VOYAGE' : activeStepNumber === 4 ? 'SEAPORT SOB' : activeStepNumber === 3 ? 'RAIL CORRIDOR' : activeStepNumber === 2 ? 'ICD STAGED' : 'FACTORY GATE-IN'}
                 </span>
                 <span className="text-xs text-slate-300 font-medium">
-                  {stageInfo.statusText}
+                  {movementStatus}
                 </span>
               </div>
               <span className="text-[11px] text-slate-400 font-mono font-medium">
-                Party Inv: <strong className="text-white">{matched?.partyInvNo || matched?.jobOrderNo || 'D26-27/10949'}</strong>
+                Party Inv: <strong className="text-white">{partyInvNo}</strong>
               </span>
             </div>
 
@@ -1425,7 +1480,7 @@ export default function CustomerTrackingView({
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Querying Cursor for Party Invoice <strong className="font-mono text-slate-800">{matched?.partyInvNo || matched?.invoiceNo || '243439'}</strong>.
+                    Querying Cursor for Party Invoice <strong className="font-mono text-slate-800">{partyInvNo}</strong>.
                   </p>
                 </div>
 

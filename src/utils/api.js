@@ -1,6 +1,4 @@
-// API Client for SPJ Customer Portal connecting to Live Enterprise Backend
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://spj-mauve.vercel.app/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://7c454dec9f3420.lhr.life/api';
 
 export const getAuthToken = () => {
   try {
