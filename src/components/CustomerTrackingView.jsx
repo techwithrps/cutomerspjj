@@ -542,7 +542,7 @@ export default function CustomerTrackingView({
             SPJ Multimodal Track & Trace
           </div>
           <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 tracking-tight">
-            Track GR Details
+            Container Tracking
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Search by Vehicle No, Party Invoice #, GR/Bilty #, Container No, SB #, or B/L Number
