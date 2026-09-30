@@ -133,7 +133,7 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
     destinationPort: port,
     shippingLine: line,
     terminal,
-    serviceName: inv.serviceName || inv.SERVICE_NAME || inv.serviceDescription || 'Reefer Transportation & CFS Handling',
+    serviceName: inv.serviceName || inv.SERVICE_NAME || inv.SERVICE_TYPE || inv.CHARGE_HEAD_NAME || inv.SERVICE_DESCRIPTION || inv.CHARGE_NAME || 'Reefer Transportation & CFS Handling',
     blNo: inv.blNo || inv.BL_NO || `MEDU${1190000 + idx}`,
     sbNo: inv.sbNo || inv.SB_NO || `674${1000 + idx}`,
     portOfLoading: inv.portOfLoading || inv.POL || 'JNPT Nhava Sheva'

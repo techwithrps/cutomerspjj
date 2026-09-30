@@ -485,12 +485,20 @@ export default function InvoiceCardsView({
                   </div>
 
                   <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/50 gap-1">
+                    <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase shrink-0">SERVICE</span>
+                    <span className="text-[7px] sm:text-[9px] font-bold text-indigo-700 truncate" title={inv.serviceName}>
+                      {inv.serviceName || 'ALL SERVICES'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1">
                     <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase shrink-0">BILLING HEAD</span>
                     <span className="text-[7px] sm:text-[9px] font-bold text-cyan-800 truncate">
                       {terminalDisplay}
                     </span>
                   </div>
                 </div>
+
 
                 {/* Total Amount & Action */}
                 <div className="pt-1 flex items-center justify-between gap-1 border-t border-slate-100">
