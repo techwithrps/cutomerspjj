@@ -229,8 +229,7 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
-      'https://brooks-cigarette-leo-henry.trycloudflare.com',
-      'https://8f4130114ba1f263-103-107-92-210.serveousercontent.com',
+      'https://tex-engineer-thought-geographical.trycloudflare.com',
       'https://spj-backend.onrender.com',
       'http://localhost:5001'
     ];
@@ -240,7 +239,14 @@ export async function fetchCustomerInvoices(inputKey) {
         // If no session token is present, auto-authenticate guest customer session
         if (!token) {
           try {
-            const cleanUser = (account.code || key || 'MARHABA').toLowerCase();
+            let cleanUser = (account.code || key || 'MARHABA').toLowerCase();
+            if (cleanUser.includes('marhaba')) cleanUser = 'marhaba';
+            else if (cleanUser.includes('fair')) cleanUser = 'fair';
+            else if (cleanUser.includes('iff')) cleanUser = 'iff';
+            else if (cleanUser.includes('rustam')) cleanUser = 'rustam';
+            else if (cleanUser.includes('ammar')) cleanUser = 'alammar';
+            else if (cleanUser.includes('albys')) cleanUser = 'albys';
+
             const authRes = await fetch(`${host}/api/auth/login`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -261,7 +267,8 @@ export async function fetchCustomerInvoices(inputKey) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-        const custSearch = account.name || account.customerId || key;
+        const cleanName = (account.name || '').replace(/[-_](HR|UP|DL|MH|RJ|GJ)$/i, '').trim();
+        const custSearch = cleanName || account.code || 'MARHABA';
         const url = `${host}/api/cir-report?customerId=${encodeURIComponent(custSearch)}&limit=2000`;
         
         const res = await fetch(url, { 

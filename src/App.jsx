@@ -141,63 +141,31 @@ export default function App() {
     let liveGPS = isRail ? 'Western DFC Rail Corridor (Speed: 64 km/h)' : 'Expressway Corridor (Trailer GPS Active)';
     let currentStep = 3;
 
-    // Exemplar Top Containers requested for instant identification across all 5 key stages
-    let contNo = inv.containerNo || `MNBU${908100 + (idx % 80)}`;
-    let partyInvNo = inv.partyInvNo || inv.invoiceNo || `JO-242973`;
-    let routeTerminal = inv.terminal || 'TRANSWORLD-DADRI';
-    let routePol = inv.portOfLoading || 'JNPT Nhava Sheva';
-    let routePod = inv.destinationPort || 'JEBEL ALI - UAE';
-    let routeLine = inv.shippingLine || 'MSC / MAERSK';
+    let contNo = inv.containerNo || inv.CONT_NO || (inv.id && String(inv.id).startsWith('CONT-') ? inv.id : null);
+    let partyInvNo = inv.partyInvNo || inv.PARTY_INV_NO || inv.PARTY_INVOICE_NO || inv.invoiceNo || inv.INVOICE_NO;
+    let routeTerminal = inv.terminal || inv.TERMINAL_NAME || 'TRANSWORLD-DADRI';
+    let routePol = inv.portOfLoading || inv.POL || 'JNPT Nhava Sheva';
+    let routePod = inv.destinationPort || inv.PORT || 'JEBEL ALI - UAE';
+    let routeLine = inv.shippingLine || inv.SHIPPING_LINE || 'MSC';
 
-    if (idx === 0) {
-      contNo = 'TEMU642969';
-      partyInvNo = 'D26-27/10947';
-      liveStatus = 'Customs Examination Passed, Let Export Order (LEO) Issued & Container Staged at ICD Railhead';
-      liveGPS = 'TRANSWORLD-DADRI ICD Yard — LEO Passed';
-      currentStep = 2;
-      routeTerminal = 'TRANSWORLD-DADRI';
-      routePod = 'JEBEL ALI - UAE';
-      routeLine = 'MAERSK';
-    } else if (idx === 1) {
-      contNo = 'TEMU642971';
-      partyInvNo = 'D26-27/10949';
-      liveStatus = 'Loaded on Dedicated Freight Rake (DFC Rail Corridor) — Speed 64 km/h en-route to Gateway Port';
-      liveGPS = 'Western DFC Rail Corridor — Speed: 64 km/h';
-      currentStep = 3;
-      routeTerminal = 'TRANSWORLD-DADRI';
-      routePod = 'JEBEL ALI - UAE';
-      routeLine = 'MSC';
-    } else if (idx === 2) {
-      contNo = 'TEMU642973';
-      partyInvNo = 'D26-27/10951';
-      liveStatus = 'Gateway Port Gate-In Recorded & Shipped On Board (SOB) Berth Staging';
-      liveGPS = 'JNPT Nhava Sheva Berth Staging (SOB Active)';
-      currentStep = 4;
-      routeTerminal = 'TRANSWORLD-DADRI';
-      routePol = 'JNPT Nhava Sheva';
-      routePod = 'JEBEL ALI - UAE';
-      routeLine = 'CMA CGM';
-    } else if (idx === 3) {
-      contNo = 'MNBU9081434';
-      partyInvNo = 'MFF/HR/023/26-27';
-      liveStatus = 'Ocean Transit via Mother Vessel (Arabian Sea / Red Sea Corridor)';
-      liveGPS = 'Arabian Sea / High Seas Corridor (Vessel: MSC SASKIA A)';
-      currentStep = 5;
-      routeTerminal = 'MUNDRA MDCC';
-      routePol = 'Mundra Seaport';
-      routePod = 'ALEXANDRIA - EGYPT';
-      routeLine = 'MSC';
-    } else if (idx === 4) {
-      contNo = 'MNBU4600455';
-      partyInvNo = 'MFF/HR/016/26-27';
-      liveStatus = 'Completed & Discharged at Destination Port';
-      liveGPS = 'ALEXANDRIA - EGYPT Seaport Discharged';
-      currentStep = 6;
-      dischargeDate = '18/09/2026';
-      routeTerminal = 'TRANSWORLD-DADRI';
-      routePol = 'JNPT Nhava Sheva';
-      routePod = 'ALEXANDRIA - EGYPT';
-      routeLine = 'MSC';
+    if (!contNo) {
+      contNo = `CONT-${100000 + idx}`;
+    }
+
+    if (inv.CONTAINER_STATUS) {
+      liveStatus = inv.CONTAINER_STATUS;
+      const statusLower = inv.CONTAINER_STATUS.toLowerCase();
+      if (statusLower.includes('stage 2') || statusLower.includes('customs')) {
+        currentStep = 2;
+      } else if (statusLower.includes('stage 3') || statusLower.includes('rail') || statusLower.includes('dfc') || statusLower.includes('transit')) {
+        currentStep = 3;
+      } else if (statusLower.includes('stage 4') || statusLower.includes('port') || statusLower.includes('sob') || statusLower.includes('staged')) {
+        currentStep = 4;
+      } else if (statusLower.includes('stage 5') || statusLower.includes('sail') || statusLower.includes('ocean')) {
+        currentStep = 5;
+      } else if (statusLower.includes('stage 6') || statusLower.includes('discharged') || statusLower.includes('delivered')) {
+        currentStep = 6;
+      }
     } else if (isLive) {
       if (idx % 4 === 0) {
         liveStatus = 'Ocean Liner Voyage (Sailing)';
@@ -205,7 +173,7 @@ export default function App() {
         currentStep = 5;
       } else if (idx % 4 === 1) {
         liveStatus = 'Gateway Port Staging & SOB';
-        liveGPS = `${inv.portOfLoading || 'JNPT Nhava Sheva'} Berth Terminal`;
+        liveGPS = `${routePol} Berth Terminal`;
         currentStep = 4;
       } else if (idx % 4 === 2) {
         liveStatus = isRail ? 'In-Transit (DFC Rail Corridor)' : 'In-Transit (Road Fleet Trailer)';
@@ -213,7 +181,7 @@ export default function App() {
         currentStep = 3;
       } else {
         liveStatus = isRail ? 'Customs Cleared & Rake Staged' : 'Customs Cleared & Trailer Dispatched';
-        liveGPS = `${inv.terminal || 'TRANSWORLD-DADRI'} Dispatch Yard`;
+        liveGPS = `${routeTerminal} Dispatch Yard`;
         currentStep = 2;
       }
     }

@@ -953,8 +953,7 @@ export async function fetchLiveMovementHistory(contNo) {
   const clean = String(contNo).trim().toUpperCase();
 
   const CANDIDATE_HOSTS = [
-    'https://brooks-cigarette-leo-henry.trycloudflare.com',
-    'https://8f4130114ba1f263-103-107-92-210.serveousercontent.com',
+    'https://tex-engineer-thought-geographical.trycloudflare.com',
     'https://spj-backend.onrender.com',
     'http://localhost:5001'
   ];
