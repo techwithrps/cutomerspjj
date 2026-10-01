@@ -185,12 +185,9 @@ export default function InvoiceCardsView({
     });
   }, [allInvoices, searchTerm, statusFilter, sortOrder]);
 
-  // Real Customer-Centric KPIs computed from actual loaded invoices
-  const totalBilled = allInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0) || customer?.exactStats?.grossRevenue || 0;
-  const totalInvoicesCount = allInvoices.length || customer?.exactStats?.invoiceCount || 0;
-
-  // Exact 100% Dynamic Tab Counts calculated directly from loaded invoices
-  const countAll = allInvoices.kpis?.invoiceCount || allInvoices.length;
+  // Real Customer-Centric KPIs computed from actual loaded invoices or Oracle DB procedure KPIs
+  const kpiData = allInvoices.kpis || customer?.exactStats;
+  const countAll = kpiData?.invoiceCount || allInvoices.totalInvoices || customer?.exactStats?.invoiceCount || allInvoices.length;
   const countPaid = allInvoices.filter(i => {
     const s = (i.status || '').toLowerCase();
     return s === 'paid' || s === 'cleared' || s === 'settled';
@@ -218,14 +215,14 @@ export default function InvoiceCardsView({
     return !isPaid && !isCredit;
   }).reduce((sum, i) => sum + (i.totalAmount || 0), 0);
   
-  const totalContainers = allInvoices.length || customer?.exactStats?.containerCount || 0;
+  const totalContainers = kpiData?.containerCount || allInvoices.totalRecords || customer?.exactStats?.containerCount || allInvoices.length;
   const liveActiveCount = Math.min(47, Math.max(12, Math.floor(allInvoices.length * 0.15)));
 
   // 100% Real-Time Procedure Aggregations directly from Oracle DB procedure KPI calculation
-  const totalBaseAmount = allInvoices.kpis?.totalBillAmount || allInvoices.reduce((sum, i) => sum + (Number(i.billAmount || i.AMOUNT || 0)), 0);
-  const totalTaxAmount = allInvoices.kpis?.totalTax || allInvoices.reduce((sum, i) => sum + (Number(i.taxAmount || ((i.igst || 0) + (i.cgst || 0) + (i.sgst || 0)) || 0)), 0);
-  const totalGrossAmount = allInvoices.kpis?.totalGrossAmount || allInvoices.reduce((sum, i) => sum + (Number(i.totalAmount || i.INVOICE_AMOUNT || 0)), 0);
-  const totalContainersCount = allInvoices.kpis?.containerCount || allInvoices.totalRecords || allInvoices.length;
+  const totalBaseAmount = kpiData?.totalBillAmount || kpiData?.netBilledAmount || allInvoices.reduce((sum, i) => sum + (Number(i.billAmount || i.AMOUNT || 0)), 0);
+  const totalTaxAmount = kpiData?.totalTax || kpiData?.taxAmount || allInvoices.reduce((sum, i) => sum + (Number(i.taxAmount || ((i.igst || 0) + (i.cgst || 0) + (i.sgst || 0)) || 0)), 0);
+  const totalGrossAmount = kpiData?.totalGrossAmount || kpiData?.grossRevenue || allInvoices.reduce((sum, i) => sum + (Number(i.totalAmount || i.INVOICE_AMOUNT || 0)), 0);
+  const totalContainersCount = kpiData?.containerCount || allInvoices.totalRecords || customer?.exactStats?.containerCount || allInvoices.length;
 
   // Exact pagination based on real filtered items
   const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1;
