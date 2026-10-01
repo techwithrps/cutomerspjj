@@ -109,13 +109,14 @@ export const CUSTOMER_ACCOUNTS = {
       office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
     },
     exactStats: {
-      invoiceCount: 10098,
-      netBilledAmount: 1588578813.56, // ₹ 158.86 Cr
-      taxAmount: 285874186.44,       // ₹ 28.59 Cr
-      grossRevenue: 1874523000.00,    // ₹ 187.45 Cr
+      invoiceCount: 8474,
+      netBilledAmount: 1801246291.26, // ₹ 180.12 Cr
+      taxAmount: 116811657.24,       // ₹ 11.68 Cr
+      grossRevenue: 1918057948.54,    // ₹ 191.80 Cr
       contribution: '4.86%',
-      activeContainersCount: 150,
-      onTimeDeliveryRate: '99.1%'
+      containerCount: 10239,
+      activeContainersCount: 47,
+      onTimeDeliveryRate: '99.4%'
     }
   },
   'RUSTAM': {

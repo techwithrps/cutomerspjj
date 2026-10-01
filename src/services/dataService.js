@@ -231,7 +231,6 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
-      'https://349285e6ca32f1.lhr.life',
       'https://spj-backend.onrender.com',
       'http://localhost:5001'
     ];
@@ -271,7 +270,7 @@ export async function fetchCustomerInvoices(inputKey) {
 
         const cleanName = (account.name || '').replace(/[-_](HR|UP|DL|MH|RJ|GJ)$/i, '').trim();
         const custSearch = cleanName || account.code || 'MARHABA';
-        const url = `${host}/api/cir-report?customerId=${encodeURIComponent(custSearch)}&limit=2000`;
+        const url = `${host}/api/cir-report?customerId=${encodeURIComponent(custSearch)}&limit=150`;
         
         const res = await fetch(url, { 
           signal: controller.signal,
@@ -290,7 +289,7 @@ export async function fetchCustomerInvoices(inputKey) {
             INVOICES_CACHE[key] = normalized;
             try {
               if (typeof localStorage !== 'undefined') {
-                localStorage.setItem(`spj_cached_invoices_${key}`, JSON.stringify(normalized.slice(0, 300)));
+                localStorage.setItem(`spj_cached_invoices_${key}`, JSON.stringify(normalized.slice(0, 150)));
                 if (data.kpis) {
                   localStorage.setItem(`spj_cached_kpis_${key}`, JSON.stringify(data.kpis));
                 }
@@ -312,7 +311,25 @@ export async function fetchCustomerInvoices(inputKey) {
   }
 
   const rawList = dbStore.invoices[key] || [];
-  return rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+  const fallbackNormalized = rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+  const kpiStore = dbStore.invoicesKPIs?.[key];
+  if (kpiStore) {
+    fallbackNormalized.kpis = kpiStore;
+    fallbackNormalized.totalRecords = kpiStore.containerCount;
+    fallbackNormalized.totalInvoices = kpiStore.invoiceCount;
+  } else if (account?.exactStats) {
+    fallbackNormalized.kpis = {
+      totalGrossAmount: account.exactStats.grossRevenue,
+      totalBillAmount: account.exactStats.netBilledAmount,
+      totalTax: account.exactStats.taxAmount,
+      invoiceCount: account.exactStats.invoiceCount,
+      containerCount: account.exactStats.containerCount || account.exactStats.invoiceCount,
+      totalRecords: account.exactStats.containerCount || account.exactStats.invoiceCount
+    };
+    fallbackNormalized.totalRecords = fallbackNormalized.kpis.containerCount;
+    fallbackNormalized.totalInvoices = fallbackNormalized.kpis.invoiceCount;
+  }
+  return fallbackNormalized;
 }
 
 
@@ -346,7 +363,25 @@ export function getLocalCustomerInvoices(inputKey) {
   }
 
   const rawList = dbStore.invoices[key] || [];
-  return rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+  const normalized = rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+  const kpiStore = dbStore.invoicesKPIs?.[key];
+  if (kpiStore) {
+    normalized.kpis = kpiStore;
+    normalized.totalRecords = kpiStore.containerCount;
+    normalized.totalInvoices = kpiStore.invoiceCount;
+  } else if (account?.exactStats) {
+    normalized.kpis = {
+      totalGrossAmount: account.exactStats.grossRevenue,
+      totalBillAmount: account.exactStats.netBilledAmount,
+      totalTax: account.exactStats.taxAmount,
+      invoiceCount: account.exactStats.invoiceCount,
+      containerCount: account.exactStats.containerCount || account.exactStats.invoiceCount,
+      totalRecords: account.exactStats.containerCount || account.exactStats.invoiceCount
+    };
+    normalized.totalRecords = normalized.kpis.containerCount;
+    normalized.totalInvoices = normalized.kpis.invoiceCount;
+  }
+  return normalized;
 }
 
 /**

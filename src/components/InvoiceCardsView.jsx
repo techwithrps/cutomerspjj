@@ -342,7 +342,7 @@ export default function InvoiceCardsView({
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-1">
             <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#0f172a] text-white shadow-xs">
-              All Invoices ({countAll})
+              All Invoices ({Number(countAll || 0).toLocaleString('en-IN')})
             </span>
           </div>
 

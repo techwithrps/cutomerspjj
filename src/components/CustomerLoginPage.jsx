@@ -37,7 +37,6 @@ export default function CustomerLoginPage({ onLoginSuccess }) {
     try {
       // 1. Try Live Server Authentication
       const CANDIDATE_AUTH_HOSTS = [
-        'https://349285e6ca32f1.lhr.life',
         'https://spj-backend.onrender.com',
         'http://localhost:5001'
       ];

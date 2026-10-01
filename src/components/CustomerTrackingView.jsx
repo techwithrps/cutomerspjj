@@ -583,7 +583,32 @@ export default function CustomerTrackingView({
       </div>
 
       {/* 2. Tracking Details Container (Rendered Only When a Container is Tracked) */}
-      {searchedContainer ? (
+      {searchedContainer && !matched ? (
+        <div className="bg-white p-8 sm:p-12 rounded-3xl border border-rose-200 text-center space-y-4 shadow-sm animate-fade-in max-w-2xl mx-auto">
+          <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-100">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5 max-w-lg mx-auto">
+            <h3 className="text-base sm:text-lg font-black text-slate-900">
+              Shipment Not Found in {customer?.name} Account
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              The container or reference <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">"{searchedContainer}"</span> is not registered under your enterprise account. Under SPJ security and client privacy policy, each client can only track containers belonging to their own shipments.
+            </p>
+          </div>
+          <div className="pt-2 flex justify-center gap-3">
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setSearchedContainer((containers && containers[0]?.contNo) || null);
+              }}
+              className="px-5 py-2.5 bg-gradient-to-r from-[#0b1329] to-[#0284c7] text-white rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all cursor-pointer"
+            >
+              View My Active Consignments
+            </button>
+          </div>
+        </div>
+      ) : searchedContainer ? (
         <div className="space-y-4 sm:space-y-5 animate-fade-in">
 
           {/* Header Summary Card */}
