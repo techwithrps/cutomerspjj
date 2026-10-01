@@ -30,7 +30,8 @@ import { getAuthToken } from '../utils/api';
 export default function InvoiceCardsView({ 
   customer, 
   onSelectInvoice,
-  onNavigateTrack
+  onNavigateTrack,
+  invoices: propInvoices
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -43,8 +44,12 @@ export default function InvoiceCardsView({
 
   const customerKey = (customer?.code || 'HMA').toUpperCase();
 
-  // Load real-time live invoices from API for ANY customer
+  // Load real-time live invoices from API for ANY customer if propInvoices is not yet available
   useEffect(() => {
+    if (propInvoices && propInvoices.length > 0) {
+      setLiveInvoices(propInvoices);
+      return;
+    }
     let isMounted = true;
     const fetchCustomerCIR = async () => {
       setLoading(true);
@@ -62,14 +67,15 @@ export default function InvoiceCardsView({
     };
     fetchCustomerCIR();
     return () => { isMounted = false; };
-  }, [customer]);
+  }, [customer, propInvoices]);
 
 
   // Merge live invoices or fallback
   const allInvoices = useMemo(() => {
+    if (propInvoices && propInvoices.length > 0) return propInvoices;
     if (liveInvoices.length > 0) return liveInvoices;
     return getLocalCustomerInvoices(customer?.code || customer?.name || customer?.id);
-  }, [liveInvoices, customer]);
+  }, [propInvoices, liveInvoices, customer]);
 
   const formatCurrency = (val) => {
     if (!val) return '₹ 0';
@@ -408,8 +414,8 @@ export default function InvoiceCardsView({
             const terminalDisplay = inv.terminal || (customer?.primaryHub || 'TRANSWORLD-DADRI');
             const jobDisplay = inv.jobNo || `EXP/2026-27/${String(4000 + idx).padStart(5, '0')}`;
             
-            // Format full SPJ commercial invoice number (e.g. SPJ/26-27/243439)
-            const rawInv = String(inv.partyInvNo || inv.invoiceNo || inv.id || (1000 + idx)).trim();
+            // Format full SPJ commercial invoice number (e.g. SPJ/D26-27/11625 or SPJ/TP26-27/4694)
+            const rawInv = String(inv.invoiceRefNo || (inv.invoiceNo ? `SPJ/26-27/${inv.invoiceNo}` : inv.partyInvNo || inv.id || (1000 + idx))).trim();
             const invNumDisplay = (rawInv.toUpperCase().startsWith('SPJ') || rawInv.toUpperCase().startsWith('PJ'))
               ? rawInv
               : `SPJ/26-27/${rawInv}`;
@@ -451,6 +457,15 @@ export default function InvoiceCardsView({
 
                 {/* Metadata Card Box - Compact Minimal Layout */}
                 <div className="space-y-1 text-[8px] sm:text-[10px] bg-slate-50/80 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-100">
+                  {inv.partyInvNo && (
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase shrink-0">PARTY INV</span>
+                      <span className="font-mono font-bold text-blue-700 truncate text-[8px] sm:text-[10px]" title={inv.partyInvNo}>
+                        {inv.partyInvNo}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase shrink-0">CONT</span>
                     <span className="font-mono font-bold text-slate-900 truncate text-[8px] sm:text-[10px]">{containerDisplay}</span>

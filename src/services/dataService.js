@@ -217,6 +217,8 @@ export function getCustomerAccount(inputKey) {
   return acc;
 }
 
+const INVOICES_CACHE = {};
+
 /**
  * Fetches invoices for a customer (Live API with DB store fallback)
  */
@@ -276,13 +278,19 @@ export async function fetchCustomerInvoices(inputKey) {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         clearTimeout(timeoutId);
-
         const contentType = res.headers.get('content-type') || '';
         if (res.ok && contentType.includes('application/json')) {
           const data = await res.json();
           const records = data.records || data.rows || [];
           if (records.length > 0) {
-            return records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+            const normalized = records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+            INVOICES_CACHE[key] = normalized;
+            try {
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(`spj_cached_invoices_${key}`, JSON.stringify(normalized.slice(0, 300)));
+              }
+            } catch (err) {}
+            return normalized;
           }
         }
       } catch (e) {
@@ -291,6 +299,10 @@ export async function fetchCustomerInvoices(inputKey) {
     }
   } catch (e) {
     console.error('[Customer Portal] Error fetching live Oracle DB invoices:', e.message);
+  }
+
+  if (INVOICES_CACHE[key] && INVOICES_CACHE[key].length > 0) {
+    return INVOICES_CACHE[key];
   }
 
   const rawList = dbStore.invoices[key] || [];
@@ -304,6 +316,23 @@ export async function fetchCustomerInvoices(inputKey) {
 export function getLocalCustomerInvoices(inputKey) {
   const key = normalizeCustomerKey(inputKey);
   const account = getCustomerAccount(key);
+
+  if (INVOICES_CACHE[key] && INVOICES_CACHE[key].length > 0) {
+    return INVOICES_CACHE[key];
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`spj_cached_invoices_${key}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          INVOICES_CACHE[key] = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+  }
+
   const rawList = dbStore.invoices[key] || [];
   return rawList.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
 }

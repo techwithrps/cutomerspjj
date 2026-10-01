@@ -249,6 +249,7 @@ export default function App() {
         {activeTab === 'invoices' && (
           <InvoiceCardsView
             customer={currentCustomer}
+            invoices={sortedCustomerInvoices}
             onSelectInvoice={(inv) => setSelectedInvoice(inv)}
             onNavigateTrack={(contNo) => {
               setTrackingQuery(contNo);
