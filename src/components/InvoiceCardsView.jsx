@@ -190,7 +190,7 @@ export default function InvoiceCardsView({
   const totalInvoicesCount = allInvoices.length || customer?.exactStats?.invoiceCount || 0;
 
   // Exact 100% Dynamic Tab Counts calculated directly from loaded invoices
-  const countAll = allInvoices.length;
+  const countAll = allInvoices.kpis?.invoiceCount || allInvoices.length;
   const countPaid = allInvoices.filter(i => {
     const s = (i.status || '').toLowerCase();
     return s === 'paid' || s === 'cleared' || s === 'settled';
@@ -221,11 +221,11 @@ export default function InvoiceCardsView({
   const totalContainers = allInvoices.length || customer?.exactStats?.containerCount || 0;
   const liveActiveCount = Math.min(47, Math.max(12, Math.floor(allInvoices.length * 0.15)));
 
-  // 100% Real-Time Procedure Aggregations directly calculated from loaded Oracle records
-  const totalBaseAmount = allInvoices.reduce((sum, i) => sum + (Number(i.billAmount || i.AMOUNT || 0)), 0);
-  const totalTaxAmount = allInvoices.reduce((sum, i) => sum + (Number(i.taxAmount || ((i.igst || 0) + (i.cgst || 0) + (i.sgst || 0)) || 0)), 0);
-  const totalGrossAmount = allInvoices.reduce((sum, i) => sum + (Number(i.totalAmount || i.INVOICE_AMOUNT || 0)), 0);
-  const totalContainersCount = allInvoices.length;
+  // 100% Real-Time Procedure Aggregations directly from Oracle DB procedure KPI calculation
+  const totalBaseAmount = allInvoices.kpis?.totalBillAmount || allInvoices.reduce((sum, i) => sum + (Number(i.billAmount || i.AMOUNT || 0)), 0);
+  const totalTaxAmount = allInvoices.kpis?.totalTax || allInvoices.reduce((sum, i) => sum + (Number(i.taxAmount || ((i.igst || 0) + (i.cgst || 0) + (i.sgst || 0)) || 0)), 0);
+  const totalGrossAmount = allInvoices.kpis?.totalGrossAmount || allInvoices.reduce((sum, i) => sum + (Number(i.totalAmount || i.INVOICE_AMOUNT || 0)), 0);
+  const totalContainersCount = allInvoices.kpis?.containerCount || allInvoices.totalRecords || allInvoices.length;
 
   // Exact pagination based on real filtered items
   const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1;

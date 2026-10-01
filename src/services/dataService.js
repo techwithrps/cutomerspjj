@@ -284,10 +284,16 @@ export async function fetchCustomerInvoices(inputKey) {
           const records = data.records || data.rows || [];
           if (records.length > 0) {
             const normalized = records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
+            normalized.kpis = data.kpis;
+            normalized.totalRecords = data.totalRecords || data.total || data.kpis?.containerCount || records.length;
+            normalized.totalInvoices = data.kpis?.invoiceCount || records.length;
             INVOICES_CACHE[key] = normalized;
             try {
               if (typeof localStorage !== 'undefined') {
                 localStorage.setItem(`spj_cached_invoices_${key}`, JSON.stringify(normalized.slice(0, 300)));
+                if (data.kpis) {
+                  localStorage.setItem(`spj_cached_kpis_${key}`, JSON.stringify(data.kpis));
+                }
               }
             } catch (err) {}
             return normalized;
@@ -323,9 +329,15 @@ export function getLocalCustomerInvoices(inputKey) {
   if (typeof localStorage !== 'undefined') {
     try {
       const cached = localStorage.getItem(`spj_cached_invoices_${key}`);
+      const cachedKpis = localStorage.getItem(`spj_cached_kpis_${key}`);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          if (cachedKpis) {
+            parsed.kpis = JSON.parse(cachedKpis);
+            parsed.totalRecords = parsed.kpis.containerCount;
+            parsed.totalInvoices = parsed.kpis.invoiceCount;
+          }
           INVOICES_CACHE[key] = parsed;
           return parsed;
         }

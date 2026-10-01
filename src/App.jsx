@@ -226,6 +226,8 @@ export default function App() {
       stageInfo: getContainerStageInfo(itemObj)
     };
   });
+  allContainerTrips.totalRecords = customerInvoices.totalRecords || customerInvoices.kpis?.containerCount || sortedCustomerInvoices.length;
+  allContainerTrips.kpis = customerInvoices.kpis;
 
   // 2. LIVE CONTAINERS: STRICTLY ONLY CONTAINERS WITHOUT A DISCHARGE DATE (IN-TRANSIT)
   const liveContainers = allContainerTrips.filter(c => !c.dischargeDate || c.dischargeDate === '-' || c.dischargeDate === null);

@@ -92,7 +92,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
                 Container Management & Fleet Hub
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                {filtered.length} {subTab === 'live' ? 'Live Active' : 'Total Trips'}
+                {subTab === 'live' ? `${effectiveLiveList.length} Live Active` : (allContainers.totalRecords ? `${allContainers.totalRecords.toLocaleString('en-IN')} Total Trips` : `${filtered.length} Total Trips`)}
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
@@ -138,7 +138,7 @@ export default function CustomerContainersView({ allContainers = [], liveContain
               <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
                 subTab === 'master' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
               }`}>
-                {effectiveAllList.length} Trips
+                {allContainers.totalRecords ? allContainers.totalRecords.toLocaleString('en-IN') : effectiveAllList.length} Trips
               </span>
             </button>
           </div>
