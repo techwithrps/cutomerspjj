@@ -23,7 +23,7 @@ export default function CustomerSupportView({ customer }) {
     office: 'D-9/3 Okhla , Industrial Estate, Phase -1, Okhla Industrial Estate Phase 1, New Delhi-110020, Delhi, India'
   };
 
-  const rm = (customer?.relationshipManager && customer.relationshipManager.name && !customer.relationshipManager.name.includes('Pooja'))
+  const rm = customer?.relationshipManager 
     ? { ...defaultRm, ...customer.relationshipManager }
     : defaultRm;
 
