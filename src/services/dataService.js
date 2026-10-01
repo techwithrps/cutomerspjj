@@ -231,7 +231,7 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
-      'https://tex-engineer-thought-geographical.trycloudflare.com',
+      'https://349285e6ca32f1.lhr.life',
       'https://spj-backend.onrender.com',
       'http://localhost:5001'
     ];

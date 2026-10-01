@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://tex-engineer-thought-geographical.trycloudflare.com/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://349285e6ca32f1.lhr.life/api';
 
 export const getAuthToken = () => {
   try {
