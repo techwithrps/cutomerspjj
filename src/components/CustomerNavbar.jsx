@@ -32,8 +32,8 @@ export default function CustomerNavbar({
     { id: 'containers', label: 'Containers', fullLabel: 'Containers', icon: Container },
     { id: 'tracking', label: 'Tracking', fullLabel: 'Track Container', icon: Navigation },
     { id: 'gr', label: 'Fleet GR', fullLabel: 'Fleet GR / Bilty', icon: Truck, isHighlight: true },
+    { id: 'fetcher', label: 'Ocean Hub', fullLabel: 'Ocean Tracking & Vessel Radar', icon: Compass, isHighlight: true },
     { id: 'schedules', label: 'Vessels', fullLabel: 'Vessel Schedules', icon: Ship },
-    { id: 'fetcher', label: 'API Hub', fullLabel: 'Live API Scraper', icon: Cpu },
     { id: 'profile', label: 'Profile', fullLabel: 'Account Profile', icon: Building2 },
     { id: 'support', label: 'Support', fullLabel: 'RM Support', icon: Headphones },
   ];

@@ -8,6 +8,7 @@ import CustomerProfileView from './components/CustomerProfileView';
 import CustomerSupportView from './components/CustomerSupportView';
 import VesselSchedulesView from './components/VesselSchedulesView';
 import LiveScheduleFetcher from './components/LiveScheduleFetcher';
+import OceanIntelligenceView from './components/OceanIntelligenceView';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import CustomerWelcomeModal from './components/CustomerWelcomeModal';
 import { getCustomerAccount, getLocalCustomerInvoices, fetchCustomerInvoices, getContainerStageInfo } from './services/dataService';
@@ -289,7 +290,7 @@ export default function App() {
         )}
 
         {activeTab === 'fetcher' && (
-          <LiveScheduleFetcher
+          <OceanIntelligenceView
             customer={currentCustomer}
           />
         )}
