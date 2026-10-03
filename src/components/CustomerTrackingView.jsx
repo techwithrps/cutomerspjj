@@ -39,7 +39,7 @@ function normalizeForSearch(str) {
 }
 
 /**
- * Builds the exact Multimodal Lifecycle Journey matching user Screenshot #2
+ * Builds the exact 10-Milestone Multimodal Lifecycle Journey requested by the user
  */
 function buildTenStageMilestones(item, customer) {
   if (!item) return [];
@@ -49,93 +49,146 @@ function buildTenStageMilestones(item, customer) {
   const pol = item.pol || item.portOfLoading || 'JNPT Nhava Sheva';
   const pod = item.destination || item.destinationPort || 'JEBEL ALI-UAE';
   const shippingLine = item.shippingLine || 'MSC / CMA CGM';
+  const factoryLocation = `${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, Meerut Rd`;
   const blNo = item.blNo || 'CGD0158714';
   const sbNo = item.sbNo || '6741008';
   const gstNo = customer?.gstin || '09AAACS9677K1Z6';
 
-  // Determine active stage step (1 to 6)
-  let activeStep = 5; // Default Stage 5: Ocean Transit via MSC / CMA CGM as per screenshot 2
+  // Determine active stage step (1 to 10)
+  let activeStep = 6; // Default to Stage 6 (Rail Out Details)
   const st = String(item.status || '').toLowerCase();
   if (st.includes('discharge') || st.includes('deliver') || st.includes('complete') || item.dischargeDate) {
-    activeStep = 6;
+    activeStep = 10;
   } else if (st.includes('sail') || st.includes('ocean')) {
-    activeStep = 5;
+    activeStep = 9;
+  } else if (st.includes('vessel') || st.includes('feeder')) {
+    activeStep = 8;
   } else if (st.includes('port') || st.includes('staging')) {
-    activeStep = 4;
+    activeStep = 7;
   } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
-    activeStep = 3;
+    activeStep = 6;
   } else if (st.includes('custom') || st.includes('leo')) {
+    activeStep = 5;
+  } else if (st.includes('buffer')) {
+    activeStep = 4;
+  } else if (st.includes('factory out') || st.includes('stuffed')) {
+    activeStep = 3;
+  } else if (st.includes('factory in') || st.includes('arrived')) {
     activeStep = 2;
-  } else if (st.includes('gate-in') || st.includes('icd')) {
+  } else if (st.includes('gate-in') || st.includes('icd out')) {
     activeStep = 1;
   }
 
   return [
     {
       step: 1,
-      id: 'booking_gatein',
-      title: 'Booking Confirmed & Gate-In Recorded',
-      subtitle: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
-      location: 'TRANSWORLD--DADRI CFS Depot',
-      description: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
-      timestamp: '01/10/2026 09:30 AM',
+      id: 'icd_out',
+      title: '1) ICD Out',
+      subtitle: 'Empty Out From ICD for Factory Stuffing',
+      location: terminal,
+      description: 'Empty Out From ICD for Factory Stuffing',
+      timestamp: item.icdInDate || item.inDate || '27/09/2026 14:10',
       icon: Building2,
       status: activeStep > 1 ? 'completed' : (activeStep === 1 ? 'current' : 'upcoming')
     },
     {
       step: 2,
-      id: 'customs_leo',
-      title: 'Customs Examination & EDI LEO Issued',
-      subtitle: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
-      location: `Customs ICD / CFS (TRANSWORLD--DADRI)`,
-      description: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
-      timestamp: '01/10/2026 14:15 PM',
-      icon: ShieldCheck,
+      id: 'factory_gate_in',
+      title: '2) Factory Gate In',
+      subtitle: 'Container arrived at factory for stuffing.',
+      location: factoryLocation,
+      description: 'Container arrived at factory for stuffing.',
+      timestamp: item.factoryInDate || '01/10/2026 09:30 AM',
+      icon: Truck,
       status: activeStep > 2 ? 'completed' : (activeStep === 2 ? 'current' : 'upcoming')
     },
     {
       step: 3,
-      id: 'rail_rake',
-      title: 'Loaded on Dedicated Freight Rake (DFC Railhead)',
-      subtitle: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
-      location: 'Western Dedicated Freight Corridor (WDFC)',
-      description: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
-      timestamp: '02/10/2026 19:40 PM',
-      icon: Train,
+      id: 'factory_gate_out',
+      title: '3) Factory Gate Out',
+      subtitle: 'Container stuffed, sealed, and dispatched from factory.',
+      location: 'Factory Dispatch Yard / Trailer Bay',
+      description: 'Container stuffed, sealed, and dispatched from factory.',
+      timestamp: item.factoryOutDate || '01/10/2026 16:30 PM',
+      icon: ShieldCheck,
       status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
     },
     {
       step: 4,
-      id: 'port_gatein',
-      title: `Gateway Port Gate-In (${pol})`,
-      subtitle: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
-      location: `${pol} Terminal Gate`,
-      description: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
-      timestamp: '04/10/2026 16:08 PM (Est)',
-      icon: Anchor,
+      id: 'icd_buffer',
+      title: '4) ICD/BUFFER In/Out Details',
+      subtitle: 'Buffer Yard & Gate In/Out Staging',
+      location: `Buffer Yard (${terminal})`,
+      description: 'Buffer Yard & Gate In/Out Staging',
+      timestamp: item.bufferDate || '01/10/2026 21:00 PM',
+      icon: Layers,
       status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
     },
     {
       step: 5,
-      id: 'ocean_transit',
-      title: `Ocean Transit via ${shippingLine}`,
-      subtitle: `Sea transit to destination seaport: ${pod}.`,
-      location: `${shippingLine} International Corridor`,
-      description: `Sea transit to destination seaport: ${pod}.`,
-      timestamp: '04/10/2026 22:00 PM (Est)',
-      icon: Ship,
+      id: 'customs_handover',
+      title: '5) Customs Handover',
+      subtitle: `Customs clearance documents handed over for verification under SB: ${sbNo}.`,
+      location: `Customs ICD / CFS (${terminal})`,
+      description: `Customs clearance documents handed over for verification under SB: ${sbNo}.`,
+      timestamp: item.sbDate || '02/10/2026 14:15 PM',
+      icon: FileText,
       status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
     },
     {
       step: 6,
+      id: 'rail_out',
+      title: '6) Rail Out Details',
+      subtitle: 'WDFC Dedicated Freight Corridor Rail Rake Out',
+      location: 'Western Dedicated Freight Corridor (WDFC)',
+      description: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
+      timestamp: item.trainOutDate || '02/10/2026 19:40 PM',
+      icon: Train,
+      status: activeStep > 6 ? 'completed' : (activeStep === 6 ? 'current' : 'upcoming')
+    },
+    {
+      step: 7,
+      id: 'port_arrival',
+      title: '7) Port Arrival Details',
+      subtitle: 'Gateway Port Gate-In & Terminal Staging',
+      location: `${pol} Terminal Gate`,
+      description: 'Gateway Port Gate-In & Terminal Staging',
+      timestamp: item.portArrivalDate || '04/10/2026 16:08 PM (Est)',
+      icon: Anchor,
+      status: activeStep > 7 ? 'completed' : (activeStep === 7 ? 'current' : 'upcoming')
+    },
+    {
+      step: 8,
+      id: 'planned_vessel',
+      title: '8) Planned Vessel Details',
+      subtitle: 'Ocean Liner Feeder / Mother Vessel Allocation',
+      location: `${shippingLine} Vessel Staging Yard`,
+      description: 'Ocean Liner Feeder / Mother Vessel Allocation',
+      timestamp: item.vesselEtd || '04/10/2026 20:00 PM (Est)',
+      icon: Compass,
+      status: activeStep > 8 ? 'completed' : (activeStep === 8 ? 'current' : 'upcoming')
+    },
+    {
+      step: 9,
+      id: 'sailing_details',
+      title: '9) Sailing Details',
+      subtitle: 'Vessel Sailing & Shipped on Board',
+      location: `${shippingLine} International Corridor`,
+      description: `Sea transit to destination seaport: ${pod}.`,
+      timestamp: item.sailedDate || '04/10/2026 22:00 PM (Est)',
+      icon: Ship,
+      status: activeStep > 9 ? 'completed' : (activeStep === 9 ? 'current' : 'upcoming')
+    },
+    {
+      step: 10,
       id: 'destination_discharge',
-      title: 'Destination Discharge & Port Delivery',
-      subtitle: 'Final discharge, customs clearance and delivery order release.',
+      title: '10) Destination Discharge & Port Delivery',
+      subtitle: 'Final Discharge at Destination Seaport & Consignee Delivery',
       location: pod,
       description: 'Final discharge, customs clearance and delivery order release.',
-      timestamp: '2026-10-08 10:08 AM (ETA)',
+      timestamp: item.dischargeDate || item.eta || '2026-10-08 10:08 AM (ETA)',
       icon: CheckCircle2,
-      status: activeStep === 6 ? 'completed' : 'upcoming'
+      status: activeStep === 10 ? 'completed' : 'upcoming'
     }
   ];
 }
