@@ -44,18 +44,18 @@ function normalizeForSearch(str) {
 function buildTenStageMilestones(item, customer) {
   if (!item) return [];
 
-  const cNo = item.contNo || item.containerNo || 'TLLU1066673';
-  const terminal = item.terminal || customer?.primaryHub || 'TRANSWORLD--DADRI CFS Depot';
-  const pol = item.pol || item.portOfLoading || 'JNPT Nhava Sheva';
-  const pod = item.destination || item.destinationPort || 'JEBEL ALI-UAE';
-  const shippingLine = item.shippingLine || 'MSC / CMA CGM';
-  const factoryLocation = `${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, Meerut Rd`;
-  const blNo = item.blNo || 'CGD0158714';
-  const sbNo = item.sbNo || '6741008';
-  const gstNo = customer?.gstin || '09AAACS9677K1Z6';
+  const cNo = item.contNo || item.containerNo || item.id || 'N/A';
+  const terminal = item.terminal || customer?.primaryHub || item.cfs || 'ICD Depot';
+  const pol = item.pol || item.portOfLoading || item.POL || 'Origin Gateway Port';
+  const pod = item.destination || item.destinationPort || item.PORT || 'Destination Seaport';
+  const shippingLine = item.shippingLine || item.line || 'Ocean Carrier';
+  const factoryLocation = item.origin || `${customer?.name || 'Client'} Facility`;
+  const blNo = item.blNo || item.BL_NO || '—';
+  const sbNo = item.sbNo || item.SB_NO || '—';
+  const gstNo = customer?.gstin || item.gstin || '';
 
   // Determine active stage step (1 to 10)
-  let activeStep = 6; // Default to Stage 6 (Rail Out Details)
+  let activeStep = 6;
   const st = String(item.status || '').toLowerCase();
   if (st.includes('discharge') || st.includes('deliver') || st.includes('complete') || item.dischargeDate) {
     activeStep = 10;
@@ -87,7 +87,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Empty Out From ICD for Factory Stuffing',
       location: terminal,
       description: 'Empty Out From ICD for Factory Stuffing',
-      timestamp: item.icdInDate || item.inDate || '27/09/2026 14:10',
+      timestamp: item.icdInDate || item.inDate || item.date || item.createdOn || 'Completed',
       icon: Building2,
       status: activeStep > 1 ? 'completed' : (activeStep === 1 ? 'current' : 'upcoming')
     },
@@ -98,7 +98,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Container arrived at factory for stuffing.',
       location: factoryLocation,
       description: 'Container arrived at factory for stuffing.',
-      timestamp: item.factoryInDate || '01/10/2026 09:30 AM',
+      timestamp: item.factoryInDate || item.inDate || 'Completed',
       icon: Truck,
       status: activeStep > 2 ? 'completed' : (activeStep === 2 ? 'current' : 'upcoming')
     },
@@ -107,9 +107,9 @@ function buildTenStageMilestones(item, customer) {
       id: 'factory_gate_out',
       title: '3) Factory Gate Out',
       subtitle: 'Container stuffed, sealed, and dispatched from factory.',
-      location: 'Factory Dispatch Yard / Trailer Bay',
+      location: `${factoryLocation} Yard`,
       description: 'Container stuffed, sealed, and dispatched from factory.',
-      timestamp: item.factoryOutDate || '01/10/2026 16:30 PM',
+      timestamp: item.factoryOutDate || item.outDate || 'Completed',
       icon: ShieldCheck,
       status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
     },
@@ -120,7 +120,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Buffer Yard & Gate In/Out Staging',
       location: `Buffer Yard (${terminal})`,
       description: 'Buffer Yard & Gate In/Out Staging',
-      timestamp: item.bufferDate || '01/10/2026 21:00 PM',
+      timestamp: item.bufferDate || item.icdInDate || 'Completed',
       icon: Layers,
       status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
     },
@@ -128,10 +128,10 @@ function buildTenStageMilestones(item, customer) {
       step: 5,
       id: 'customs_handover',
       title: '5) Customs Handover',
-      subtitle: `Customs clearance documents handed over for verification under SB: ${sbNo}.`,
+      subtitle: sbNo !== '—' ? `Customs clearance documents verified under SB: ${sbNo}.` : 'Customs clearance documents verified.',
       location: `Customs ICD / CFS (${terminal})`,
-      description: `Customs clearance documents handed over for verification under SB: ${sbNo}.`,
-      timestamp: item.sbDate || '02/10/2026 14:15 PM',
+      description: sbNo !== '—' ? `Customs clearance documents verified under SB: ${sbNo}.` : 'Customs clearance documents verified.',
+      timestamp: item.sbDate || item.leoDate || 'Completed',
       icon: FileText,
       status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
     },
@@ -142,7 +142,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'WDFC Dedicated Freight Corridor Rail Rake Out',
       location: 'Western Dedicated Freight Corridor (WDFC)',
       description: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
-      timestamp: item.trainOutDate || '02/10/2026 19:40 PM',
+      timestamp: item.trainOutDate || item.lineHandoverDate || 'Completed',
       icon: Train,
       status: activeStep > 6 ? 'completed' : (activeStep === 6 ? 'current' : 'upcoming')
     },
@@ -153,7 +153,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Gateway Port Gate-In & Terminal Staging',
       location: `${pol} Terminal Gate`,
       description: 'Gateway Port Gate-In & Terminal Staging',
-      timestamp: item.portArrivalDate || '04/10/2026 16:08 PM (Est)',
+      timestamp: item.portArrivalDate || item.sailedDate || 'Staged',
       icon: Anchor,
       status: activeStep > 7 ? 'completed' : (activeStep === 7 ? 'current' : 'upcoming')
     },
@@ -162,9 +162,9 @@ function buildTenStageMilestones(item, customer) {
       id: 'planned_vessel',
       title: '8) Planned Vessel Details',
       subtitle: 'Ocean Liner Feeder / Mother Vessel Allocation',
-      location: `${shippingLine} Vessel Staging Yard`,
+      location: `${shippingLine} Staging Yard`,
       description: 'Ocean Liner Feeder / Mother Vessel Allocation',
-      timestamp: item.vesselEtd || '04/10/2026 20:00 PM (Est)',
+      timestamp: item.vesselEtd || item.etd || 'Allocated',
       icon: Compass,
       status: activeStep > 8 ? 'completed' : (activeStep === 8 ? 'current' : 'upcoming')
     },
@@ -175,7 +175,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Vessel Sailing & Shipped on Board',
       location: `${shippingLine} International Corridor`,
       description: `Sea transit to destination seaport: ${pod}.`,
-      timestamp: item.sailedDate || '04/10/2026 22:00 PM (Est)',
+      timestamp: item.sailedDate || item.sobDate || 'In Transit',
       icon: Ship,
       status: activeStep > 9 ? 'completed' : (activeStep === 9 ? 'current' : 'upcoming')
     },
@@ -186,7 +186,7 @@ function buildTenStageMilestones(item, customer) {
       subtitle: 'Final Discharge at Destination Seaport & Consignee Delivery',
       location: pod,
       description: 'Final discharge, customs clearance and delivery order release.',
-      timestamp: item.dischargeDate || item.eta || '2026-10-08 10:08 AM (ETA)',
+      timestamp: item.dischargeDate || item.eta || 'Pending Discharge',
       icon: CheckCircle2,
       status: activeStep === 10 ? 'completed' : 'upcoming'
     }
