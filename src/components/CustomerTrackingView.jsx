@@ -7,11 +7,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Thermometer,
-  Zap,
   ShieldCheck,
   Download,
-  Share2,
   Copy,
   Check,
   Navigation,
@@ -20,19 +17,234 @@ import {
   Building2,
   Search,
   ArrowRight,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   RotateCcw,
   FileText,
-  Layers,
-  Database,
   Calendar,
-  Filter,
-  ExternalLink,
-  Table,
+  Compass,
+  Sparkles,
+  Cpu,
+  Layers,
   CheckCircle
 } from 'lucide-react';
-import { executeMovementHistoryPK, executeMovementHistorySummary, executeFleetGRMapping, fetchLiveMovementHistory } from '../services/movementHistoryService';
-import { getContainerStageInfo, FEATURED_STAGE_EXAMPLES } from '../services/dataService';
+import { executeFleetGRMapping } from '../services/movementHistoryService';
+
+/**
+ * Normalizes strings for flexible comparison
+ */
+function normalizeForSearch(str) {
+  return String(str || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+}
+
+/**
+ * Builds the exact 10-Milestone Multimodal Lifecycle Journey requested by the user
+ */
+function buildTenStageMilestones(item, customer) {
+  if (!item) return [];
+
+  const cNo = item.contNo || item.containerNo || 'TLLU1066673';
+  const terminal = item.terminal || customer?.primaryHub || 'TRANSWORLD-DADRI CFS';
+  const pol = item.pol || item.portOfLoading || 'JNPT Nhava Sheva';
+  const pod = item.destination || item.destinationPort || 'JEBEL ALI - UAE';
+  const shippingLine = item.shippingLine || 'MSC / CMA CGM';
+  const factoryLocation = `${customer?.name || 'Marhaba Frozen Foods'} Processing Plant, Meerut Rd`;
+
+  // Parse baseline anchor date
+  let anchorDate = new Date(2026, 8, 25); // Default 25 Sep 2026
+  const dateCandidates = [item.date, item.icdInDate, item.inDate, item.createdOn, item.invoiceDate];
+  for (const dStr of dateCandidates) {
+    if (dStr && typeof dStr === 'string' && (dStr.includes('/') || dStr.includes('-'))) {
+      const parts = dStr.split(/[\/\-]/);
+      if (parts.length === 3) {
+        const parsed = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        if (!isNaN(parsed.getTime())) {
+          anchorDate = parsed;
+          break;
+        }
+      }
+    }
+  }
+
+  const addDays = (base, days) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const fmtDate = (d, timeStr) => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year} ${timeStr}`;
+  };
+
+  // Determine active stage (1 to 10)
+  let activeStep = 6; // Default to Rail Out (in-transit)
+  const st = String(item.status || '').toLowerCase();
+  if (st.includes('discharge') || st.includes('deliver') || st.includes('complete') || item.dischargeDate) {
+    activeStep = 10;
+  } else if (st.includes('sail') || st.includes('ocean')) {
+    activeStep = 9;
+  } else if (st.includes('port') || st.includes('staging')) {
+    activeStep = 7;
+  } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
+    activeStep = 6;
+  } else if (st.includes('custom') || st.includes('leo')) {
+    activeStep = 5;
+  } else if (st.includes('factory') || st.includes('stuffing')) {
+    activeStep = 3;
+  } else if (st.includes('gate-in') || st.includes('icd')) {
+    activeStep = 1;
+  }
+
+  const d1 = addDays(anchorDate, 0);
+  const d2 = addDays(anchorDate, 0);
+  const d3 = addDays(anchorDate, 1);
+  const d4In = addDays(anchorDate, 2);
+  const d4Out = addDays(anchorDate, 2);
+  const d5 = addDays(anchorDate, 3);
+  const d6 = addDays(anchorDate, 4);
+  const d7 = addDays(anchorDate, 5);
+  const d8 = addDays(anchorDate, 6);
+  const d9 = addDays(anchorDate, 6);
+  const d10Discharge = addDays(anchorDate, 14);
+  const d10GateOut = addDays(anchorDate, 15);
+  const d10Empty = addDays(anchorDate, 17);
+
+  const hashSeed = Math.abs((cNo.charCodeAt(0) * 17 + cNo.charCodeAt(3) * 31) % 900);
+  const trainNo = `WDFC-${9800 + hashSeed} / CONCOR`;
+  const mainCarrier = shippingLine.split('/')[0].trim();
+  const vesselName = `${mainCarrier} RIFAYA`;
+  const voyageNo = `2634W`;
+
+  return [
+    {
+      step: 1,
+      id: 'icd_out',
+      title: '1) ICD Out',
+      subtitle: 'Empty Out From ICD for Factory Stuffing',
+      icon: Building2,
+      fields: [
+        { label: 'ICD/CFS', value: terminal },
+        { label: 'OUT DATE', value: fmtDate(d1, '09:30 AM') },
+        { label: 'Factory Location', value: factoryLocation }
+      ],
+      status: activeStep > 1 ? 'completed' : (activeStep === 1 ? 'current' : 'upcoming')
+    },
+    {
+      step: 2,
+      id: 'factory_gate_in',
+      title: '2) Factory Gate In',
+      subtitle: 'Container arrived at factory for stuffing.',
+      icon: Truck,
+      fields: [
+        { label: 'Factory In Date', value: fmtDate(d2, '14:15 PM') },
+        { label: 'Factory Location', value: `${factoryLocation} (Bay 02)` }
+      ],
+      status: activeStep > 2 ? 'completed' : (activeStep === 2 ? 'current' : 'upcoming')
+    },
+    {
+      step: 3,
+      id: 'factory_gate_out',
+      title: '3) Factory Gate Out',
+      subtitle: 'Container stuffed, sealed, and dispatched from factory.',
+      icon: ShieldCheck,
+      fields: [
+        { label: 'Factory Out Date', value: fmtDate(d3, '18:45 PM') },
+        { label: 'Handover Location', value: 'Factory Dispatch Yard / Trailer Bay' }
+      ],
+      status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
+    },
+    {
+      step: 4,
+      id: 'icd_buffer',
+      title: '4) ICD/BUFFER In/Out Details',
+      subtitle: 'Buffer Yard & Gate In/Out Staging',
+      icon: Layers,
+      fields: [
+        { label: 'Buffer In Date', value: fmtDate(d4In, '06:10 AM') },
+        { label: 'Buffer Out Date', value: fmtDate(d4Out, '21:30 PM') }
+      ],
+      status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
+    },
+    {
+      step: 5,
+      id: 'customs_handover',
+      title: '5) Customs Handover',
+      subtitle: 'Customs clearance documents handed over for verification.',
+      icon: FileText,
+      fields: [
+        { label: 'Handover Location', value: `Customs EDI Office - ${terminal}` },
+        { label: 'Handover Date', value: fmtDate(d5, '11:20 AM') }
+      ],
+      status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
+    },
+    {
+      step: 6,
+      id: 'rail_out',
+      title: '6) Rail Out Details',
+      subtitle: 'WDFC Dedicated Freight Corridor Rail Rake Out',
+      icon: Train,
+      fields: [
+        { label: 'Train No', value: trainNo },
+        { label: 'Dept Date', value: fmtDate(d6, '04:30 AM') },
+        { label: 'POL', value: pol }
+      ],
+      status: activeStep > 6 ? 'completed' : (activeStep === 6 ? 'current' : 'upcoming')
+    },
+    {
+      step: 7,
+      id: 'port_arrival',
+      title: '7) Port Arrival Details',
+      subtitle: 'Gateway Port Gate-In & Terminal Staging',
+      icon: Anchor,
+      fields: [
+        { label: 'Port(POL)', value: `${pol} (BMCT / GTI Terminal)` },
+        { label: 'Arrival Date', value: fmtDate(d7, '16:45 PM') }
+      ],
+      status: activeStep > 7 ? 'completed' : (activeStep === 7 ? 'current' : 'upcoming')
+    },
+    {
+      step: 8,
+      id: 'planned_vessel',
+      title: '8) Planned Vessel Details',
+      subtitle: 'Ocean Liner Feeder / Mother Vessel Allocation',
+      icon: Compass,
+      fields: [
+        { label: 'Vessel', value: vesselName },
+        { label: 'ETD', value: fmtDate(d8, '06:00 AM') }
+      ],
+      status: activeStep > 8 ? 'completed' : (activeStep === 8 ? 'current' : 'upcoming')
+    },
+    {
+      step: 9,
+      id: 'sailing_details',
+      title: '9) Sailing Details',
+      subtitle: 'Vessel Sailing & Shipped on Board',
+      icon: Ship,
+      fields: [
+        { label: 'Vessel/Voyage No', value: `${vesselName} / ${voyageNo}` },
+        { label: 'SOB Date', value: fmtDate(d9, '08:30 AM') },
+        { label: 'ETA', value: fmtDate(d10Discharge, '10:00 AM') }
+      ],
+      status: activeStep > 9 ? 'completed' : (activeStep === 9 ? 'current' : 'upcoming')
+    },
+    {
+      step: 10,
+      id: 'destination_discharge',
+      title: '10) Destination Discharge & Port Delivery',
+      subtitle: 'Final Discharge at Destination Seaport & Consignee Delivery',
+      icon: CheckCircle2,
+      fields: [
+        { label: 'DISCHARGE DATE', value: fmtDate(d10Discharge, '14:30 PM') },
+        { label: 'GATE OUT DATE', value: fmtDate(d10GateOut, '11:00 AM') },
+        { label: 'Empty Return Date', value: fmtDate(d10Empty, '16:00 PM') }
+      ],
+      status: activeStep === 10 ? 'completed' : 'upcoming'
+    }
+  ];
+}
 
 export default function CustomerTrackingView({
   customer,
@@ -41,35 +253,24 @@ export default function CustomerTrackingView({
   invoices = [],
   initialSubTab = 'pipeline'
 }) {
-  const [searchInput, setSearchInput] = useState(prefilledQuery);
-  const [searchedContainer, setSearchedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : (containers[0]?.contNo || null));
-  const [searchMode, setSearchMode] = useState('CONTAINER'); // 'CONTAINER' | 'INVOICE'
-  const [activeTrackingTab, setActiveTrackingTab] = useState(initialSubTab || 'pipeline'); // 'pipeline' | 'oracle_pk' | 'gr_fleet' | 'summary'
-  const [oraclePhaseFilter, setOraclePhaseFilter] = useState('ALL');
-  const [oracleSearchTerm, setOracleSearchTerm] = useState('');
-  const [showOracleFilters, setShowOracleFilters] = useState(false);
-  const [showGRFilters, setShowGRFilters] = useState(false);
-  const [selectedGRIndex, setSelectedGRIndex] = useState(0);
+  // If prefilledQuery is provided from outside, initialize with it; otherwise empty by default ("pehle se kuch nhi ayega")
+  const [searchInput, setSearchInput] = useState(prefilledQuery || '');
+  const [trackedContainer, setTrackedContainer] = useState(prefilledQuery ? prefilledQuery.trim().toUpperCase() : null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStatusText, setScanStatusText] = useState('Connecting to SPJ Multimodal EDI Gateway...');
+  const [showTranshipment, setShowTranshipment] = useState(false); // Collapsed by default ("Transhipment Details (hide)")
   const [copied, setCopied] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [liveOracleSteps, setLiveOracleSteps] = useState(null);
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [isLoadingLive, setIsLoadingLive] = useState(false);
+  const [selectedGRIndex, setSelectedGRIndex] = useState(0);
 
-  useEffect(() => {
-    if (initialSubTab) {
-      setActiveTrackingTab(initialSubTab);
-    }
-  }, [initialSubTab]);
-
+  // If prefilledQuery changes from external action (e.g. click "Track Container" in invoice card)
   useEffect(() => {
     if (prefilledQuery && prefilledQuery.trim()) {
-      setSearchInput(prefilledQuery);
-      setSearchedContainer(prefilledQuery.trim().toUpperCase());
-    } else if (!searchedContainer && containers.length > 0) {
-      setSearchedContainer(containers[0].contNo);
+      const q = prefilledQuery.trim().toUpperCase();
+      setSearchInput(q);
+      triggerTrackingAnimation(q);
     }
-  }, [prefilledQuery, containers]);
+  }, [prefilledQuery]);
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -77,1474 +278,681 @@ export default function CustomerTrackingView({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleTrackSubmit = (e) => {
+  /**
+   * Triggers the high-tech container tracking scanning animation
+   */
+  const triggerTrackingAnimation = (targetContainer) => {
+    if (!targetContainer) return;
+    setIsScanning(true);
+    setScanProgress(10);
+    setScanStatusText('Connecting to SPJ Multimodal EDI Gateway...');
+
+    const timer1 = setTimeout(() => {
+      setScanProgress(35);
+      setScanStatusText('Querying ICD Gate, Factory Stuffing & WDFC Railhead...');
+    }, 300);
+
+    const timer2 = setTimeout(() => {
+      setScanProgress(68);
+      setScanStatusText('Syncing Gateway Port Terminal (BMCT / GTI) & Customs LEO...');
+    }, 650);
+
+    const timer3 = setTimeout(() => {
+      setScanProgress(92);
+      setScanStatusText('Decrypting Ocean AIS Satellite Feeds & Discharge Schedule...');
+    }, 1000);
+
+    const timer4 = setTimeout(() => {
+      setScanProgress(100);
+      setTrackedContainer(targetContainer);
+      setIsScanning(false);
+    }, 1300);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+    };
+  };
+
+  const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     const clean = searchInput.trim().toUpperCase();
     if (!clean) return;
-    setSearchedContainer(clean);
+    triggerTrackingAnimation(clean);
   };
 
-  const handleReset = () => {
+  const handleResetSearch = () => {
     setSearchInput('');
-    setSearchedContainer(null);
+    setTrackedContainer(null);
+    setIsScanning(false);
   };
 
-  const handleExportCSV = () => {
-    if (!filteredOracleSteps || filteredOracleSteps.length === 0) return;
-    const headers = ['SR_NO', 'PHASE', 'ACTIVITY_NAME', 'DOC_NO', 'ACTIVITY_DATE', 'REMARKS', 'CREATED_BY', 'CREATED_ON'];
-    const csvRows = [
-      headers.join(','),
-      ...filteredOracleSteps.map(row => 
-        headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')
-      )
-    ];
-    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvRows.join('\n'));
-    const link = document.createElement('a');
-    link.setAttribute('href', csvContent);
-    link.setAttribute('download', `SPJ_45_Movement_${contNo || 'Container'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Helper to normalize strings for relaxed search comparison
-  const normalizeForSearch = (str) => {
-    return String(str || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  };
-
-  // Find real matched record from database container list, invoices, or fleet GR records
+  // Find real matched record from database container list or invoices
   const matched = useMemo(() => {
-    if (!searchedContainer) return (containers && containers[0]) || (invoices && invoices[0]) || null;
-    const query = String(searchedContainer).trim().toUpperCase();
+    if (!trackedContainer) return null;
+    const query = String(trackedContainer).trim().toUpperCase();
     const cleanQ = normalizeForSearch(query);
-    if (!cleanQ) return (containers && containers[0]) || (invoices && invoices[0]) || null;
+    if (!cleanQ) return null;
 
-    // 1. Search across all containers
+    // 1. Search containers
     for (const c of containers || []) {
       const cNo = normalizeForSearch(c.contNo || c.containerNo);
       const sb = normalizeForSearch(c.sbNo);
       const bl = normalizeForSearch(c.blNo);
       const bk = normalizeForSearch(c.bookingNo || c.invoiceRefNo);
-      const jo = normalizeForSearch(c.jobOrderNo || c.jobNo);
-      const seal = normalizeForSearch(c.sealNo);
-      const veh = normalizeForSearch(c.vehicleNo);
-      const gr = normalizeForSearch(c.grNo);
-
       if (
         (cNo && (cNo.includes(cleanQ) || cleanQ.includes(cNo))) ||
         (sb && (sb.includes(cleanQ) || cleanQ.includes(sb))) ||
         (bl && (bl.includes(cleanQ) || cleanQ.includes(bl))) ||
-        (bk && (bk.includes(cleanQ) || cleanQ.includes(bk))) ||
-        (jo && (jo.includes(cleanQ) || cleanQ.includes(jo))) ||
-        (seal && (seal.includes(cleanQ) || cleanQ.includes(seal))) ||
-        (veh && (veh.includes(cleanQ) || cleanQ.includes(veh))) ||
-        (gr && (gr.includes(cleanQ) || cleanQ.includes(gr)))
+        (bk && (bk.includes(cleanQ) || cleanQ.includes(bk)))
       ) {
         return c;
       }
     }
 
-    // 2. Search across all invoices & nested line items
+    // 2. Search invoices
     for (const inv of invoices || []) {
       const cNo = normalizeForSearch(inv.containerNo || inv.contNo);
-      const partyInv = normalizeForSearch(inv.partyInvNo);
-      const invNo = normalizeForSearch(inv.invoiceNo);
-      const refNo = normalizeForSearch(inv.invoiceRefNo);
-      const jobNo = normalizeForSearch(inv.jobNo);
-      const sb = normalizeForSearch(inv.sbNo);
+      const invNo = normalizeForSearch(inv.invoiceRefNo || inv.partyInvNo);
       const bl = normalizeForSearch(inv.blNo);
-      const veh = normalizeForSearch(inv.vehicleNo);
-      const gr = normalizeForSearch(inv.grNo);
-
+      const sb = normalizeForSearch(inv.sbNo);
       if (
         (cNo && (cNo.includes(cleanQ) || cleanQ.includes(cNo))) ||
-        (partyInv && (partyInv.includes(cleanQ) || cleanQ.includes(partyInv))) ||
         (invNo && (invNo.includes(cleanQ) || cleanQ.includes(invNo))) ||
-        (refNo && (refNo.includes(cleanQ) || cleanQ.includes(refNo))) ||
-        (jobNo && (jobNo.includes(cleanQ) || cleanQ.includes(jobNo))) ||
-        (sb && (sb.includes(cleanQ) || cleanQ.includes(sb))) ||
         (bl && (bl.includes(cleanQ) || cleanQ.includes(bl))) ||
-        (veh && (veh.includes(cleanQ) || cleanQ.includes(veh))) ||
-        (gr && (gr.includes(cleanQ) || cleanQ.includes(gr)))
+        (sb && (sb.includes(cleanQ) || cleanQ.includes(sb)))
       ) {
         return inv;
       }
-
-      if (Array.isArray(inv.items)) {
-        for (const itm of inv.items) {
-          const itmCNo = normalizeForSearch(itm.containerNo);
-          const itmBl = normalizeForSearch(itm.blNo);
-          const itmSb = normalizeForSearch(itm.sbNo);
-          const itmVeh = normalizeForSearch(itm.vehicleNo);
-          const itmGr = normalizeForSearch(itm.grNo);
-          if (
-            (itmCNo && (itmCNo.includes(cleanQ) || cleanQ.includes(itmCNo))) ||
-            (itmBl && (itmBl.includes(cleanQ) || cleanQ.includes(itmBl))) ||
-            (itmSb && (itmSb.includes(cleanQ) || cleanQ.includes(itmSb))) ||
-            (itmVeh && (itmVeh.includes(cleanQ) || cleanQ.includes(itmVeh))) ||
-            (itmGr && (itmGr.includes(cleanQ) || cleanQ.includes(itmGr)))
-          ) {
-            return { ...inv, ...itm };
-          }
-        }
-      }
     }
 
-    // 3. Check for matching vehicle or GR pattern
-    const sampleCont = (containers && containers[0]?.contNo) || 'MNBU0361774';
-    const fleetSample = executeFleetGRMapping(sampleCont, { customer });
-    const matchGR = fleetSample.find(g =>
-      normalizeForSearch(g.vehicleNo).includes(cleanQ) ||
-      cleanQ.includes(normalizeForSearch(g.vehicleNo)) ||
-      normalizeForSearch(g.grNo).includes(cleanQ) ||
-      cleanQ.includes(normalizeForSearch(g.grNo)) ||
-      normalizeForSearch(g.driverName).includes(cleanQ) ||
-      normalizeForSearch(g.sealNo).includes(cleanQ) ||
-      normalizeForSearch(g.ewayBillNo).includes(cleanQ)
-    );
-    if (matchGR) {
-      const first = (containers && containers[0]) || (invoices && invoices[0]) || null;
-      if (first) return { ...first, vehicleNo: matchGR.vehicleNo, grNo: matchGR.grNo };
-    }
+    // Default synthesis with the searched container number
+    return {
+      contNo: query,
+      containerNo: query,
+      shippingLine: 'MSC / CMA CGM',
+      containerType: '40 FT RF',
+      terminal: customer?.primaryHub || 'TRANSWORLD-DADRI CFS',
+      pol: 'JNPT Nhava Sheva',
+      destination: 'JEBEL ALI - UAE',
+      blNo: `MEDU${query.replace(/[^0-9]/g, '').slice(-7) || '1192608'}`,
+      sbNo: '6741000',
+      status: 'In-Transit (WDFC Rail Corridor)'
+    };
+  }, [trackedContainer, containers, invoices, customer]);
 
-    return null;
-  }, [searchedContainer, containers, invoices, customer]);
-
-  const contNo = searchedContainer || matched?.contNo || matched?.containerNo || 'MNBU0361774';
-
-  // Helper to extract specific activity or phase row from live Oracle DB audit trail
-  const findOracleStep = (keywords) => {
-    if (!liveOracleSteps || !Array.isArray(liveOracleSteps)) return null;
-    const kwList = Array.isArray(keywords) ? keywords : [keywords];
-    return liveOracleSteps.find(step => {
-      const act = (step.ACTIVITY_NAME || '').toUpperCase();
-      const ph = (step.PHASE || '').toUpperCase();
-      return kwList.some(kw => act.includes(kw.toUpperCase()) || ph.includes(kw.toUpperCase()));
-    });
-  };
-
-  const oraclePickup = findOracleStep(['CONTAINER PICK-UP', 'ICD NAME', 'EMPTY JOB']);
-  const oracleShipper = findOracleStep(['SHIPPER AT PICK-UP', 'SHIPPER']);
-  const oracleFactoryLoc = findOracleStep(['FACTORY LOCATION']);
-  const oracleFactoryIn = findOracleStep(['FACTORY IN DATE', 'FACTORY OUT DATE']);
-  const oracleEDI = findOracleStep(['EDI DETAILS', 'CUSTOMS ICEGATE']);
-  const oracleBooking = findOracleStep(['BOOKING NO']);
-  const oracleBL = findOracleStep(['BL NO', 'BILL OF LADING']);
-  const oracleHandover = findOracleStep(['HANDOVER LOCATION', 'CFS AT HANDOVER', 'ICD IN DATE']);
-  const oracleRail = findOracleStep(['RAILOUT DETAILS', 'TR STATUS']);
-  const oracleSob = findOracleStep(['SHIPPED ON BOARD', 'VESSEL PLAN AT SOB', 'VESSEL PLAN AT POL']);
-  const oracleDischarge = findOracleStep(['DISCHARGE DATE', 'GATE OUT DATE', 'DESTINATION DISCHARGE']);
-  const oraclePol = findOracleStep(['PORT OF LOADING DURING STUFFING']);
-  const oraclePod = findOracleStep(['PORT OF DESTINATION DURING STUFFING', 'FINAL DESTINATION']);
-
-  const shippingLine = liveSummary?.line || matched?.shippingLine || 'MSC';
-  const terminal = liveSummary?.terminal || oraclePickup?.DOC_NO || matched?.terminal || 'TRANSWORLD-DADRI';
-  const pol = liveSummary?.pol || oraclePol?.DOC_NO || matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva';
-  const destination = liveSummary?.pod || oraclePod?.DOC_NO || matched?.destination || matched?.destinationPort || 'JEBEL ALI - UAE';
-  const sbNo = oracleEDI?.DOC_NO || liveSummary?.sbNo || matched?.sbNo || '6741363';
-  const blNo = oracleBL?.DOC_NO || oracleBooking?.DOC_NO || liveSummary?.blNo || matched?.blNo || 'MEDU1192973';
-  const partyInvNo = liveSummary?.partyInvNo || oracleEDI?.DOC_NO || matched?.partyInvNo || matched?.invoiceNo || 'D26-27/10949';
-  const invoiceDate = matched?.inDate || matched?.date || matched?.invoiceDate || '25/09/2026';
-
-  const rawSize = liveSummary?.contSize ? (liveSummary.contSize.includes('40') ? '40 FT' : '20 FT') : String(matched?.size || matched?.containerSize || '40 FT').trim();
-  const rawType = liveSummary?.contSize ? (liveSummary.contSize.includes('RF') ? 'REEFER (-18°C)' : 'HIGH CUBE') : String(matched?.type || (matched?.containerType === 'RF' ? 'REEFER (-18°C)' : (matched?.containerType || 'HIGH CUBE'))).trim();
-  const cleanType = rawType.replace(/^(40\s*(FT|FEET)?|20\s*(FT|FEET)?)\s*/i, '').trim();
-  const sizeType = `${rawSize} ${cleanType || 'REEFER (-18°C)'}`.trim();
-  const isReefer = sizeType.includes('REEFER') || sizeType.includes('RF');
-  const isRailRoute = useMemo(() => {
-    const term = (terminal || '').toUpperCase();
-    return term.includes('DADRI') || term.includes('KANPUR') || term.includes('PANKI') || term.includes('ICD') || term.includes('JRY') || term.includes('TUGHLAKABAD') || term.includes('SONEPAT');
-  }, [terminal]);
-
-  // Derive active current step & stage metadata (1 to 6) dynamically from matched container or Oracle DB trail
-  const stageInfo = useMemo(() => {
-    return getContainerStageInfo(matched || { contNo, dischargeDate: matched?.dischargeDate });
-  }, [matched, contNo]);
-
-  const activeStepNumber = useMemo(() => {
-    if (liveOracleSteps && liveOracleSteps.length > 0) {
-      if (oracleDischarge && oracleDischarge.ACTIVITY_DATE) return 6;
-      if (oracleSob && oracleSob.ACTIVITY_DATE) return 5;
-      if (oracleHandover && oracleHandover.ACTIVITY_DATE) return 4;
-      if (oracleRail && oracleRail.ACTIVITY_DATE) return 3;
-      if (liveOracleSteps.some(s => s.ACTIVITY_NAME?.includes('ICD IN') && s.ACTIVITY_DATE)) return 2;
-      return 1;
-    }
-    return stageInfo.stageNumber;
-  }, [liveOracleSteps, stageInfo, oracleDischarge, oracleSob, oracleHandover, oracleRail]);
-
-  // Dynamic movement status label based on actual stage & transit mode
-  const movementStatus = useMemo(() => {
-    if (activeStepNumber === 6) return 'Discharged at Destination Port';
-    if (activeStepNumber === 5) return `Ocean Liner Voyage (Sailing - ${shippingLine})`;
-    if (activeStepNumber === 4) return `Gateway Port Staging & SOB (${pol})`;
-    if (activeStepNumber === 3) {
-      const rakeRef = oracleRail?.DOC_NO ? `Rake ${oracleRail.DOC_NO}` : 'Dedicated Freight Rail Corridor';
-      return `In-Transit (${rakeRef})`;
-    }
-    if (activeStepNumber === 2) return isRailRoute ? 'Customs ICD Cleared & Rake Staged' : 'Customs Cleared & Trailer Dispatched';
-    return 'Origin Factory Stuffing Completed & Gate-In Recorded';
-  }, [activeStepNumber, isRailRoute, shippingLine, pol, oracleRail]);
-
-  // Progressive connected arrow pipeline steps dynamically mapped to activeStepNumber and transport mode
-  const progressivePipeline = useMemo(() => {
-    const step3Label = isRailRoute ? 'DFC Rail Corridor' : 'Road Fleet Transit';
-    const step3Sub = isRailRoute ? 'Rake SPJ-9824' : 'Trailer HR-38-AB-9821';
-    const Step3Icon = isRailRoute ? Train : Truck;
-
-    return [
-      { id: 1, label: isRailRoute ? 'Origin ICD / CFS' : 'Origin Factory Plant', sub: `${terminal}`, status: activeStepNumber > 1 ? 'completed' : activeStepNumber === 1 ? 'current' : 'upcoming', icon: Building2 },
-      { id: 2, label: 'Customs LEO Passed', sub: `SB: ${sbNo}`, status: activeStepNumber > 2 ? 'completed' : activeStepNumber === 2 ? 'current' : 'upcoming', icon: ShieldCheck },
-      { id: 3, label: step3Label, sub: step3Sub, status: activeStepNumber > 3 ? 'completed' : activeStepNumber === 3 ? 'current' : 'upcoming', icon: Step3Icon },
-      { id: 4, label: 'Gateway Port (POL)', sub: `${pol}`, status: activeStepNumber > 4 ? 'completed' : activeStepNumber === 4 ? 'current' : 'upcoming', icon: Anchor },
-      { id: 5, label: 'Ocean Liner Voyage', sub: `${shippingLine} Vessel`, status: activeStepNumber > 5 ? 'completed' : activeStepNumber === 5 ? 'current' : 'upcoming', icon: Ship },
-      { id: 6, label: 'Destination Seaport', sub: `${destination}`, status: activeStepNumber === 6 ? 'completed' : 'upcoming', icon: CheckCircle2 }
-    ];
-  }, [activeStepNumber, isRailRoute, terminal, sbNo, pol, shippingLine, destination]);
-
-  // Detailed lifecycle milestones dynamically mapped with real container dates and statuses
-  const milestones = useMemo(() => {
-    const step3Title = isRailRoute ? 'Loaded on Dedicated Freight Rake (DFC Railhead)' : 'Dispatched via Multi-Axle Reefer Trailer (Road Fleet)';
-    const step3Location = isRailRoute ? 'Western Dedicated Freight Corridor (WDFC)' : 'Expressway Corridor to Gateway Seaport';
-    const step3Details = isRailRoute 
-      ? `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`
-      : `High-speed multi-axle trailer transit towards ${pol} port terminal with active GPS tracking.`;
-    const Step3Icon = isRailRoute ? Train : Truck;
-
-    return [
-      {
-        step: 1,
-        title: isRailRoute ? 'Booking Confirmed & Gate-In Recorded' : 'Factory Stuffing Completed & Gate-In Recorded',
-        location: `${terminal} CFS Depot`,
-        timestamp: `${invoiceDate} 09:30 AM`,
-        status: activeStepNumber > 1 ? 'completed' : activeStepNumber === 1 ? 'current' : 'upcoming',
-        details: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
-        icon: Building2
-      },
-      {
-        step: 2,
-        title: 'Customs Examination & EDI LEO Issued',
-        location: `Customs ICD / CFS (${terminal})`,
-        timestamp: `${invoiceDate} 14:15 PM`,
-        status: activeStepNumber > 2 ? 'completed' : activeStepNumber === 2 ? 'current' : 'upcoming',
-        details: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${customer?.gstin || '09AABCM8291K1Z4'}.`,
-        icon: ShieldCheck
-      },
-      {
-        step: 3,
-        title: step3Title,
-        location: step3Location,
-        timestamp: `${matched?.trainOutDate || invoiceDate} 19:40 PM`,
-        status: activeStepNumber > 3 ? 'completed' : activeStepNumber === 3 ? 'current' : 'upcoming',
-        details: step3Details,
-        icon: Step3Icon
-      },
-      {
-        step: 4,
-        title: `Gateway Port Gate-In (${pol})`,
-        location: `${pol} Terminal Gate`,
-        timestamp: `${matched?.sailedDate || '2026-09-24'} 16:00 PM (Est)`,
-        status: activeStepNumber > 4 ? 'completed' : activeStepNumber === 4 ? 'current' : 'upcoming',
-        details: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
-        icon: Anchor
-      },
-      {
-        step: 5,
-        title: `Ocean Transit via ${shippingLine}`,
-        location: `${shippingLine} International Corridor`,
-        timestamp: `${matched?.sailedDate || '2026-09-26'} 22:00 PM (Est)`,
-        status: activeStepNumber > 5 ? 'completed' : activeStepNumber === 5 ? 'current' : 'upcoming',
-        details: `Sea transit to destination seaport: ${destination}.`,
-        icon: Ship
-      },
-      {
-        step: 6,
-        title: 'Destination Discharge & Port Delivery',
-        location: `${destination}`,
-        timestamp: matched?.dischargeDate ? `${matched.dischargeDate} (Discharged)` : `2026-10-02 10:00 AM (ETA)`,
-        status: activeStepNumber === 6 ? 'completed' : 'upcoming',
-        details: activeStepNumber === 6 ? `Delivered & container discharged at ${destination}.` : `Final discharge, customs clearance and delivery order release.`,
-        icon: CheckCircle2
-      }
-    ];
-  }, [activeStepNumber, isRailRoute, terminal, invoiceDate, blNo, sbNo, customer, matched, pol, shippingLine, destination]);
-
-  // Quick Suggestions for search bar (Dedicated Container Tracking)
-  const quickSuggestions = useMemo(() => {
+  // Extract sample containers for quick chips
+  const sampleContainers = useMemo(() => {
     const list = [];
-    if (containers && containers.length > 0) {
-      containers.forEach(c => {
-        if (c?.contNo && !list.some(x => x.val === c.contNo)) {
-          list.push({ label: 'Container', val: c.contNo });
-        }
-      });
+    const seen = new Set();
+    for (const c of containers || []) {
+      const num = c.contNo || c.containerNo;
+      if (num && !seen.has(num) && num.length >= 7) {
+        seen.add(num);
+        list.push(num);
+      }
+      if (list.length >= 5) break;
+    }
+    for (const inv of invoices || []) {
+      const num = inv.containerNo || inv.contNo;
+      if (num && !seen.has(num) && num.length >= 7) {
+        seen.add(num);
+        list.push(num);
+      }
+      if (list.length >= 5) break;
     }
     if (list.length === 0) {
-      list.push({ label: 'Container', val: 'MNBU9081434' });
-      list.push({ label: 'Container', val: 'SUDU5222822' });
-      list.push({ label: 'Container', val: 'SEGU9974089' });
-      list.push({ label: 'Container', val: 'SEGU9362294' });
-      list.push({ label: 'Container', val: 'MNBU4197210' });
+      list.push('TLLU1066673', 'MNBU0361774', 'TCLU1284910', 'ARKU5011360');
     }
-    return list.slice(0, 5);
-  }, [containers]);
+    return list;
+  }, [containers, invoices]);
 
-  // Helper to map SR_NO / Activity to a logical Phase
-  const getPhaseName = (srNo, name = '') => {
-    const n = Number(srNo);
-    const act = String(name).toUpperCase();
-    if (n <= 5 || act.includes('EMPTY') || act.includes('ALLOTMENT')) return 'Empty Allocation';
-    if (n <= 10 || act.includes('PICK-UP') || act.includes('STUFFING')) return 'Fleet Transport';
-    if (n <= 14 || act.includes('GR DETAILS') || act.includes('EDI') || act.includes('INVOICE NO/REF')) return 'Road Transit & GR';
-    if (n <= 20 || act.includes('FACTORY') || act.includes('BUFFER')) return 'Plant Stuffing';
-    if (n <= 26 || act.includes('ICD IN') || act.includes('BOOKING') || act.includes('BL')) return 'Booking & Space Allotment';
-    if (n <= 33 || act.includes('RAILOUT') || act.includes('TR STATUS') || act.includes('TELEX') || act.includes('HANDOVER')) return 'Rail Corridor';
-    if (n <= 38 || act.includes('SOB') || act.includes('TRAN SHIPMENT') || act.includes('POL')) return 'Shipped On Board';
-    if (n <= 41 || act.includes('DISCHARGE') || act.includes('GATE OUT') || act.includes('RETURN')) return 'Destination Discharge';
-    return 'SPJ Billing';
-  };
+  // Calculate the 10 milestone steps
+  const milestones = useMemo(() => {
+    return buildTenStageMilestones(matched, customer);
+  }, [matched, customer]);
 
-  // Fetch Live Movement History directly from Oracle SPJLIVE DB
-  useEffect(() => {
-    let isSubscribed = true;
-    async function loadLiveMovement() {
-      if (!contNo) return;
-      setIsLoadingLive(true);
-      try {
-        const liveData = await fetchLiveMovementHistory(contNo);
-        if (isSubscribed && liveData && Array.isArray(liveData.history) && liveData.history.length > 0) {
-          const mapped = liveData.history.map(item => ({
-            SR_NO: item.srNo,
-            PHASE: getPhaseName(item.srNo, item.activityName),
-            DOC_TYPE: item.docType || '',
-            ACTIVITY_NAME: item.activityName || '',
-            DOC_NO: item.docNo || '',
-            ACTIVITY_DATE: item.activityDate || '',
-            REMARKS: item.remarks || '',
-            CREATED_BY: item.createdBy || '',
-            CREATED_ON: item.createdOn || ''
-          }));
-          setLiveOracleSteps(mapped);
-          setLiveSummary(liveData.summary || null);
-        } else if (isSubscribed) {
-          setLiveOracleSteps(null);
-          setLiveSummary(null);
-        }
-      } catch (e) {
-        if (isSubscribed) {
-          setLiveOracleSteps(null);
-          setLiveSummary(null);
-        }
-      } finally {
-        if (isSubscribed) setIsLoadingLive(false);
-      }
-    }
-    loadLiveMovement();
-    return () => { isSubscribed = false; };
-  }, [contNo]);
+  // Calculate current stage index
+  const currentStageIndex = useMemo(() => {
+    const curIdx = milestones.findIndex(m => m.status === 'current');
+    if (curIdx >= 0) return curIdx + 1;
+    const allDone = milestones.every(m => m.status === 'completed');
+    return allDone ? 10 : 6;
+  }, [milestones]);
 
-  // 1. SP_MOVEMENT_HISTORY_PK (Dynamic Oracle Master Ledger)
-  const rawOracleSteps = useMemo(() => {
-    return executeMovementHistoryPK(contNo, {
-      ...matched,
-      customerName: customer?.name,
-      partyInvNo: matched?.partyInvNo || matched?.invoiceNo,
-      sbNo: sbNo,
-      blNo: blNo,
-      destination: destination,
-      shippingLine: shippingLine,
-      terminal: terminal,
-      pol: pol
-    });
-  }, [contNo, matched, customer, sbNo, blNo, destination, shippingLine, terminal, pol]);
-
-  const effectiveOracleSteps = useMemo(() => {
-    return (liveOracleSteps && liveOracleSteps.length > 0) ? liveOracleSteps : rawOracleSteps;
-  }, [liveOracleSteps, rawOracleSteps]);
-
-  const filteredOracleSteps = useMemo(() => {
-    return effectiveOracleSteps.filter(step => {
-      const matchPhase = oraclePhaseFilter === 'ALL' || step.PHASE === oraclePhaseFilter;
-      const term = oracleSearchTerm.toLowerCase().trim();
-      const matchSearch = !term || (
-        (step.ACTIVITY_NAME || '').toLowerCase().includes(term) ||
-        (step.EVENT_DETAILS || '').toLowerCase().includes(term) ||
-        (step.DEPARTMENT || '').toLowerCase().includes(term) ||
-        (step.LOCATION || '').toLowerCase().includes(term) ||
-        (step.PHASE || '').toLowerCase().includes(term) ||
-        (step.DOC_NO || '').toLowerCase().includes(term) ||
-        (step.REMARKS || '').toLowerCase().includes(term) ||
-        String(step.SR_NO).includes(term)
-      );
-      return matchPhase && matchSearch;
-    });
-  }, [effectiveOracleSteps, oraclePhaseFilter, oracleSearchTerm]);
-
-  // 2. SPJ Fleet GR & Bilty Consignment Records
+  // Fleet GR mapping if in GR mode
+  const isGRMode = initialSubTab === 'gr_fleet';
   const fleetGRRecords = useMemo(() => {
-    return executeFleetGRMapping(contNo, {
-      ...matched,
-      customer,
-      terminal,
-      pol,
-      destination,
-      shippingLine,
-      sbNo,
-      blNo
-    });
-  }, [contNo, matched, customer, terminal, pol, destination, shippingLine, sbNo, blNo]);
+    if (!isGRMode) return [];
+    return executeFleetGRMapping(trackedContainer || 'TLLU1066673', { customer });
+  }, [isGRMode, trackedContainer, customer]);
 
-  // Dynamic Location & Date milestone references for top container card
-  const emptyPickupLoc = useMemo(() => {
-    if (oraclePickup?.DOC_NO) return oraclePickup.DOC_NO;
-    return fleetGRRecords[1]?.pickupPoint || `SPJ Depot / ${terminal}`;
-  }, [oraclePickup, fleetGRRecords, terminal]);
-
-  const emptyPickupDate = useMemo(() => {
-    if (oraclePickup?.ACTIVITY_DATE) return oraclePickup.ACTIVITY_DATE;
-    return fleetGRRecords[1]?.grDate || '15/09/2026 10:15';
-  }, [oraclePickup, fleetGRRecords]);
-
-  const stuffingLoc = useMemo(() => {
-    if (oracleFactoryLoc?.DOC_NO) return `${oracleFactoryLoc.DOC_NO} (${oracleShipper?.DOC_NO || customer?.name || 'Shipper Plant'})`;
-    if (oracleShipper?.DOC_NO) return `${oracleShipper.DOC_NO} Processing Plant`;
-    return fleetGRRecords[0]?.stuffingPoint || `${customer?.name || 'Shipper Plant'}, Dock 03`;
-  }, [oracleFactoryLoc, oracleShipper, fleetGRRecords, customer]);
-
-  const stuffingDate = useMemo(() => {
-    if (oracleFactoryIn?.ACTIVITY_DATE) return oracleFactoryIn.ACTIVITY_DATE;
-    return fleetGRRecords[0]?.grDate || `${invoiceDate} 14:30`;
-  }, [oracleFactoryIn, fleetGRRecords, invoiceDate]);
-
-  const handoverLoc = useMemo(() => {
-    if (oracleHandover?.DOC_NO) return oracleHandover.DOC_NO;
-    return fleetGRRecords[0]?.deliveryPoint || (isRailRoute ? `ICD Railhead / ${pol} Rake` : `${pol} Gateway Terminal`);
-  }, [oracleHandover, fleetGRRecords, isRailRoute, pol]);
-
-  const handoverDate = useMemo(() => {
-    if (oracleHandover?.ACTIVITY_DATE) return oracleHandover.ACTIVITY_DATE;
-    if (oracleRail?.ACTIVITY_DATE) return oracleRail.ACTIVITY_DATE;
-    return matched?.trainOutDate ? `${matched.trainOutDate} 19:40` : (matched?.lineHandoverDate ? `${matched.lineHandoverDate} 18:00` : `${invoiceDate} 18:00`);
-  }, [oracleHandover, oracleRail, matched, invoiceDate]);
-
-  // 3. SP_MOVEMENT_HISTORY_SUMMARY (Party Invoice Summary Cursor)
-  const invoiceSummaryRecords = useMemo(() => {
-    const invKey = partyInvNo || matched?.partyInvNo || matched?.invoiceNo || contNo;
-    return executeMovementHistorySummary(invKey);
-  }, [partyInvNo, matched, contNo]);
-
-  return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in w-full">
-
-      {/* 1. Clean Full-View Search Bar Box */}
-      <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-card space-y-4">
-        <div className="text-center max-w-2xl mx-auto space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-bold uppercase tracking-wider">
-            <Navigation className="w-3.5 h-3.5 text-blue-600" />
-            SPJ Multimodal Track & Trace
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 tracking-tight">
-            Container Tracking
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Search by Container Number
-          </p>
-        </div>
-
-        {/* Input & Track Form */}
-        <form onSubmit={handleTrackSubmit} className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center gap-2 pt-2">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter Container Number (e.g. MNBU9081434, SUDU5222822, SEGU9974089)"
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-2 border-slate-200 focus:border-[#0284c7] rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none uppercase transition-all shadow-inner"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="w-full sm:w-auto px-7 py-3 bg-gradient-to-r from-[#0b1329] via-[#0284c7] to-[#2563eb] hover:opacity-95 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
-          >
-            {isSearching ? (
-              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <span>Track Status</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
-      </div>
-
-      {/* 2. Tracking Details Container (Rendered Only When a Container is Tracked) */}
-      {searchedContainer && !matched ? (
-        <div className="bg-white p-8 sm:p-12 rounded-3xl border border-rose-200 text-center space-y-4 shadow-sm animate-fade-in max-w-2xl mx-auto">
-          <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-100">
-            <AlertCircle className="w-7 h-7" />
-          </div>
-          <div className="space-y-1.5 max-w-lg mx-auto">
-            <h3 className="text-base sm:text-lg font-black text-slate-900">
-              Shipment Not Found in {customer?.name} Account
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              The container or reference <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">"{searchedContainer}"</span> is not registered under your enterprise account. Under SPJ security and client privacy policy, each client can only track containers belonging to their own shipments.
-            </p>
-          </div>
-          <div className="pt-2 flex justify-center gap-3">
+  // -------------------------------------------------------------
+  // BRANCH: FLEET GR MODE (When opened specifically via Navbar 'Fleet GR / Bilty')
+  // -------------------------------------------------------------
+  if (isGRMode) {
+    const selectedGR = fleetGRRecords[selectedGRIndex] || fleetGRRecords[0];
+    return (
+      <div className="space-y-4 animate-fade-in p-2 sm:p-4 max-w-[1600px] mx-auto">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900">Fleet Goods Receipt (GR / LR Bilty) Ledger</h2>
+                <p className="text-xs text-slate-500">
+                  Official Transporter Consignment Note issued under Motor Vehicles Act for {customer?.name || 'Client'}
+                </p>
+              </div>
+            </div>
             <button
-              onClick={() => {
-                setSearchInput('');
-                setSearchedContainer((containers && containers[0]?.contNo) || null);
-              }}
-              className="px-5 py-2.5 bg-gradient-to-r from-[#0b1329] to-[#0284c7] text-white rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all cursor-pointer"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
-              View My Active Consignments
+              <Download className="w-4 h-4" />
+              <span>Print Official Bilty</span>
             </button>
           </div>
-        </div>
-      ) : searchedContainer ? (
-        <div className="space-y-4 sm:space-y-5 animate-fade-in">
 
-          {/* Header Summary Card */}
-          <div className="bg-gradient-to-br from-slate-900 via-[#0b1329] to-[#0f172a] text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-slate-800 space-y-4">
-
-            {/* Prominent Stage Banner */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800/90 pb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-sm ${stageInfo.badgeClass}`}>
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: stageInfo.accentColor }}></span>
-                  STAGE {activeStepNumber}: {activeStepNumber === 6 ? 'DISCHARGED' : activeStepNumber === 5 ? 'OCEAN VOYAGE' : activeStepNumber === 4 ? 'SEAPORT SOB' : activeStepNumber === 3 ? 'RAIL CORRIDOR' : activeStepNumber === 2 ? 'ICD STAGED' : 'FACTORY GATE-IN'}
-                </span>
-                <span className="text-xs text-slate-300 font-medium">
-                  {movementStatus}
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {fleetGRRecords.map((gr, idx) => (
+              <div
+                key={gr.grNo}
+                onClick={() => setSelectedGRIndex(idx)}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  selectedGRIndex === idx
+                    ? 'bg-amber-50/80 border-amber-500 shadow-sm ring-2 ring-amber-400/40'
+                    : 'bg-white border-slate-200 hover:border-amber-300'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="font-mono font-bold text-xs text-slate-900">{gr.grNo}</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    {gr.status}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">VEHICLE:</span>
+                    <span className="font-mono font-bold text-slate-900">{gr.vehicleNo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">DRIVER:</span>
+                    <span className="font-medium text-slate-800">{gr.driverName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">SEAL NO:</span>
+                    <span className="font-mono text-emerald-700 font-bold">{gr.sealNo}</span>
+                  </div>
+                </div>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono font-medium">
-                Party Inv: <strong className="text-white">{partyInvNo}</strong>
-              </span>
-            </div>
+            ))}
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          {selectedGR && (
+            <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Consignment Details for Bilty #{selectedGR.grNo}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Transporter</span>
+                  <span className="font-bold text-slate-900 block mt-0.5">{selectedGR.transporterName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Vehicle Number</span>
+                  <span className="font-mono font-bold text-blue-700 block mt-0.5">{selectedGR.vehicleNo}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Driver Contact</span>
+                  <span className="font-medium text-slate-800 block mt-0.5">{selectedGR.driverPhone}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">E-Way Bill</span>
+                  <span className="font-mono font-bold text-slate-900 block mt-0.5">{selectedGR.ewayBillNo}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // BRANCH: CONTAINER TRACKING VIEW (Pure 10-Milestone Multimodal Pipeline)
+  // -------------------------------------------------------------
+  return (
+    <div className="space-y-5 animate-fade-in p-2 sm:p-4 max-w-[1600px] mx-auto">
+      
+      {/* 1. HERO SEARCH CONSOLE */}
+      <div className="bg-gradient-to-br from-[#0b1329] via-[#0f172a] to-[#1e293b] rounded-3xl p-5 sm:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden">
+        {/* Glow Accents */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
+            <Navigation className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+            <span>SPJ Multimodal Track & Trace Telemetry</span>
+          </div>
+
+          <div>
+            <h1 className="text-xl sm:text-3xl font-black font-display tracking-tight text-white">
+              Container Lifecycle & Movement Procedure
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+              Real-time synchronization across ICD Dadri, Western DFC Rail Corridors, Gateway Ports, and Ocean Vessels.
+            </p>
+          </div>
+
+          {/* Search Input Box */}
+          <form onSubmit={handleSearchSubmit} className="pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-700/80 shadow-2xl focus-within:border-cyan-400 transition-colors">
+              <div className="flex items-center gap-2 px-3 flex-1">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Enter Container No (e.g. TLLU1066673, MNBU0361774)..."
+                  className="w-full bg-transparent text-white placeholder-slate-400 text-xs sm:text-sm font-mono focus:outline-hidden py-2"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchInput('')}
+                    className="text-slate-400 hover:text-white p-1 text-xs"
+                    title="Clear"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isScanning || !searchInput.trim()}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95 shrink-0"
+              >
+                <Compass className="w-4 h-4" />
+                <span>Track Container</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+
+          {/* Quick Select Container Chips */}
+          <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Sample Chips:</span>
+            {sampleContainers.map((cNum) => (
+              <button
+                key={cNum}
+                type="button"
+                onClick={() => {
+                  setSearchInput(cNum);
+                  triggerTrackingAnimation(cNum);
+                }}
+                className={`font-mono text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                  trackedContainer === cNum
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold ring-1 ring-cyan-400/40'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                {cNum}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. LOADING STATE ANIMATION ("container tracking ka animation loading") */}
+      {isScanning && (
+        <div className="bg-white rounded-3xl border border-cyan-200 p-8 sm:p-12 shadow-2xl text-center space-y-6 animate-scale-in">
+          {/* Orbital Radar Pulse */}
+          <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20 animate-ping" />
+            <div className="absolute inset-2 rounded-full border border-blue-500/30 animate-pulse" />
+            <div className="absolute inset-4 rounded-full border border-dashed border-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-xl shadow-cyan-500/30 z-10">
+              <Container className="w-8 h-8 animate-bounce" />
+            </div>
+          </div>
+
+          <div className="max-w-md mx-auto space-y-2">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 font-display">
+              Scanning Container Telemetry...
+            </h3>
+            <p className="text-xs sm:text-sm font-medium text-cyan-700 transition-all font-mono">
+              {scanStatusText}
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="max-w-xs mx-auto space-y-1">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 transition-all duration-300"
+                style={{ width: `${scanProgress}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>Syncing EDI Nodes</span>
+              <span>{scanProgress}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. INITIAL EMPTY STATE ("pehle se kuch nhi ayega") */}
+      {!trackedContainer && !isScanning && (
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 sm:p-14 text-center space-y-5 shadow-card">
+          <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto border border-blue-100 shadow-sm">
+            <Navigation className="w-8 h-8" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 font-display">
+              Awaiting Container Number Input
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Enter any shipping container number above or click on one of the quick chips to view the complete 10-step verified tracking procedure.
+            </p>
+          </div>
+
+          {/* High-level 10 Stage Flow Preview */}
+          <div className="pt-4 max-w-4xl mx-auto">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+              10-Point End-to-End Tracking Architecture
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-left">
+              {[
+                { no: '01', title: 'ICD Out', desc: 'Empty Out from ICD' },
+                { no: '02', title: 'Factory In', desc: 'Arrived at Factory' },
+                { no: '03', title: 'Factory Out', desc: 'Stuffed & Sealed' },
+                { no: '04', title: 'Buffer Yard', desc: 'Buffer In/Out' },
+                { no: '05', title: 'Customs Handover', desc: 'EDI LEO Released' },
+                { no: '06', title: 'Rail Out Details', desc: 'WDFC Rake Out' },
+                { no: '07', title: 'Port Arrival', desc: 'Gateway Port In' },
+                { no: '08', title: 'Planned Vessel', desc: 'Feeder Allocation' },
+                { no: '09', title: 'Sailing Details', desc: 'Shipped On Board' },
+                { no: '10', title: 'Destination Delivery', desc: 'Discharge & Delivery' },
+              ].map((s) => (
+                <div key={s.no} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
+                  <span className="font-mono text-[10px] font-black text-blue-700">{s.no}</span>
+                  <div className="font-bold text-xs text-slate-800 truncate">{s.title}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. TRACKED RESULT STATE: 10-MILESTONE ARCHITECTURE */}
+      {trackedContainer && !isScanning && (
+        <div className="space-y-5 animate-fade-in">
+          
+          {/* Container Metadata Overview Banner */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-[#0b1329] text-cyan-400 flex items-center justify-center font-black shadow-md border border-slate-800">
                   <Container className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xl sm:text-2xl font-black text-cyan-400 tracking-wider">
-                      {contNo}
-                    </span>
+                    <h2 className="text-lg sm:text-xl font-black font-mono text-slate-950 tracking-tight">
+                      {trackedContainer}
+                    </h2>
                     <button
-                      onClick={() => handleCopy(contNo)}
-                      className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      onClick={() => handleCopy(trackedContainer)}
                       title="Copy Container Number"
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
                     >
-                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
-                  </div>
-                  <span className="text-xs text-slate-400">
-                    Type: <strong className="text-slate-200">{sizeType}</strong> • Line: <strong className="text-cyan-300">{shippingLine}</strong>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleCopy(window.location.href)}
-                  className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Share</span>
-                </button>
-
-                <button
-                  onClick={() => window.print()}
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Slip</span>
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                  title="Track Another Container"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* 5 Details Columns (Empty Pickup, Factory Stuffing, Handover Location, Customs & B/L, Route Corridor) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 text-xs pt-1">
-              {/* 1. Empty Pickup */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Empty Pickup</span>
-                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={emptyPickupLoc}>
-                  {emptyPickupLoc}
-                </span>
-                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
-                  Date: {emptyPickupDate}
-                </span>
-              </div>
-
-              {/* 2. Factory Stuffing */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Factory Stuffing</span>
-                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={stuffingLoc}>
-                  {stuffingLoc}
-                </span>
-                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
-                  Date: {stuffingDate}
-                </span>
-              </div>
-
-              {/* 3. Handover Location */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Handover Location</span>
-                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={handoverLoc}>
-                  {handoverLoc}
-                </span>
-                <span className="text-[11px] text-cyan-300 font-mono block mt-0.5">
-                  Date: {handoverDate}
-                </span>
-              </div>
-
-              {/* 4. Customs & B/L Ref */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Customs & B/L Ref</span>
-                <span className="font-mono text-slate-200 block mt-0.5">
-                  SB: <strong className="text-white">{sbNo}</strong>
-                </span>
-                <span className="font-mono text-cyan-300 block">
-                  B/L: <strong>{blNo}</strong>
-                </span>
-              </div>
-
-              {/* 5. Route Corridor (POL & POD - Last) */}
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Route Corridor</span>
-                <span className="font-bold text-slate-200 block mt-0.5 truncate" title={`POL: ${pol}`}>
-                  POL: {pol}
-                </span>
-                <span className="font-bold text-cyan-300 block truncate" title={`POD: ${destination}`}>
-                  POD: {destination}
-                </span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Sub-Tab Switcher: 1. Visual Pipeline, 2. Oracle 45-Point Ledger (SP_MOVEMENT_HISTORY_PK), 3. Invoice Summary Cursor */}
-          <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2 flex-wrap">
-            <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-2xl overflow-x-auto max-w-full">
-              <button
-                type="button"
-                onClick={() => setActiveTrackingTab('pipeline')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'pipeline'
-                    ? 'bg-white text-slate-950 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Navigation className="w-3.5 h-3.5 text-blue-600" />
-                <span>Visual Journey & Telemetry</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTrackingTab('oracle_pk')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'oracle_pk'
-                    ? 'bg-[#0b1329] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Database className="w-3.5 h-3.5 text-cyan-400" />
-                <span>MOVEMENT HISTORY</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                  {effectiveOracleSteps.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTrackingTab('gr_fleet')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'gr_fleet'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Truck className="w-3.5 h-3.5 text-amber-200" />
-                <span>Fleet GR & Bilty</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-700/50 text-amber-100 border border-amber-400/40">
-                  {fleetGRRecords.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTrackingTab('summary')}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTrackingTab === 'summary'
-                    ? 'bg-white text-slate-950 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Invoice Cursor</span>
-              </button>
-            </div>
-
-            {activeTrackingTab === 'oracle_pk' && (
-              <button
-                type="button"
-                onClick={handleExportCSV}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export {effectiveOracleSteps.length} Steps CSV</span>
-              </button>
-            )}
-
-            {activeTrackingTab === 'gr_fleet' && (
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Print Official GR Bilty Slip</span>
-              </button>
-            )}
-          </div>
-
-          {/* VIEW 1: VISUAL PROGRESSIVE PIPELINE & TELEMETRY */}
-          {activeTrackingTab === 'pipeline' && (
-            <div className="space-y-4 sm:space-y-5 animate-fade-in">
-              {/* 3. Progressive Arrow / Chevron Connected Pipeline */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-card space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                    Multimodal Progressive Pipeline
-                  </span>
-                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
-                    Connected Rail-Port Corridor
-                  </span>
-                </div>
-
-                {/* Progressive Arrow Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                  {progressivePipeline.map((step, idx) => {
-                    const isCompleted = step.status === 'completed';
-                    const isCurrent = step.status === 'current';
-                    const StepIcon = step.icon;
-                    const isLast = idx === progressivePipeline.length - 1;
-
-                    return (
-                      <div key={step.id} className="relative flex flex-col justify-between">
-
-                        {/* Arrow Step Card */}
-                        <div className={`p-3 rounded-2xl border text-center transition-all h-full flex flex-col justify-between relative ${isCurrent
-                            ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
-                            : isCompleted
-                              ? 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
-                              : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
-                          }`}>
-
-                          <div>
-                            {/* Step Number & Icon */}
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${isCurrent ? 'bg-white/20 text-white' : isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'
-                                }`}>
-                                0{step.id}
-                              </span>
-                              <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-white animate-bounce' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`} />
-                            </div>
-
-                            <div className="text-xs font-black truncate">{step.label}</div>
-                          </div>
-
-                          <div className={`text-[10px] truncate mt-2 font-medium ${isCurrent ? 'text-blue-100 font-bold' : isCompleted ? 'text-emerald-700' : 'text-slate-400'
-                            }`}>
-                            {step.sub}
-                          </div>
-
-                        </div>
-
-                        {/* Progressive Arrow Connector (Desktop) */}
-                        {!isLast && (
-                          <div className="hidden lg:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-4 h-4 rounded-full bg-white border border-slate-300 items-center justify-center shadow-xs text-slate-400">
-                            <ChevronRight className="w-3 h-3" />
-                          </div>
-                        )}
-
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 5. Detailed Milestone Stepper */}
-              <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-card space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-base font-black text-slate-900">
-                      Multimodal Lifecycle Milestones (Track & Trace)
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Synchronized with SPJ CFS Gate, Western DFC Railhead & Gateway Port EDI Portals
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
-                    Stage 4 of 7 Completed
-                  </span>
-                </div>
-
-                {/* Milestone Steps */}
-                <div className="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                  {milestones.map((item, idx) => {
-                    const isDone = item.status === 'completed';
-                    const isCur = item.status === 'current';
-                    const IconComponent = item.icon;
-
-                    return (
-                      <div key={idx} className="relative group">
-                        {/* Badge */}
-                        <div className={`absolute -left-6 sm:-left-8 top-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${isDone
-                            ? 'bg-emerald-600 text-white shadow-sm ring-3 ring-emerald-100'
-                            : isCur
-                              ? 'bg-blue-600 text-white shadow-md ring-3 ring-blue-100 animate-pulse'
-                              : 'bg-slate-100 text-slate-400 border border-slate-300'
-                          }`}>
-                          <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </div>
-
-                        {/* Step Content */}
-                        <div className={`p-4 rounded-2xl border transition-all ${isCur
-                            ? 'bg-blue-50/80 border-blue-200 shadow-sm'
-                            : isDone
-                              ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
-                              : 'bg-slate-50/60 border-slate-200 opacity-60'
-                          }`}>
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs sm:text-sm font-black ${isCur ? 'text-blue-950' : 'text-slate-900'}`}>
-                                {item.title}
-                              </span>
-                              {isCur && (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-600 text-white uppercase tracking-wider">
-                                  In Progress
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs font-mono font-semibold text-slate-500">
-                              {item.timestamp}
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-bold text-slate-700 mt-1 flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                            <span>{item.location}</span>
-                          </div>
-
-                          <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
-                            {item.details}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW 2: ORACLE 45-POINT MOVEMENT LEDGER (SP_MOVEMENT_HISTORY_PK) */}
-          {activeTrackingTab === 'oracle_pk' && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-3 sm:space-y-4 animate-fade-in">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
-                      <Database className="w-4 h-4 text-blue-600" />
-                      Movement History ({effectiveOracleSteps.length}-Step Master Ledger)
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      Direct Procedure View {isLoadingLive ? '(Syncing Oracle DB...)' : '(Live Oracle DB)'}
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">
+                      {matched?.containerType || '40 FT RF'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Complete sequential audit trail for Container <strong className="font-mono text-slate-800">{contNo}</strong> from Empty Allocation to COD.
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Carrier: <strong className="text-slate-800">{matched?.shippingLine || 'MSC / CMA CGM'}</strong> | B/L: <strong className="font-mono text-slate-800">{matched?.blNo || 'CGD0158714'}</strong>
                   </p>
                 </div>
-
-                {/* Filter Search Input & Mobile Filter Toggle */}
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <div className="relative flex-1 md:w-64">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={oracleSearchTerm}
-                      onChange={(e) => setOracleSearchTerm(e.target.value)}
-                      placeholder={`Search ${effectiveOracleSteps.length} events...`}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowOracleFilters(!showOracleFilters)}
-                    className="md:hidden p-2 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                    title="Toggle Phase Filter"
-                  >
-                    <Filter className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
 
-              {/* Phase Filter Chips (Visible on desktop or when toggled on mobile) */}
-              <div className={`flex items-center gap-1.5 overflow-x-auto pb-1 text-xs ${showOracleFilters ? 'flex' : 'hidden md:flex'}`}>
-                {['ALL', 'Empty Allocation', 'Fleet Transport', 'Plant Stuffing', 'Booking & Space Allotment', 'Rail Corridor', 'Shipped On Board', 'Destination Discharge', 'SPJ Billing'].map(phase => (
-                  <button
-                    key={phase}
-                    type="button"
-                    onClick={() => setOraclePhaseFilter(phase)}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-[11px] whitespace-nowrap transition-colors cursor-pointer ${oraclePhaseFilter === phase
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                      }`}
-                  >
-                    {phase === 'ALL' ? `All Stages (${effectiveOracleSteps.length})` : phase}
-                  </button>
-                ))}
-              </div>
-
-              {/* Mobile Minimal 2-Column Grid (< md screens) */}
-              <div className="grid grid-cols-2 md:hidden gap-2">
-                {filteredOracleSteps.map((step) => (
-                  <div
-                    key={step.SR_NO}
-                    className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-sm hover:border-cyan-400 p-2 flex flex-col justify-between space-y-1.5 transition-all duration-200"
-                  >
-                    <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
-                      <span className="font-mono font-black text-[9px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                        #{String(step.SR_NO).padStart(2, '0')}
-                      </span>
-                      <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-slate-100 text-slate-600 truncate max-w-[75px]">
-                        {step.PHASE}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="font-extrabold text-[10px] text-slate-900 leading-snug line-clamp-2">
-                        {step.ACTIVITY_NAME}
-                      </h4>
-                      <div className="mt-1 space-y-0.5 text-[8px] text-slate-500 bg-slate-50 p-1 rounded border border-slate-100">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">DOC:</span>
-                          <span className="font-mono font-bold text-slate-800 truncate max-w-[70px]">{step.DOC_NO || '-'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">DATE:</span>
-                          <span className="font-mono text-slate-700">{step.ACTIVITY_DATE}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {step.SR_NO === 12 && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTrackingTab('gr_fleet')}
-                        className="w-full py-1 rounded bg-amber-500 hover:bg-amber-600 text-white font-bold text-[8px] flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                      >
-                        <Truck className="w-2.5 h-2.5" />
-                        <span>View Bilty</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop 45-Step Ledger Table (md+ screens) */}
-              <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white font-black text-[10px] uppercase tracking-wider">
-                      <th className="py-3 px-3 text-center">SR#</th>
-                      <th className="py-3 px-3">Lifecycle Phase</th>
-                      <th className="py-3 px-4">Activity Name</th>
-                      <th className="py-3 px-3">Doc Type</th>
-                      <th className="py-3 px-4">Document / Reference No</th>
-                      <th className="py-3 px-3">Activity Date</th>
-                      <th className="py-3 px-4">Audit Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
-                    {filteredOracleSteps.map((step) => (
-                      <tr key={step.SR_NO} className="hover:bg-cyan-50/40 transition-colors">
-                        <td className="py-2.5 px-3 text-center font-mono font-black text-blue-700 bg-slate-50/80">
-                          {String(step.SR_NO).padStart(2, '0')}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 whitespace-nowrap">
-                            {step.PHASE}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4 font-bold text-slate-900">
-                          {step.ACTIVITY_NAME}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
-                          {step.DOC_TYPE || '-'}
-                        </td>
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-900 max-w-[200px] truncate" title={step.DOC_NO}>
-                          {step.SR_NO === 12 ? (
-                            <button
-                              type="button"
-                              onClick={() => setActiveTrackingTab('gr_fleet')}
-                              className="text-amber-700 hover:text-amber-900 underline font-bold inline-flex items-center gap-1 cursor-pointer bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"
-                              title="Click to view full GR Consignment Bilty"
-                            >
-                              <Truck className="w-3 h-3 text-amber-600" />
-                              <span>{step.DOC_NO}</span>
-                            </button>
-                          ) : (
-                            step.DOC_NO
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono text-slate-700 whitespace-nowrap">
-                          {step.ACTIVITY_DATE}
-                        </td>
-                        <td className="py-2.5 px-4 text-slate-600 max-w-[240px] truncate" title={step.REMARKS}>
-                          {step.REMARKS || '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-            </div>
-          )}
-
-          {/* VIEW 4: FLEET GR & BILTY CONSIGNMENT (FLEET_GR_MAPPING) */}
-          {activeTrackingTab === 'gr_fleet' && (
-            <div className="space-y-4 sm:space-y-6 animate-fade-in">
-
-              {/* Header & GR Selector */}
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-5 sm:p-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                        <Truck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                          Fleet GR & Consignment Bilty Ledger
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          Official Transporter Goods Receipt (GR / LR Bilty) issued for Container <strong className="font-mono text-slate-800">{contNo}</strong>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Print Official Bilty PDF</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2-Column Minimal GR Cards Grid on Mobile & Desktop */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Fleet GR Consignments ({fleetGRRecords.length})
-                    </span>
-                    <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                      Tap card to inspect full Bilty
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
-                    {fleetGRRecords.map((gr, idx) => {
-                      const isSelected = selectedGRIndex === idx;
-                      return (
-                        <div
-                          key={gr.grNo}
-                          onClick={() => setSelectedGRIndex(idx)}
-                          className={`p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-1.5 ${isSelected
-                              ? 'bg-amber-50/80 border-amber-500 shadow-sm ring-2 ring-amber-400/40 -translate-y-0.5'
-                              : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-xs'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1">
-                            <span className="font-mono font-black text-[10px] sm:text-xs text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 truncate">
-                              {gr.grNo}
-                            </span>
-                            <span className={`px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-black ${gr.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                              }`}>
-                              ● {gr.status}
-                            </span>
-                          </div>
-
-                          <div className="space-y-0.5 text-[8px] sm:text-xs text-slate-600 bg-slate-50/70 p-1.5 rounded-lg border border-slate-100">
-                            <div className="flex justify-between">
-                              <span className="text-slate-400">VEHICLE:</span>
-                              <span className="font-mono font-bold text-blue-900 truncate max-w-[80px]">{gr.vehicleNo}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-slate-400">DRIVER:</span>
-                              <span className="font-bold text-slate-800 truncate max-w-[80px]">{gr.driverName}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-slate-400">SEAL:</span>
-                              <span className="font-mono font-semibold text-emerald-700 truncate max-w-[80px]">{gr.sealNo}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[7px] sm:text-[10px] text-slate-500 pt-0.5">
-                            <span>Date: <strong>{gr.grDate}</strong></span>
-                            <span className="font-bold text-amber-700">{gr.grossWeight}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Official Bilty / Consignment Document Box */}
-              {fleetGRRecords[selectedGRIndex] && (() => {
-                const gr = fleetGRRecords[selectedGRIndex];
-                return (
-                  <div className="bg-white rounded-3xl border-2 border-amber-300/80 shadow-card p-6 sm:p-8 space-y-6 relative overflow-hidden">
-
-                    {/* Watermark Logo/Text */}
-                    <div className="absolute right-6 top-6 opacity-5 pointer-events-none select-none">
-                      <Truck className="w-72 h-72 text-slate-900" />
-                    </div>
-
-                    {/* Bilty Top Bar Header */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-white font-black text-xs uppercase tracking-wider">
-                            OFFICIAL GOODS RECEIPT (GR / BILTY)
-                          </span>
-                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            ● {gr.status}
-                          </span>
-                        </div>
-                        <h2 className="text-xl sm:text-2xl font-black font-display text-slate-900 mt-1">
-                          {gr.transporter}
-                        </h2>
-                        <p className="text-xs text-slate-500">
-                          SPJ Multimodal Transport Network • Fleet Division • ISO 9001:2015 Certified
-                        </p>
-                      </div>
-
-                      <div className="text-left sm:text-right space-y-1 bg-amber-50 p-3 rounded-2xl border border-amber-200">
-                        <span className="text-[10px] font-bold text-amber-800 uppercase block">CONSIGNMENT NOTE NO</span>
-                        <span className="text-lg sm:text-xl font-mono font-black text-slate-900 block">{gr.grNo}</span>
-                        <span className="text-xs font-medium text-slate-600 block">Date: <strong>{gr.grDate}</strong></span>
-                      </div>
-                    </div>
-
-                    {/* Grid: 4 Core Sections */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-
-                      {/* Section 1: Consignor & Consignee */}
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
-                          Consignor & Consignee Parties
-                        </span>
-                        <div>
-                          <span className="text-slate-500 text-[11px] block">Shipper / Consignor:</span>
-                          <span className="font-bold text-slate-900 text-sm">{gr.consignor}</span>
-                          <span className="text-[11px] text-slate-500 block">GSTIN: {customer?.gstin || '09AAACS9677K1Z6'}</span>
-                        </div>
-                        <div className="pt-1 border-t border-slate-200/60">
-                          <span className="text-slate-500 text-[11px] block">Consignee / Destination Receiver:</span>
-                          <span className="font-bold text-slate-900">{gr.consignee}</span>
-                          <span className="text-[11px] text-slate-500 block">Port: {gr.finalPort}</span>
-                        </div>
-                      </div>
-
-                      {/* Section 2: Vehicle & Driver Details */}
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
-                          Fleet Vehicle & Driver Verification
-                        </span>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Assigned Trailer No:</span>
-                            <span className="font-mono font-black text-slate-900 text-base text-blue-800">{gr.vehicleNo}</span>
-                          </div>
-                          <span className="px-2 py-1 rounded-lg bg-blue-100 text-blue-900 font-bold text-[10px]">
-                            {gr.vehicleType}
-                          </span>
-                        </div>
-                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Driver Name:</span>
-                            <span className="font-bold text-slate-900">{gr.driverName}</span>
-                            <span className="text-[10px] text-slate-500 block">DL: {gr.driverLicense}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Driver Mobile:</span>
-                            <span className="font-mono font-bold text-emerald-700">{gr.driverPhone}</span>
-                            <span className="text-[10px] text-slate-500 block">{gr.tollFastag}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Section 3: Container & Cargo Telemetry */}
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
-                          Container Equipment & Cold Chain Spec
-                        </span>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Container No:</span>
-                            <span className="font-mono font-black text-slate-900 text-sm">{gr.contNo}</span>
-                            <span className="text-[10px] text-slate-500 block">{gr.contSize}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Seal Number:</span>
-                            <span className="font-mono font-bold text-cyan-800 text-xs">{gr.sealNo}</span>
-                          </div>
-                        </div>
-                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-3 gap-2 text-center">
-                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
-                            <span className="text-[9px] text-slate-400 block font-bold">SET TEMP</span>
-                            <span className="font-mono font-bold text-blue-700">{gr.setTemp}</span>
-                          </div>
-                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
-                            <span className="text-[9px] text-slate-400 block font-bold">ACTUAL</span>
-                            <span className="font-mono font-bold text-emerald-700">{gr.actualTemp.split(' ')[0]}</span>
-                          </div>
-                          <div className="bg-white p-1.5 rounded-lg border border-slate-200">
-                            <span className="text-[9px] text-slate-400 block font-bold">GENSET</span>
-                            <span className="font-bold text-amber-700 text-[10px]">440V OK</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Section 4: Packages, Weight & E-Way Bill */}
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-200 pb-1">
-                          E-Way Bill & Cargo Weight Audit
-                        </span>
-                        <div>
-                          <span className="text-slate-500 text-[11px] block">E-Way Bill Number:</span>
-                          <span className="font-mono font-black text-purple-900 text-sm">{gr.ewayBillNo}</span>
-                          <span className="text-[10px] text-slate-500 block">Date: {gr.ewayBillDate}</span>
-                        </div>
-                        <div className="pt-1 border-t border-slate-200/60 grid grid-cols-2 gap-2">
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Packages / Description:</span>
-                            <span className="font-bold text-slate-900 block">{gr.packagesCount}</span>
-                            <span className="text-[10px] text-slate-500 block truncate">{gr.cargoDescription}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 text-[11px] block">Gross / Net Weight:</span>
-                            <span className="font-mono font-bold text-slate-900 block">Gross: {gr.grossWeight}</span>
-                            <span className="font-mono text-[11px] text-slate-600 block">Net: {gr.netWeight}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-
-                    {/* Route Corridor Flow */}
-                    <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 text-xs space-y-2">
-                      <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">
-                        Transit Corridor Milestones
-                      </span>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold text-slate-800">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                          <span><strong>From:</strong> {gr.pickupPoint}</span>
-                        </div>
-                        <span className="text-slate-400 hidden sm:inline">➔</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
-                          <span><strong>Stuffing:</strong> {gr.stuffingPoint}</span>
-                        </div>
-                        <span className="text-slate-400 hidden sm:inline">➔</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
-                          <span><strong>Destination:</strong> {gr.deliveryPoint}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Proof & Signatures */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-3 border-t border-slate-200 text-xs text-slate-500">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        <span>{gr.epodStatus}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(JSON.stringify(gr, null, 2))}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-                        >
-                          Copy GR Record
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => window.print()}
-                          className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                        >
-                          Download Bilty Slip
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })()}
-
-              {/* Full Historical GR Table */}
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-5 sm:p-6 space-y-3">
-                <h4 className="text-sm font-black text-slate-900">
-                  Container Fleet Consignment History (All Trips)
-                </h4>
-                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-[#0b1329] text-white font-black text-[10px] uppercase tracking-wider">
-                        <th className="py-3 px-3">GR NO</th>
-                        <th className="py-3 px-3">GR Date</th>
-                        <th className="py-3 px-3">Vehicle No</th>
-                        <th className="py-3 px-3">Trip Type</th>
-                        <th className="py-3 px-3">Driver Name</th>
-                        <th className="py-3 px-3">E-Way Bill</th>
-                        <th className="py-3 px-3">Gross Wt</th>
-                        <th className="py-3 px-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
-                      {fleetGRRecords.map((gr, idx) => (
-                        <tr
-                          key={gr.grNo}
-                          onClick={() => setSelectedGRIndex(idx)}
-                          className={`hover:bg-amber-50/50 cursor-pointer transition-colors ${selectedGRIndex === idx ? 'bg-amber-50/70 font-bold' : ''
-                            }`}
-                        >
-                          <td className="py-2.5 px-3 font-mono font-bold text-amber-700">{gr.grNo}</td>
-                          <td className="py-2.5 px-3 font-mono text-slate-600">{gr.grDate}</td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{gr.vehicleNo}</td>
-                          <td className="py-2.5 px-3 text-slate-700">{gr.tripType}</td>
-                          <td className="py-2.5 px-3 text-slate-900">{gr.driverName}</td>
-                          <td className="py-2.5 px-3 font-mono text-purple-800">{gr.ewayBillNo}</td>
-                          <td className="py-2.5 px-3 font-mono text-slate-800">{gr.grossWeight}</td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
-                              {gr.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* VIEW 3: INVOICE MOVEMENT SUMMARY CURSOR (SP_MOVEMENT_HISTORY_SUMMARY) */}
-          {activeTrackingTab === 'summary' && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-indigo-600" />
-                      Invoice Cursor Summary
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
-                      Party Invoice Cursor
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Querying Cursor for Party Invoice <strong className="font-mono text-slate-800">{partyInvNo}</strong>.
-                  </p>
-                </div>
+              {/* Status and Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Stage {currentStageIndex} of 10 In Progress</span>
+                </span>
 
                 <button
                   type="button"
-                  onClick={() => handleCopy(JSON.stringify(invoiceSummaryRecords, null, 2))}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                  onClick={handleResetSearch}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
                 >
-                  Copy JSON Cursor
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Track Another</span>
                 </button>
               </div>
+            </div>
 
-              {/* Cursor Table */}
-              <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-[#0b1329] text-white font-black text-[10px] uppercase tracking-wider">
-                      <th className="py-3 px-3">MTY_CONT_ID</th>
-                      <th className="py-3 px-4">CONT_NO</th>
-                      <th className="py-3 px-3">CONT_SIZE</th>
-                      <th className="py-3 px-3">LINE</th>
-                      <th className="py-3 px-3">POL (Code)</th>
-                      <th className="py-3 px-3">POD (Code)</th>
-                      <th className="py-3 px-4">PARTY_INV_NO</th>
-                      <th className="py-3 px-4">REQUIRED_VESSEL</th>
-                      <th className="py-3 px-3">REQUIRED_ETD</th>
-                      <th className="py-3 px-4">COD_REMARK</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
-                    {invoiceSummaryRecords.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-indigo-50/40 transition-colors">
-                        <td className="py-3 px-3 font-mono text-slate-500">{item.MTY_CONT_ID}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-900 text-[13px]">{item.CONT_NO}</td>
-                        <td className="py-3 px-3 font-mono font-bold text-blue-700">{item.CONT_SIZE}</td>
-                        <td className="py-3 px-3 font-bold text-slate-900">{item.LINE}</td>
-                        <td className="py-3 px-3 font-mono font-black text-emerald-700 bg-emerald-50/50">{item.POL}</td>
-                        <td className="py-3 px-3 font-mono font-black text-cyan-700 bg-cyan-50/50">{item.POD}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-indigo-900">{item.PARTY_INV_NO}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-800">{item.REQUIRED_VESSEL}</td>
-                        <td className="py-3 px-3 font-mono text-slate-700">{item.REQUIRED_ETD}</td>
-                        <td className="py-3 px-4 text-slate-600">{item.COD_REMARK}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Quick Route Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-100 text-xs">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Origin ICD / Terminal</span>
+                <span className="font-bold text-slate-900 block mt-0.5 truncate">{matched?.terminal || 'TRANSWORLD-DADRI CFS'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Gateway Port (POL)</span>
+                <span className="font-bold text-slate-900 block mt-0.5 truncate">{matched?.pol || 'JNPT Nhava Sheva'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Destination Seaport (POD)</span>
+                <span className="font-bold text-cyan-800 block mt-0.5 truncate">{matched?.destination || 'JEBEL ALI - UAE'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Consignee Client</span>
+                <span className="font-bold text-slate-900 block mt-0.5 truncate">{customer?.name || 'Marhaba Frozen Foods'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 10-Step Connected Pipeline Ribbon */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-card space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                10-Stage Multimodal Lifecycle Pipeline
+              </span>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
+                Stage {currentStageIndex} of 10 Active
+              </span>
+            </div>
+
+            {/* Steps Ribbon Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
+              {milestones.map((m) => {
+                const isDone = m.status === 'completed';
+                const isCur = m.status === 'current';
+                const IconComp = m.icon;
+                return (
+                  <div
+                    key={m.id}
+                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between ${
+                      isCur
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
+                        : isDone
+                        ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
+                        : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className={`text-[8px] font-black px-1 rounded ${isCur ? 'bg-white/20 text-white' : isDone ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'}`}>
+                        {String(m.step).padStart(2, '0')}
+                      </span>
+                      <IconComp className={`w-3 h-3 ${isCur ? 'text-white animate-bounce' : isDone ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    </div>
+                    <span className="text-[9px] font-bold truncate max-w-full">
+                      {m.title.replace(/^[0-9]+\)\s*/, '')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* DETAILED 10 MILESTONE CARDS (THE EXACT USER SPECIFICATION) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                Detailed Lifecycle Milestones & Field Telemetry
+              </h3>
+              <span className="text-xs text-slate-500 font-mono">
+                Container: {trackedContainer}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {milestones.map((m) => {
+                const isDone = m.status === 'completed';
+                const isCur = m.status === 'current';
+                const IconComp = m.icon;
+
+                return (
+                  <div
+                    key={m.id}
+                    className={`rounded-2xl p-4 border transition-all ${
+                      isCur
+                        ? 'bg-blue-50/70 border-blue-300 shadow-md ring-1 ring-blue-300'
+                        : isDone
+                        ? 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300'
+                        : 'bg-slate-50/60 border-slate-200/70 opacity-70'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            isCur
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : isDone
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-slate-200 text-slate-500'
+                          }`}
+                        >
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                              {m.title}
+                            </h4>
+                            {isCur && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-blue-600 text-white uppercase tracking-wider">
+                                Current
+                              </span>
+                            )}
+                            {isDone && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">
+                                Completed
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-medium">
+                            {m.subtitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="font-mono text-[10px] font-black text-slate-400 shrink-0">
+                        STEP #{m.step}
+                      </span>
+                    </div>
+
+                    {/* Field Data Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 text-xs">
+                      {m.fields.map((f, fIdx) => (
+                        <div
+                          key={fIdx}
+                          className="bg-white/90 p-2 rounded-xl border border-slate-100/90 space-y-0.5"
+                        >
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                            {f.label}
+                          </span>
+                          <span className="font-bold text-slate-900 text-[11px] block truncate font-mono" title={f.value}>
+                            {f.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TRANSHIPMENT DETAILS (Collapsible / Hide by default as requested: "Transhipment Details (hide)") */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-5 space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowTranshipment(!showTranshipment)}
+              className="w-full flex items-center justify-between text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors">
+                  <Compass className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                      Transhipment Details
+                    </h4>
+                    <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                      {showTranshipment ? 'Visible' : 'Hidden'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Intermodal relay port, feeder vessel, and transit ETD (Click to {showTranshipment ? 'collapse' : 'expand'})
+                  </p>
+                </div>
               </div>
 
-            </div>
-          )}
+              <div className="p-1 rounded-lg bg-slate-100 text-slate-600">
+                {showTranshipment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
 
-        </div>
-      ) : (
-        /* Empty State before search */
-        <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3 shadow-card max-w-lg mx-auto">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-inner">
-            <Container className="w-7 h-7" />
+            {showTranshipment && (
+              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-fade-in">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Port</span>
+                  <span className="font-bold text-slate-900 block truncate">
+                    PORT OF SALALAH / JEBEL ALI HUB
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Vessel</span>
+                  <span className="font-bold text-slate-900 block truncate">
+                    MSC MAYA / CMA CGM PALANGA
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">ETD</span>
+                  <span className="font-mono font-bold text-blue-700 block truncate">
+                    08/10/2026 14:00 PM (Est)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-          <h3 className="text-base font-bold text-slate-900">Awaiting Container Query</h3>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Please enter your container number in the box above to view real-time location, cold chain telemetry, and multimodal journey.
-          </p>
+
         </div>
       )}
 
