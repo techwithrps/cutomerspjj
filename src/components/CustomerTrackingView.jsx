@@ -835,6 +835,49 @@ export default function CustomerTrackingView({
 
           </div>
 
+          {/* HORIZONTAL LEFT-TO-RIGHT 10-STAGE MILESTONE RIBBON */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-card space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-900 uppercase tracking-wider block">
+                10-Stage Multimodal Progress Ribbon (Left-to-Right)
+              </span>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
+                Stage {milestones.findIndex(m => m.status === 'current') >= 0 ? milestones.findIndex(m => m.status === 'current') + 1 : milestones.filter(m => m.status === 'completed').length} of 10 Active
+              </span>
+            </div>
+
+            {/* 10 Step Grid Ribbon - Left to Right */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
+              {milestones.map((m) => {
+                const isDone = m.status === 'completed';
+                const isCur = m.status === 'current';
+                const IconComp = m.icon || CheckCircle2;
+                return (
+                  <div
+                    key={m.id}
+                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between min-h-[64px] ${
+                      isCur
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
+                        : isDone
+                        ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
+                        : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className={`text-[8px] font-black px-1 rounded ${isCur ? 'bg-white/20 text-white' : isDone ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'}`}>
+                        {String(m.step).padStart(2, '0')}
+                      </span>
+                      <IconComp className={`w-3.5 h-3.5 ${isCur ? 'text-white animate-pulse' : isDone ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    </div>
+                    <span className="text-[9px] font-bold truncate max-w-full leading-tight" title={m.title.replace(/^[0-9]+\)\s*/, '')}>
+                      {m.title.replace(/^[0-9]+\)\s*/, '')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* SCREENSHOT 2: MULTIMODAL LIFECYCLE MILESTONES (TRACK & TRACE) VERTICAL PIPELINE */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-card p-6 sm:p-8 space-y-6">
             
