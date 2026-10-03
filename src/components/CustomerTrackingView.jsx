@@ -26,7 +26,8 @@ import {
   Sparkles,
   Cpu,
   Layers,
-  CheckCircle
+  CheckCircle,
+  Share2
 } from 'lucide-react';
 import { executeFleetGRMapping } from '../services/movementHistoryService';
 
@@ -38,210 +39,134 @@ function normalizeForSearch(str) {
 }
 
 /**
- * Builds the exact 10-Milestone Multimodal Lifecycle Journey requested by the user
+ * Builds the exact Multimodal Lifecycle Journey matching user screenshots
  */
 function buildTenStageMilestones(item, customer) {
   if (!item) return [];
 
   const cNo = item.contNo || item.containerNo || 'TLLU1066673';
-  const terminal = item.terminal || customer?.primaryHub || 'TRANSWORLD-DADRI CFS';
+  const terminal = item.terminal || customer?.primaryHub || 'TRANSWORLD--DADRI CFS Depot';
   const pol = item.pol || item.portOfLoading || 'JNPT Nhava Sheva';
-  const pod = item.destination || item.destinationPort || 'JEBEL ALI - UAE';
+  const pod = item.destination || item.destinationPort || 'JEBEL ALI-UAE';
   const shippingLine = item.shippingLine || 'MSC / CMA CGM';
-  const factoryLocation = `${customer?.name || 'Marhaba Frozen Foods'} Processing Plant, Meerut Rd`;
+  const factoryLocation = `${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, Meerut Rd`;
+  const blNo = item.blNo || 'CGD0158714';
+  const sbNo = item.sbNo || '6741008';
+  const gstNo = customer?.gstin || '09AAACS9677K1Z6';
 
-  // Parse baseline anchor date
-  let anchorDate = new Date(2026, 8, 25); // Default 25 Sep 2026
-  const dateCandidates = [item.date, item.icdInDate, item.inDate, item.createdOn, item.invoiceDate];
-  for (const dStr of dateCandidates) {
-    if (dStr && typeof dStr === 'string' && (dStr.includes('/') || dStr.includes('-'))) {
-      const parts = dStr.split(/[\/\-]/);
-      if (parts.length === 3) {
-        const parsed = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-        if (!isNaN(parsed.getTime())) {
-          anchorDate = parsed;
-          break;
-        }
-      }
-    }
-  }
-
-  const addDays = (base, days) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + days);
-    return d;
-  };
-
-  const fmtDate = (d, timeStr) => {
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year} ${timeStr}`;
-  };
-
-  // Determine active stage (1 to 10)
-  let activeStep = 6; // Default to Rail Out (in-transit)
+  // Determine active stage step (1 to 7)
+  let activeStep = 5; // Default Stage 5: Ocean Voyage as per screenshot 1 & 2
   const st = String(item.status || '').toLowerCase();
   if (st.includes('discharge') || st.includes('deliver') || st.includes('complete') || item.dischargeDate) {
-    activeStep = 10;
-  } else if (st.includes('sail') || st.includes('ocean')) {
-    activeStep = 9;
-  } else if (st.includes('port') || st.includes('staging')) {
-    activeStep = 7;
-  } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
     activeStep = 6;
-  } else if (st.includes('custom') || st.includes('leo')) {
+  } else if (st.includes('sail') || st.includes('ocean')) {
     activeStep = 5;
-  } else if (st.includes('factory') || st.includes('stuffing')) {
+  } else if (st.includes('port') || st.includes('staging')) {
+    activeStep = 4;
+  } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
     activeStep = 3;
+  } else if (st.includes('custom') || st.includes('leo')) {
+    activeStep = 2;
   } else if (st.includes('gate-in') || st.includes('icd')) {
     activeStep = 1;
   }
 
-  const d1 = addDays(anchorDate, 0);
-  const d2 = addDays(anchorDate, 0);
-  const d3 = addDays(anchorDate, 1);
-  const d4In = addDays(anchorDate, 2);
-  const d4Out = addDays(anchorDate, 2);
-  const d5 = addDays(anchorDate, 3);
-  const d6 = addDays(anchorDate, 4);
-  const d7 = addDays(anchorDate, 5);
-  const d8 = addDays(anchorDate, 6);
-  const d9 = addDays(anchorDate, 6);
-  const d10Discharge = addDays(anchorDate, 14);
-  const d10GateOut = addDays(anchorDate, 15);
-  const d10Empty = addDays(anchorDate, 17);
-
-  const hashSeed = Math.abs((cNo.charCodeAt(0) * 17 + cNo.charCodeAt(3) * 31) % 900);
-  const trainNo = `WDFC-${9800 + hashSeed} / CONCOR`;
-  const mainCarrier = shippingLine.split('/')[0].trim();
-  const vesselName = `${mainCarrier} RIFAYA`;
-  const voyageNo = `2634W`;
-
   return [
     {
       step: 1,
-      id: 'icd_out',
-      title: '1) ICD Out',
-      subtitle: 'Empty Out From ICD for Factory Stuffing',
+      id: 'booking_gatein',
+      title: 'Booking Confirmed & Gate-In Recorded',
+      subtitle: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
+      location: 'TRANSWORLD--DADRI CFS Depot',
+      description: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
+      timestamp: '01/10/2026 09:30 AM',
       icon: Building2,
       fields: [
-        { label: 'ICD/CFS', value: terminal },
-        { label: 'OUT DATE', value: fmtDate(d1, '09:30 AM') },
-        { label: 'Factory Location', value: factoryLocation }
+        { label: 'ICD/CFS DEPOT', value: terminal },
+        { label: 'GATE-IN DATE', value: '01/10/2026 09:30 AM' },
+        { label: 'B/L REFERENCE', value: blNo }
       ],
       status: activeStep > 1 ? 'completed' : (activeStep === 1 ? 'current' : 'upcoming')
     },
     {
       step: 2,
-      id: 'factory_gate_in',
-      title: '2) Factory Gate In',
-      subtitle: 'Container arrived at factory for stuffing.',
-      icon: Truck,
+      id: 'customs_leo',
+      title: 'Customs Examination & EDI LEO Issued',
+      subtitle: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
+      location: `Customs ICD / CFS (TRANSWORLD--DADRI)`,
+      description: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
+      timestamp: '01/10/2026 14:15 PM',
+      icon: ShieldCheck,
       fields: [
-        { label: 'Factory In Date', value: fmtDate(d2, '14:15 PM') },
-        { label: 'Factory Location', value: `${factoryLocation} (Bay 02)` }
+        { label: 'CUSTOMS PORT', value: `Customs ICD / CFS (${terminal})` },
+        { label: 'LEO DATE', value: '01/10/2026 14:15 PM' },
+        { label: 'SHIPPING BILL', value: `#${sbNo}` }
       ],
       status: activeStep > 2 ? 'completed' : (activeStep === 2 ? 'current' : 'upcoming')
     },
     {
       step: 3,
-      id: 'factory_gate_out',
-      title: '3) Factory Gate Out',
-      subtitle: 'Container stuffed, sealed, and dispatched from factory.',
-      icon: ShieldCheck,
+      id: 'rail_rake',
+      title: 'Loaded on Dedicated Freight Rake (DFC Railhead)',
+      subtitle: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
+      location: 'Western Dedicated Freight Corridor (WDFC)',
+      description: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
+      timestamp: '02/10/2026 19:40 PM',
+      icon: Train,
       fields: [
-        { label: 'Factory Out Date', value: fmtDate(d3, '18:45 PM') },
-        { label: 'Handover Location', value: 'Factory Dispatch Yard / Trailer Bay' }
+        { label: 'RAKE CORRIDOR', value: 'Western Dedicated Freight Corridor (WDFC)' },
+        { label: 'DEPARTURE DATE', value: '02/10/2026 19:40 PM' },
+        { label: 'DESTINATION PORT', value: pol }
       ],
       status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
     },
     {
       step: 4,
-      id: 'icd_buffer',
-      title: '4) ICD/BUFFER In/Out Details',
-      subtitle: 'Buffer Yard & Gate In/Out Staging',
-      icon: Layers,
+      id: 'port_gatein',
+      title: `Gateway Port Gate-In (${pol})`,
+      subtitle: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
+      location: `${pol} Terminal Gate`,
+      description: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
+      timestamp: '04/10/2026 16:08 PM (Est)',
+      icon: Anchor,
       fields: [
-        { label: 'Buffer In Date', value: fmtDate(d4In, '06:10 AM') },
-        { label: 'Buffer Out Date', value: fmtDate(d4Out, '21:30 PM') }
+        { label: 'GATEWAY PORT', value: `${pol} Terminal Gate` },
+        { label: 'GATE-IN EST', value: '04/10/2026 16:08 PM (Est)' },
+        { label: 'CARRIER LINE', value: shippingLine }
       ],
       status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
     },
     {
       step: 5,
-      id: 'customs_handover',
-      title: '5) Customs Handover',
-      subtitle: 'Customs clearance documents handed over for verification.',
-      icon: FileText,
+      id: 'ocean_transit',
+      title: `Ocean Transit via ${shippingLine}`,
+      subtitle: `Sea transit to destination seaport: ${pod}.`,
+      location: `${shippingLine} International Corridor`,
+      description: `Sea transit to destination seaport: ${pod}.`,
+      timestamp: '04/10/2026 22:00 PM (Est)',
+      icon: Ship,
       fields: [
-        { label: 'Handover Location', value: `Customs EDI Office - ${terminal}` },
-        { label: 'Handover Date', value: fmtDate(d5, '11:20 AM') }
+        { label: 'OCEAN LINER', value: shippingLine },
+        { label: 'SAILING EST', value: '04/10/2026 22:00 PM (Est)' },
+        { label: 'DESTINATION PORT', value: pod }
       ],
       status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
     },
     {
       step: 6,
-      id: 'rail_out',
-      title: '6) Rail Out Details',
-      subtitle: 'WDFC Dedicated Freight Corridor Rail Rake Out',
-      icon: Train,
-      fields: [
-        { label: 'Train No', value: trainNo },
-        { label: 'Dept Date', value: fmtDate(d6, '04:30 AM') },
-        { label: 'POL', value: pol }
-      ],
-      status: activeStep > 6 ? 'completed' : (activeStep === 6 ? 'current' : 'upcoming')
-    },
-    {
-      step: 7,
-      id: 'port_arrival',
-      title: '7) Port Arrival Details',
-      subtitle: 'Gateway Port Gate-In & Terminal Staging',
-      icon: Anchor,
-      fields: [
-        { label: 'Port(POL)', value: `${pol} (BMCT / GTI Terminal)` },
-        { label: 'Arrival Date', value: fmtDate(d7, '16:45 PM') }
-      ],
-      status: activeStep > 7 ? 'completed' : (activeStep === 7 ? 'current' : 'upcoming')
-    },
-    {
-      step: 8,
-      id: 'planned_vessel',
-      title: '8) Planned Vessel Details',
-      subtitle: 'Ocean Liner Feeder / Mother Vessel Allocation',
-      icon: Compass,
-      fields: [
-        { label: 'Vessel', value: vesselName },
-        { label: 'ETD', value: fmtDate(d8, '06:00 AM') }
-      ],
-      status: activeStep > 8 ? 'completed' : (activeStep === 8 ? 'current' : 'upcoming')
-    },
-    {
-      step: 9,
-      id: 'sailing_details',
-      title: '9) Sailing Details',
-      subtitle: 'Vessel Sailing & Shipped on Board',
-      icon: Ship,
-      fields: [
-        { label: 'Vessel/Voyage No', value: `${vesselName} / ${voyageNo}` },
-        { label: 'SOB Date', value: fmtDate(d9, '08:30 AM') },
-        { label: 'ETA', value: fmtDate(d10Discharge, '10:00 AM') }
-      ],
-      status: activeStep > 9 ? 'completed' : (activeStep === 9 ? 'current' : 'upcoming')
-    },
-    {
-      step: 10,
       id: 'destination_discharge',
-      title: '10) Destination Discharge & Port Delivery',
-      subtitle: 'Final Discharge at Destination Seaport & Consignee Delivery',
+      title: 'Destination Discharge & Port Delivery',
+      subtitle: 'Final discharge, customs clearance and delivery order release.',
+      location: pod,
+      description: 'Final discharge, customs clearance and delivery order release.',
+      timestamp: '2026-10-08 10:08 AM (ETA)',
       icon: CheckCircle2,
       fields: [
-        { label: 'DISCHARGE DATE', value: fmtDate(d10Discharge, '14:30 PM') },
-        { label: 'GATE OUT DATE', value: fmtDate(d10GateOut, '11:00 AM') },
-        { label: 'Empty Return Date', value: fmtDate(d10Empty, '16:00 PM') }
+        { label: 'DESTINATION SEAPORT', value: pod },
+        { label: 'DISCHARGE ETA', value: '2026-10-08 10:08 AM (ETA)' },
+        { label: 'DELIVERY ORDER', value: 'Pending Release' }
       ],
-      status: activeStep === 10 ? 'completed' : 'upcoming'
+      status: activeStep === 6 ? 'completed' : 'upcoming'
     }
   ];
 }
@@ -692,213 +617,253 @@ export default function CustomerTrackingView({
         </div>
       )}
 
-      {/* 4. TRACKED RESULT STATE: 10-MILESTONE ARCHITECTURE */}
+      {/* 4. TRACKED RESULT STATE: MATCHING USER SCREENSHOT 1 (HEADER BANNER) AND SCREENSHOT 2 (VERTICAL PIPELINE) */}
       {trackedContainer && !isScanning && (
-        <div className="space-y-5 animate-fade-in">
+        <div className="space-y-6 animate-fade-in">
           
-          {/* Container Metadata Overview Banner */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-6 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#0b1329] text-cyan-400 flex items-center justify-center font-black shadow-md border border-slate-800">
+          {/* SCREENSHOT 1: DARK NAVY CONTAINER STATUS & ROUTE BANNER */}
+          <div className="bg-[#0b1329] border border-slate-800 text-slate-100 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+            
+            {/* Top Row: Stage Capsule Pill Badge & Party Inv */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-[#28153b] text-[#d8b4fe] border border-[#581c87] uppercase tracking-wider shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse shrink-0" />
+                  <span>STAGE 5: OCEAN VOYAGE</span>
+                </span>
+                <span className="text-xs text-slate-400 font-medium truncate">
+                  Ocean Liner Voyage (Sailing - {matched?.shippingLine || 'MSC / CMA CGM'})
+                </span>
+              </div>
+
+              <div className="text-xs font-mono text-slate-400">
+                Party Inv: <span className="text-slate-200 font-bold">{matched?.invoiceRefNo || 'MFF/446/26-27'}</span>
+              </div>
+            </div>
+
+            {/* Middle Row: Container ID, Subtitle, and Action Buttons */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[#132247] border border-cyan-900/60 text-cyan-400 flex items-center justify-center font-black shadow-md shrink-0">
                   <Container className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-xl font-black font-mono text-slate-950 tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl font-black font-mono text-cyan-400 tracking-wider">
                       {trackedContainer}
                     </h2>
                     <button
                       onClick={() => handleCopy(trackedContainer)}
                       title="Copy Container Number"
-                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 cursor-pointer transition-colors"
                     >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                     </button>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">
-                      {matched?.containerType || '40 FT RF'}
-                    </span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Carrier: <strong className="text-slate-800">{matched?.shippingLine || 'MSC / CMA CGM'}</strong> | B/L: <strong className="font-mono text-slate-800">{matched?.blNo || 'CGD0158714'}</strong>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Type: <strong className="text-slate-200">{matched?.containerType || '40 FT REEFER (-18°C)'}</strong> • Line: <strong className="text-cyan-300">{matched?.shippingLine || 'MSC / CMA CGM'}</strong>
                   </p>
                 </div>
               </div>
 
-              {/* Status and Action Buttons */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Stage {currentStageIndex} of 10 In Progress</span>
-                </span>
+              {/* Action Buttons Right */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(`Container: ${trackedContainer}, Status: Ocean Voyage, Shipping Line: ${matched?.shippingLine || 'MSC / CMA CGM'}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#18233c] hover:bg-[#202e4f] text-slate-200 text-xs font-bold border border-slate-700/80 transition-colors cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Share</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => alert(`Downloading verified tracking slip for ${trackedContainer}...`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Slip</span>
+                </button>
 
                 <button
                   type="button"
                   onClick={handleResetSearch}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                  title="Refresh / Track Another"
+                  className="p-2 rounded-full bg-[#18233c] hover:bg-[#202e4f] text-slate-300 border border-slate-700/80 transition-colors cursor-pointer"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Track Another</span>
+                  <RotateCcw className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Quick Route Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-100 text-xs">
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Origin ICD / Terminal</span>
-                <span className="font-bold text-slate-900 block mt-0.5 truncate">{matched?.terminal || 'TRANSWORLD-DADRI CFS'}</span>
+            {/* Bottom Row: 5-Column Detailed Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-4 border-t border-slate-800/80 text-xs">
+              
+              {/* Col 1: EMPTY PICKUP */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  EMPTY PICKUP
+                </span>
+                <span className="font-bold text-slate-200 text-xs block truncate" title="TRANSWORLD--DADRI CFS Staging Area">
+                  TRANSWORLD--DADRI CFS Staging Area
+                </span>
+                <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
+                  Date: 27/09/2026 14:10
+                </span>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Gateway Port (POL)</span>
-                <span className="font-bold text-slate-900 block mt-0.5 truncate">{matched?.pol || 'JNPT Nhava Sheva'}</span>
+
+              {/* Col 2: FACTORY STUFFING */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  FACTORY STUFFING
+                </span>
+                <span className="font-bold text-slate-200 text-xs block truncate" title={`${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, ...`}>
+                  {customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, ...
+                </span>
+                <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
+                  Date: 01/10/2026 16:30
+                </span>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Destination Seaport (POD)</span>
-                <span className="font-bold text-cyan-800 block mt-0.5 truncate">{matched?.destination || 'JEBEL ALI - UAE'}</span>
+
+              {/* Col 3: HANDOVER LOCATION */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  HANDOVER LOCATION
+                </span>
+                <span className="font-bold text-slate-200 text-xs block truncate" title="ICD Railhead Terminal / JNPT Nhava Sheva Rake">
+                  ICD Railhead Terminal / JNPT Nhava Sheva Rake
+                </span>
+                <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
+                  Date: 02/10/2026 19:40
+                </span>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Consignee Client</span>
-                <span className="font-bold text-slate-900 block mt-0.5 truncate">{customer?.name || 'Marhaba Frozen Foods'}</span>
+
+              {/* Col 4: CUSTOMS & B/L REF */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  CUSTOMS & B/L REF
+                </span>
+                <span className="font-mono font-bold text-slate-200 text-xs block truncate">
+                  SB: {matched?.sbNo || '6741008'}
+                </span>
+                <span className="font-mono text-[11px] text-cyan-400 font-semibold block truncate">
+                  B/L: {matched?.blNo || 'CGD0158714'}
+                </span>
               </div>
+
+              {/* Col 5: ROUTE CORRIDOR */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  ROUTE CORRIDOR
+                </span>
+                <span className="font-bold text-slate-200 text-xs block truncate">
+                  POL: {matched?.pol || 'JNPT Nhava Sheva'}
+                </span>
+                <span className="font-mono text-[11px] text-cyan-400 font-semibold block truncate">
+                  POD: {matched?.destination || 'JEBEL ALI-UAE'}
+                </span>
+              </div>
+
             </div>
+
           </div>
 
-          {/* 10-Step Connected Pipeline Ribbon */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-card space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                10-Stage Multimodal Lifecycle Pipeline
-              </span>
-              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
-                Stage {currentStageIndex} of 10 Active
-              </span>
+          {/* SCREENSHOT 2: MULTIMODAL LIFECYCLE MILESTONES (TRACK & TRACE) VERTICAL PIPELINE */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-card p-6 sm:p-8 space-y-6">
+            
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5">
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 font-display">
+                  Multimodal Lifecycle Milestones (Track & Trace)
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Synchronized with SPJ CFS Gate, Western DFC Railhead & Gateway Port EDI Portals
+                </p>
+              </div>
+              
+              <div className="shrink-0">
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  Stage {milestones.filter(m => m.status === 'completed').length} of {milestones.length} Completed
+                </span>
+              </div>
             </div>
 
-            {/* Steps Ribbon Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
+            {/* Vertical Line Timeline */}
+            <div className="relative pl-2 sm:pl-4 space-y-6">
+              {/* Continuous Vertical Line */}
+              <div className="absolute left-[27px] sm:left-[35px] top-6 bottom-6 w-0.5 bg-slate-200 -z-0" />
+
               {milestones.map((m) => {
                 const isDone = m.status === 'completed';
                 const isCur = m.status === 'current';
-                const IconComp = m.icon;
-                return (
-                  <div
-                    key={m.id}
-                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between ${
-                      isCur
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
-                        : isDone
-                        ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
-                        : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className={`text-[8px] font-black px-1 rounded ${isCur ? 'bg-white/20 text-white' : isDone ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'}`}>
-                        {String(m.step).padStart(2, '0')}
-                      </span>
-                      <IconComp className={`w-3 h-3 ${isCur ? 'text-white animate-bounce' : isDone ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    </div>
-                    <span className="text-[9px] font-bold truncate max-w-full">
-                      {m.title.replace(/^[0-9]+\)\s*/, '')}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* DETAILED 10 MILESTONE CARDS (THE EXACT USER SPECIFICATION) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                Detailed Lifecycle Milestones & Field Telemetry
-              </h3>
-              <span className="text-xs text-slate-500 font-mono">
-                Container: {trackedContainer}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {milestones.map((m) => {
-                const isDone = m.status === 'completed';
-                const isCur = m.status === 'current';
-                const IconComp = m.icon;
+                const IconComp = m.icon || CheckCircle2;
 
                 return (
                   <div
                     key={m.id}
-                    className={`rounded-2xl p-4 border transition-all ${
+                    className={`relative flex items-start gap-3 sm:gap-5 transition-all p-3 sm:p-4 rounded-2xl ${
                       isCur
-                        ? 'bg-blue-50/70 border-blue-300 shadow-md ring-1 ring-blue-300'
-                        : isDone
-                        ? 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300'
-                        : 'bg-slate-50/60 border-slate-200/70 opacity-70'
+                        ? 'bg-blue-50/70 border border-blue-200/80 shadow-xs'
+                        : 'hover:bg-slate-50/60'
                     }`}
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            isCur
-                              ? 'bg-blue-600 text-white shadow-sm'
-                              : isDone
-                              ? 'bg-emerald-600 text-white shadow-xs'
-                              : 'bg-slate-200 text-slate-500'
-                          }`}
-                        >
+                    {/* Left Node Circle Icon */}
+                    <div className="relative z-10 shrink-0 mt-0.5">
+                      {isDone ? (
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                      ) : isCur ? (
+                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md ring-4 ring-blue-100">
                           <IconComp className="w-4 h-4" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs sm:text-sm font-black text-slate-900">
-                              {m.title}
-                            </h4>
-                            {isCur && (
-                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-blue-600 text-white uppercase tracking-wider">
-                                Current
-                              </span>
-                            )}
-                            {isDone && (
-                              <span className="px-1.5 py-0.2 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                                Completed
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-medium">
-                            {m.subtitle}
-                          </p>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-300 text-slate-400 flex items-center justify-center">
+                          <Clock className="w-4 h-4" />
                         </div>
-                      </div>
-
-                      <span className="font-mono text-[10px] font-black text-slate-400 shrink-0">
-                        STEP #{m.step}
-                      </span>
+                      )}
                     </div>
 
-                    {/* Field Data Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 text-xs">
-                      {m.fields.map((f, fIdx) => (
-                        <div
-                          key={fIdx}
-                          className="bg-white/90 p-2 rounded-xl border border-slate-100/90 space-y-0.5"
-                        >
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-                            {f.label}
-                          </span>
-                          <span className="font-bold text-slate-900 text-[11px] block truncate font-mono" title={f.value}>
-                            {f.value}
-                          </span>
+                    {/* Milestone Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm sm:text-base font-black text-slate-900">
+                            {m.title}
+                          </h4>
+                          {isCur && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-600 text-white uppercase tracking-wider">
+                              IN PROGRESS
+                            </span>
+                          )}
                         </div>
-                      ))}
+
+                        <span className="text-[11px] sm:text-xs font-mono font-semibold text-slate-400 shrink-0 sm:text-right">
+                          {m.timestamp}
+                        </span>
+                      </div>
+
+                      {/* Location Pin */}
+                      <div className="flex items-center gap-1 mt-1 text-xs font-bold text-slate-700">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <span className="truncate">{m.location}</span>
+                      </div>
+
+                      {/* Subtext Description */}
+                      <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                        {m.description}
+                      </p>
                     </div>
                   </div>
                 );
               })}
             </div>
+
           </div>
 
-          {/* TRANSHIPMENT DETAILS (Collapsible / Hide by default as requested: "Transhipment Details (hide)") */}
+          {/* TRANSHIPMENT DETAILS (Collapsible / Hide by default as requested) */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-5 space-y-3">
             <button
               type="button"
