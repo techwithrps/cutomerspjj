@@ -15,7 +15,8 @@ import {
   Ship, 
   Cpu, 
   Sparkles,
-  Truck
+  Truck,
+  Compass
 } from 'lucide-react';
 
 export default function CustomerNavbar({ 
