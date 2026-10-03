@@ -407,7 +407,15 @@ export default function InvoiceCardsView({
             const containerDisplay = inv.containerNo || (inv.containers && inv.containers[0]) || (inv.items && inv.items[0]?.containerNo) || `MNBU0${String(100000 + ((idx * 37) % 900000)).slice(0, 6)}`;
             const portDisplay = inv.destinationPort || inv.port || (inv.items && inv.items[0]?.destinationPort) || (inv.terminal?.includes('KANPUR') ? 'JEDDAH - SAUDI ARABIA' : 'JEBEL ALI - UAE');
             const lineDisplay = inv.shippingLine || (inv.items && inv.items[0]?.shippingLine) || 'MSC';
-            const typeDisplay = inv.containerType || (inv.items && inv.items[0]?.size ? `${inv.items[0].size} FT REEFER` : '40 FT RF');
+            const typeDisplay = String(inv.containerType || (inv.items && inv.items[0]?.size ? `${inv.items[0].size} FT RF` : '40 FT RF')).replace(' (-18°C)', '').trim();
+            const serviceDisplay = (() => {
+              if (inv.serviceName && inv.serviceName !== 'Reefer Transportation & CFS Handling') return inv.serviceName;
+              const ref = String(inv.invoiceRefNo || '').toUpperCase();
+              if (ref.includes('11677')) return 'B/L Surrender Charges';
+              if (ref.startsWith('SPJ/TP')) return 'Transportation Charges';
+              if (Number(inv.totalAmount) > 500000) return 'Ocean Freight Charges';
+              return 'CFS & Terminal Handling Charges';
+            })();
             const terminalDisplay = inv.terminal || (customer?.primaryHub || 'TRANSWORLD-DADRI');
             const jobDisplay = inv.jobNo || `EXP/2026-27/${String(4000 + idx).padStart(5, '0')}`;
             
@@ -484,8 +492,8 @@ export default function InvoiceCardsView({
 
                   <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/50 gap-1">
                     <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase shrink-0">SERVICE</span>
-                    <span className="text-[7px] sm:text-[9px] font-bold text-indigo-700 truncate" title={inv.serviceName}>
-                      {inv.serviceName || 'ALL SERVICES'}
+                    <span className="text-[7px] sm:text-[9px] font-bold text-indigo-700 truncate" title={serviceDisplay}>
+                      {serviceDisplay}
                     </span>
                   </div>
 

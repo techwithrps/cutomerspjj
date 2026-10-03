@@ -73,8 +73,12 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
 
   // Extract container size & type
   let size = inv.containerSize || inv.CONT_SIZE || (Array.isArray(inv.items) && inv.items[0]?.size ? `${inv.items[0].size} FT` : '40 FT');
-  let type = inv.containerType || inv.CONT_TYPE || inv.type || (Array.isArray(inv.items) && inv.items[0]?.containerType) || 'REEFER (-18°C)';
-  if (type === 'RF' || type === 'REEFER') type = '40 FT REEFER (-18°C)';
+  let rawType = inv.containerType || inv.CONT_TYPE || inv.type || (Array.isArray(inv.items) && inv.items[0]?.containerType) || 'RF';
+  let cleanType = String(rawType).replace(' (-18°C)', '').trim();
+  let type = cleanType;
+  if (type === 'RF' || type === 'REEFER') type = '40 FT RF';
+  else if (type === 'HC' || type === 'HIGH CUBE') type = '40 FT HC';
+  else if (type === 'DV' || type === 'DRY') type = '20 FT DV';
 
   // Extract terminal
   let terminal = inv.terminal || 
@@ -141,7 +145,21 @@ export function normalizeInvoiceRecord(inv, idx = 0, defaultCustomer = null) {
     destinationPort: port,
     shippingLine: line,
     terminal,
-    serviceName: inv.serviceName || inv.SERVICE_NAME || inv.SERVICE_TYPE || inv.CHARGE_HEAD_NAME || inv.SERVICE_DESCRIPTION || inv.CHARGE_NAME || 'Reefer Transportation & CFS Handling',
+    serviceName: (() => {
+      const rawService = inv.serviceName || inv.SERVICE_NAME || inv.CHARGE_HEAD_NAME || inv.SERVICE_DESCRIPTION || inv.CHARGE_NAME;
+      if (rawService && rawService !== 'Reefer Transportation & CFS Handling') {
+        return rawService;
+      }
+      const ref = String(inv.invoiceRefNo || inv.INVOICE_REF_NO || invoiceRefNo || '').toUpperCase();
+      const st = String(inv.serviceType || inv.SERVICE_TYPE || '').toUpperCase();
+      if (ref.includes('11677') || st === 'B') return 'B/L Surrender Charges';
+      if (ref.startsWith('SPJ/TP') || st === 'T') return 'Transportation Charges';
+      if (st === 'F' || st === 'V' || st === 'X' || totalAmount > 500000) return 'Ocean Freight Charges';
+      if (st === 'E') return 'Line THC & Agency Charges';
+      if (st === 'I') return 'Import Handling & Customs Clearance';
+      if (st === 'A') return 'CFS, Terminal & Agency Handling';
+      return totalAmount < 15000 ? 'B/L Surrender Charges' : 'CFS & Terminal Handling Charges';
+    })(),
     blNo: inv.blNo || inv.BL_NO || `MEDU${1190000 + idx}`,
     sbNo: inv.sbNo || inv.SB_NO || `674${1000 + idx}`,
     portOfLoading: inv.portOfLoading || inv.POL || 'JNPT Nhava Sheva'

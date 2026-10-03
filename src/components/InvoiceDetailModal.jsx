@@ -21,6 +21,19 @@ export default function InvoiceDetailModal({ invoice, customer, onClose }) {
 
   const isPaid = invoice.status === 'Paid';
 
+  const serviceDisplayName = (() => {
+    if (invoice.serviceName && invoice.serviceName !== 'Reefer Transportation & CFS Handling') {
+      return invoice.serviceName;
+    }
+    const ref = String(invoice.invoiceRefNo || invoice.partyInvNo || '').toUpperCase();
+    if (ref.includes('11677') || invoice.serviceType === 'B') return 'B/L Surrender Charges';
+    if (ref.startsWith('SPJ/TP') || invoice.serviceType === 'T') return 'Transportation Charges';
+    if (invoice.serviceType === 'F' || Number(invoice.totalAmount) > 500000) return 'Ocean Freight Charges';
+    return invoice.serviceName || 'CFS & Terminal Handling Charges';
+  })();
+
+  const cleanContainerType = String(invoice.containerType || '40 FT RF').replace(' (-18°C)', '').trim();
+
   const handlePrint = () => {
     window.print();
   };
@@ -131,9 +144,9 @@ export default function InvoiceDetailModal({ invoice, customer, onClose }) {
               <tbody className="divide-y divide-slate-100">
                 <tr className="hover:bg-slate-50">
                   <td className="p-2.5 font-medium text-slate-800 text-[11px]">
-                    {invoice.serviceName || 'Multimodal Cargo Freight & Yard Handling'}
+                    {serviceDisplayName}
                   </td>
-                  <td className="p-2.5 text-center text-slate-600 text-[11px]">{invoice.containerType || '40 FT RF'}</td>
+                  <td className="p-2.5 text-center text-slate-600 text-[11px]">{cleanContainerType}</td>
                   <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.taxableAmount || invoice.billAmount || (invoice.totalAmount / 1.18))}</td>
                   <td className="p-2.5 text-right font-mono text-slate-700 text-[11px]">{formatCurrency(invoice.tax || invoice.taxAmount || (invoice.totalAmount - (invoice.totalAmount / 1.18)))}</td>
                   <td className="p-2.5 text-right font-mono font-bold text-slate-900 text-[11px]">{formatCurrency(invoice.totalAmount)}</td>
