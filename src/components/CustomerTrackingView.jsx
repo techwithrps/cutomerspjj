@@ -39,7 +39,7 @@ function normalizeForSearch(str) {
 }
 
 /**
- * Builds the exact 10-Milestone Multimodal Lifecycle Journey requested by the user
+ * Builds the exact Multimodal Lifecycle Journey matching user Screenshot #2
  */
 function buildTenStageMilestones(item, customer) {
   if (!item) return [];
@@ -49,190 +49,93 @@ function buildTenStageMilestones(item, customer) {
   const pol = item.pol || item.portOfLoading || 'JNPT Nhava Sheva';
   const pod = item.destination || item.destinationPort || 'JEBEL ALI-UAE';
   const shippingLine = item.shippingLine || 'MSC / CMA CGM';
-  const factoryLocation = `${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, Meerut Rd`;
   const blNo = item.blNo || 'CGD0158714';
   const sbNo = item.sbNo || '6741008';
-  const mainCarrier = shippingLine.split('/')[0].trim();
+  const gstNo = customer?.gstin || '09AAACS9677K1Z6';
 
-  // Determine active stage step (1 to 10)
-  let activeStep = 6; // Default to Stage 6 (Rail Out Details)
+  // Determine active stage step (1 to 6)
+  let activeStep = 5; // Default Stage 5: Ocean Transit via MSC / CMA CGM as per screenshot 2
   const st = String(item.status || '').toLowerCase();
   if (st.includes('discharge') || st.includes('deliver') || st.includes('complete') || item.dischargeDate) {
-    activeStep = 10;
-  } else if (st.includes('sail') || st.includes('ocean')) {
-    activeStep = 9;
-  } else if (st.includes('vessel') || st.includes('feeder')) {
-    activeStep = 8;
-  } else if (st.includes('port') || st.includes('staging')) {
-    activeStep = 7;
-  } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
     activeStep = 6;
-  } else if (st.includes('custom') || st.includes('leo')) {
+  } else if (st.includes('sail') || st.includes('ocean')) {
     activeStep = 5;
-  } else if (st.includes('buffer')) {
+  } else if (st.includes('port') || st.includes('staging')) {
     activeStep = 4;
-  } else if (st.includes('factory out') || st.includes('stuffed')) {
+  } else if (st.includes('rail') || st.includes('transit') || st.includes('corridor')) {
     activeStep = 3;
-  } else if (st.includes('factory in') || st.includes('arrived')) {
+  } else if (st.includes('custom') || st.includes('leo')) {
     activeStep = 2;
-  } else if (st.includes('gate-in') || st.includes('icd out')) {
+  } else if (st.includes('gate-in') || st.includes('icd')) {
     activeStep = 1;
   }
 
   return [
     {
       step: 1,
-      id: 'icd_out',
-      title: '1) ICD Out',
-      subtitle: 'Empty Out From ICD for Factory Stuffing',
-      location: terminal,
-      description: 'Empty Out From ICD for Factory Stuffing',
-      timestamp: '27/09/2026 14:10',
+      id: 'booking_gatein',
+      title: 'Booking Confirmed & Gate-In Recorded',
+      subtitle: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
+      location: 'TRANSWORLD--DADRI CFS Depot',
+      description: `Container pre-trip inspected (PTI OK). Gate-In verified under B/L: ${blNo}.`,
+      timestamp: '01/10/2026 09:30 AM',
       icon: Building2,
-      fields: [
-        { label: 'ICD/CFS:', value: terminal },
-        { label: 'OUT DATE:', value: '27/09/2026 14:10' },
-        { label: 'Factory Location:', value: factoryLocation }
-      ],
       status: activeStep > 1 ? 'completed' : (activeStep === 1 ? 'current' : 'upcoming')
     },
     {
       step: 2,
-      id: 'factory_gate_in',
-      title: '2) Factory Gate In',
-      subtitle: 'Container arrived at factory for stuffing.',
-      location: `${factoryLocation} (Bay 02)`,
-      description: 'Container arrived at factory for stuffing.',
-      timestamp: '01/10/2026 09:30 AM',
-      icon: Truck,
-      fields: [
-        { label: 'Factory In Date:', value: '01/10/2026 09:30 AM' },
-        { label: 'Factory Location:', value: `${factoryLocation} (Bay 02)` }
-      ],
+      id: 'customs_leo',
+      title: 'Customs Examination & EDI LEO Issued',
+      subtitle: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
+      location: `Customs ICD / CFS (TRANSWORLD--DADRI)`,
+      description: `ICEGATE Shipping Bill #${sbNo} cleared. Let Export Order (LEO) passed under GSTIN: ${gstNo}.`,
+      timestamp: '01/10/2026 14:15 PM',
+      icon: ShieldCheck,
       status: activeStep > 2 ? 'completed' : (activeStep === 2 ? 'current' : 'upcoming')
     },
     {
       step: 3,
-      id: 'factory_gate_out',
-      title: '3) Factory Gate Out',
-      subtitle: 'Container stuffed, sealed, and dispatched from factory.',
-      location: 'Factory Dispatch Yard / Trailer Bay',
-      description: 'Container stuffed, sealed, and dispatched from factory.',
-      timestamp: '01/10/2026 16:30 PM',
-      icon: ShieldCheck,
-      fields: [
-        { label: 'Factory Out Date:', value: '01/10/2026 16:30 PM' },
-        { label: 'Handover Location:', value: 'Factory Dispatch Yard / Trailer Bay' }
-      ],
-      status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
-    },
-    {
-      step: 4,
-      id: 'icd_buffer',
-      title: '4) ICD/BUFFER In/Out Details',
-      subtitle: 'Buffer Yard & Gate In/Out Staging',
-      location: `Buffer Yard (${terminal})`,
-      description: 'Buffer Yard & Gate In/Out Staging',
-      timestamp: '01/10/2026 21:00 PM',
-      icon: Layers,
-      fields: [
-        { label: 'Buffer In Date:', value: '01/10/2026 21:00 PM' },
-        { label: 'Buffer Out Date:', value: '02/10/2026 06:15 AM' }
-      ],
-      status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
-    },
-    {
-      step: 5,
-      id: 'customs_handover',
-      title: '5) Customs Handover',
-      subtitle: 'Customs clearance documents handed over for verification.',
-      location: `Customs ICD / CFS (${terminal})`,
-      description: 'Customs clearance documents handed over for verification.',
-      timestamp: '02/10/2026 14:15 PM',
-      icon: FileText,
-      fields: [
-        { label: 'Handover Location:', value: `Customs ICD / CFS (${terminal})` },
-        { label: 'Handover Date:', value: '02/10/2026 14:15 PM' }
-      ],
-      status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
-    },
-    {
-      step: 6,
-      id: 'rail_out',
-      title: '6) Rail Out Details',
-      subtitle: 'WDFC Dedicated Freight Corridor Rail Rake Out',
+      id: 'rail_rake',
+      title: 'Loaded on Dedicated Freight Rake (DFC Railhead)',
+      subtitle: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
       location: 'Western Dedicated Freight Corridor (WDFC)',
       description: `Rake dispatch towards ${pol}. Continuous cold-chain clip-on reefer genset monitoring active.`,
       timestamp: '02/10/2026 19:40 PM',
       icon: Train,
-      fields: [
-        { label: 'Train No:', value: 'WDFC-9842 / CONCOR' },
-        { label: 'Dept Date:', value: '02/10/2026 19:40 PM' },
-        { label: 'POL:', value: pol }
-      ],
-      status: activeStep > 6 ? 'completed' : (activeStep === 6 ? 'current' : 'upcoming')
+      status: activeStep > 3 ? 'completed' : (activeStep === 3 ? 'current' : 'upcoming')
     },
     {
-      step: 7,
-      id: 'port_arrival',
-      title: '7) Port Arrival Details',
-      subtitle: 'Gateway Port Gate-In & Terminal Staging',
+      step: 4,
+      id: 'port_gatein',
+      title: `Gateway Port Gate-In (${pol})`,
+      subtitle: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
       location: `${pol} Terminal Gate`,
-      description: 'Gateway Port Gate-In & Terminal Staging',
+      description: `Vessel staging scheduled under Shipping Line ${shippingLine}. Terminal stacking bay assigned.`,
       timestamp: '04/10/2026 16:08 PM (Est)',
       icon: Anchor,
-      fields: [
-        { label: 'Port(POL):', value: `${pol} (BMCT / GTI Terminal)` },
-        { label: 'Arrival Date:', value: '04/10/2026 16:08 PM (Est)' }
-      ],
-      status: activeStep > 7 ? 'completed' : (activeStep === 7 ? 'current' : 'upcoming')
+      status: activeStep > 4 ? 'completed' : (activeStep === 4 ? 'current' : 'upcoming')
     },
     {
-      step: 8,
-      id: 'planned_vessel',
-      title: '8) Planned Vessel Details',
-      subtitle: 'Ocean Liner Feeder / Mother Vessel Allocation',
-      location: `${shippingLine} Vessel Staging Yard`,
-      description: 'Ocean Liner Feeder / Mother Vessel Allocation',
-      timestamp: '04/10/2026 20:00 PM (Est)',
-      icon: Compass,
-      fields: [
-        { label: 'Vessel :', value: `${mainCarrier} RIFAYA` },
-        { label: 'ETD:', value: '04/10/2026 20:00 PM (Est)' }
-      ],
-      status: activeStep > 8 ? 'completed' : (activeStep === 8 ? 'current' : 'upcoming')
-    },
-    {
-      step: 9,
-      id: 'sailing_details',
-      title: '9) Sailing Details',
-      subtitle: 'Vessel Sailing & Shipped on Board',
+      step: 5,
+      id: 'ocean_transit',
+      title: `Ocean Transit via ${shippingLine}`,
+      subtitle: `Sea transit to destination seaport: ${pod}.`,
       location: `${shippingLine} International Corridor`,
       description: `Sea transit to destination seaport: ${pod}.`,
       timestamp: '04/10/2026 22:00 PM (Est)',
       icon: Ship,
-      fields: [
-        { label: 'Vessel/Voyage No:', value: `${mainCarrier} RIFAYA / 2634W` },
-        { label: 'SOB Date:', value: '04/10/2026 22:00 PM (Est)' },
-        { label: 'ETA:', value: '2026-10-08 10:00 AM' }
-      ],
-      status: activeStep > 9 ? 'completed' : (activeStep === 9 ? 'current' : 'upcoming')
+      status: activeStep > 5 ? 'completed' : (activeStep === 5 ? 'current' : 'upcoming')
     },
     {
-      step: 10,
+      step: 6,
       id: 'destination_discharge',
-      title: '10) Destination Discharge & Port Delivery',
-      subtitle: 'Final Discharge at Destination Seaport & Consignee Delivery',
+      title: 'Destination Discharge & Port Delivery',
+      subtitle: 'Final discharge, customs clearance and delivery order release.',
       location: pod,
       description: 'Final discharge, customs clearance and delivery order release.',
       timestamp: '2026-10-08 10:08 AM (ETA)',
       icon: CheckCircle2,
-      fields: [
-        { label: 'DISCHARGE DATE:', value: '2026-10-08 10:08 AM (ETA)' },
-        { label: 'GATE OUT DATE:', value: '2026-10-09 11:30 AM (Est)' },
-        { label: 'Empty Return Date:', value: '2026-10-11 16:00 PM (Est)' }
-      ],
-      status: activeStep === 10 ? 'completed' : 'upcoming'
+      status: activeStep === 6 ? 'completed' : 'upcoming'
     }
   ];
 }
@@ -965,82 +868,12 @@ export default function CustomerTrackingView({
                         {m.description}
                       </p>
 
-                      {/* Exact Field Key-Value Details Grid requested by User */}
-                      {m.fields && m.fields.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2.5 mt-2.5 border-t border-slate-100/90">
-                          {m.fields.map((f, fIdx) => (
-                            <div key={fIdx} className="bg-slate-50/90 px-3 py-1.5 rounded-xl border border-slate-200/70 space-y-0.5">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                {f.label}
-                              </span>
-                              <span className="font-bold font-mono text-[11px] text-slate-900 block truncate" title={f.value}>
-                                {f.value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
 
-          </div>
-
-          {/* TRANSHIPMENT DETAILS (Collapsible / Hide by default as requested) */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-4 sm:p-5 space-y-3">
-            <button
-              type="button"
-              onClick={() => setShowTranshipment(!showTranshipment)}
-              className="w-full flex items-center justify-between text-left cursor-pointer group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors">
-                  <Compass className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs sm:text-sm font-black text-slate-900">
-                      Transhipment Details
-                    </h4>
-                    <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                      {showTranshipment ? 'Visible' : 'Hidden'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    Intermodal relay port, feeder vessel, and transit ETD (Click to {showTranshipment ? 'collapse' : 'expand'})
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-1 rounded-lg bg-slate-100 text-slate-600">
-                {showTranshipment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
-
-            {showTranshipment && (
-              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-fade-in">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Port</span>
-                  <span className="font-bold text-slate-900 block truncate">
-                    PORT OF SALALAH / JEBEL ALI HUB
-                  </span>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Vessel</span>
-                  <span className="font-bold text-slate-900 block truncate">
-                    MSC MAYA / CMA CGM PALANGA
-                  </span>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-0.5">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">ETD</span>
-                  <span className="font-mono font-bold text-blue-700 block truncate">
-                    08/10/2026 14:00 PM (Est)
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
         </div>
