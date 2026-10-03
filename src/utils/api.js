@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://spj-backend.onrender.com/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://spjjbackend.onrender.com/api';
 
 export const getAuthToken = () => {
   try {

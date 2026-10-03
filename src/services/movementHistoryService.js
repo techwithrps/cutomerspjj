@@ -953,7 +953,7 @@ export async function fetchLiveMovementHistory(contNo) {
   const clean = String(contNo).trim().toUpperCase();
 
   const CANDIDATE_HOSTS = [
-    'https://spj-backend.onrender.com',
+    'https://spjjbackend.onrender.com',
     'http://localhost:5001'
   ];
 

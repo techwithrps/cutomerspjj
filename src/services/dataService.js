@@ -249,7 +249,7 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
-      'https://spj-backend.onrender.com',
+      'https://spjjbackend.onrender.com',
       'http://localhost:5001'
     ];
 
