@@ -36,16 +36,26 @@ export default function App() {
     return [];
   });
 
-  // Re-fetch dynamic invoices when current customer changes
+  // Re-fetch dynamic invoices when current customer changes + REALTIME 10s polling for 600+ customers
   React.useEffect(() => {
     if (currentCustomer) {
-      const local = getLocalCustomerInvoices(currentCustomer.code || currentCustomer.name);
+      const custKey = currentCustomer.code || currentCustomer.name || currentCustomer.id;
+      const local = getLocalCustomerInvoices(custKey);
       setCustomerInvoices(local);
-      fetchCustomerInvoices(currentCustomer.code || currentCustomer.name).then(live => {
-        if (live && live.length > 0) {
-          setCustomerInvoices(live);
-        }
-      });
+
+      const loadRealtimeInvoices = () => {
+        fetchCustomerInvoices(custKey).then(live => {
+          if (live && live.length > 0) {
+            setCustomerInvoices(live);
+          }
+        });
+      };
+
+      loadRealtimeInvoices();
+
+      // Realtime polling interval every 10s from Oracle DB
+      const intervalId = setInterval(loadRealtimeInvoices, 10000);
+      return () => clearInterval(intervalId);
     }
   }, [currentCustomer]);
 

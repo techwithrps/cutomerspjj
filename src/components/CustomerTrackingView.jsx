@@ -674,11 +674,11 @@ export default function CustomerTrackingView({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                   EMPTY PICKUP
                 </span>
-                <span className="font-bold text-slate-200 text-xs block truncate" title="TRANSWORLD--DADRI CFS Staging Area">
-                  TRANSWORLD--DADRI CFS Staging Area
+                <span className="font-bold text-slate-200 text-xs block truncate" title={matched?.terminal || customer?.primaryHub || 'SPJ Staging Area'}>
+                  {matched?.terminal || customer?.primaryHub || 'SPJ Staging Area'}
                 </span>
                 <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
-                  Date: 27/09/2026 14:10
+                  Date: {matched?.icdInDate || matched?.sbDate || matched?.inDate || '27/09/2026 14:10'}
                 </span>
               </div>
 
@@ -687,11 +687,11 @@ export default function CustomerTrackingView({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                   FACTORY STUFFING
                 </span>
-                <span className="font-bold text-slate-200 text-xs block truncate" title={`${customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, ...`}>
-                  {customer?.name || 'MARHABA FROZEN FOODS'}--HR Processing Plant, ...
+                <span className="font-bold text-slate-200 text-xs block truncate" title={matched?.origin || `${customer?.name || 'Customer'} Processing Plant`}>
+                  {matched?.origin || `${customer?.name || 'Customer'} Processing Plant`}
                 </span>
                 <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
-                  Date: 01/10/2026 16:30
+                  Date: {matched?.factoryDate || matched?.inDate || '01/10/2026 16:30'}
                 </span>
               </div>
 
@@ -700,11 +700,11 @@ export default function CustomerTrackingView({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                   HANDOVER LOCATION
                 </span>
-                <span className="font-bold text-slate-200 text-xs block truncate" title="ICD Railhead Terminal / JNPT Nhava Sheva Rake">
-                  ICD Railhead Terminal / JNPT Nhava Sheva Rake
+                <span className="font-bold text-slate-200 text-xs block truncate" title={matched?.handoverLoc || `${matched?.terminal || 'ICD Railhead Terminal'} / Rake`}>
+                  {matched?.handoverLoc || `${matched?.terminal || 'ICD Railhead Terminal'} / Rake`}
                 </span>
                 <span className="text-[11px] font-mono text-cyan-400 font-semibold block truncate">
-                  Date: 02/10/2026 19:40
+                  Date: {matched?.trainOutDate || matched?.handoverDate || '02/10/2026 19:40'}
                 </span>
               </div>
 
@@ -727,10 +727,10 @@ export default function CustomerTrackingView({
                   ROUTE CORRIDOR
                 </span>
                 <span className="font-bold text-slate-200 text-xs block truncate">
-                  POL: {matched?.pol || 'JNPT Nhava Sheva'}
+                  POL: {matched?.pol || matched?.portOfLoading || 'JNPT Nhava Sheva'}
                 </span>
                 <span className="font-mono text-[11px] text-cyan-400 font-semibold block truncate">
-                  POD: {matched?.destination || 'JEBEL ALI-UAE'}
+                  POD: {matched?.destination || matched?.destinationPort || 'JEBEL ALI-UAE'}
                 </span>
               </div>
 
