@@ -296,7 +296,53 @@ export default function OceanIntelligenceView() {
     setDestPort(temp);
   };
 
-  // Perform Live Schedules Search via Panvaya API
+// Helper to match Panvaya carrier response against SCAC and carrier aliases
+function matchesCarrier(sailing, scac) {
+  if (!sailing || !scac || scac === 'ALL') return true;
+  const sCode = (sailing.carrierCode || '').toUpperCase();
+  const sName = (sailing.carrier || '').toUpperCase();
+  const target = scac.toUpperCase();
+
+  if (sCode === target) return true;
+
+  if (target === 'PILU' && (sCode === 'PCIU' || sName.includes('PIL'))) return true;
+  if ((target === 'WHL' || target === 'WHLC') && (sCode === 'WHLC' || sCode === 'WHL' || sName.includes('WAN HAI') || sName.includes('WANHAI'))) return true;
+  if ((target === 'SKOR' || target === 'SKLU') && (sCode === 'SKLU' || sCode === 'SKOR' || sName.includes('SINOKOR'))) return true;
+  if ((target === 'SAMU' || target === 'SIKU') && (sCode === 'SIKU' || sCode === 'SAMU' || sName.includes('SAMUDERA'))) return true;
+  if ((target === 'TSLU' || target === 'TSSU') && (sCode === 'TSSU' || sCode === 'TSLU' || sName.includes('T.S.') || sName.includes('TS LINES'))) return true;
+  if ((target === 'NAMS' || target === 'NSSU') && (sCode === 'NSSU' || sCode === 'NAMS' || sName.includes('NAMSUNG'))) return true;
+  if (target === 'CULU' && (sCode === 'CULU' || sName.includes('CHINA UNITED') || sName.includes('CU LINES'))) return true;
+  if (target === 'MAEU' && (sCode === 'MAEU' || sName.includes('MAERSK'))) return true;
+  if (target === 'EGLV' && (sCode === 'EGLV' || sName.includes('EVERGREEN'))) return true;
+  if (target === 'CMDU' && (sCode === 'CMDU' || sName.includes('CMA CGM') || sName.includes('CMA-CGM'))) return true;
+  if (target === 'COSU' && (sCode === 'COSU' || sName.includes('COSCO'))) return true;
+  if (target === 'HLCU' && (sCode === 'HLCU' || sName.includes('HAPAG'))) return true;
+  if (target === 'MSCU' && (sCode === 'MSCU' || sName.includes('MSC') || sName.includes('MEDITERRANEAN'))) return true;
+  if (target === 'ONEY' && (sCode === 'ONEY' || sName.includes('OCEAN NETWORK') || sName === 'ONE')) return true;
+  if (target === 'OOLU' && (sCode === 'OOLU' || sName.includes('OOCL') || sName.includes('ORIENT OVERSEAS'))) return true;
+  if (target === 'HDMU' && (sCode === 'HDMU' || sName.includes('HYUNDAI') || sName.includes('HMM'))) return true;
+  if (target === 'YMLU' && (sCode === 'YMLU' || sName.includes('YANG MING'))) return true;
+  if (target === 'ZIMU' && (sCode === 'ZIMU' || sName.includes('ZIM'))) return true;
+  if (target === 'KMTU' && (sCode === 'KMTU' || sName.includes('KMTC'))) return true;
+  if (target === 'ESPU' && (sCode === 'ESPU' || sName.includes('EMIRATES') || sName.includes('ESL'))) return true;
+  if (target === 'GSLU' && (sCode === 'GSLU' || sName.includes('GOLD STAR'))) return true;
+  if (target === 'HASL' && (sCode === 'HASL' || sName.includes('HEUNG-A') || sName.includes('HEUNG A'))) return true;
+  if (target === 'IALU' && (sCode === 'IALU' || sName.includes('INTERASIA'))) return true;
+  if (target === 'ANNU' && (sCode === 'ANNU' || sName.includes('ANL'))) return true;
+  if (target === 'CMCU' && (sCode === 'CMCU' || sName.includes('CROWLEY'))) return true;
+  if (target === 'GWFC' && (sCode === 'GWFC' || sName.includes('GREAT WHITE'))) return true;
+  if (target === 'KOSL' && (sCode === 'KOSL' || sName.includes('KING OCEAN'))) return true;
+  if (target === 'MATS' && (sCode === 'MATS' || sName.includes('MATSON'))) return true;
+  if (target === 'REGU' && (sCode === 'REGU' || sName.includes('RCL'))) return true;
+  if (target === 'SMLU' && (sCode === 'SMLU' || sName.includes('SEABOARD'))) return true;
+  if (target === 'SLDU' && (sCode === 'SLDU' || sName.includes('SEALEAD'))) return true;
+  if (target === 'SMLN' && (sCode === 'SMLN' || sName.includes('SM LINE'))) return true;
+  if (target === 'SWIU' && (sCode === 'SWIU' || sName.includes('SWIRE'))) return true;
+
+  return sName.includes(target) || (sailing.carrier && sailing.carrier.toLowerCase().includes(scac.toLowerCase()));
+}
+
+  // Perform Live Schedules Search via Panvaya API (queries all active carriers for maximum options)
   const handleSearchSchedules = async () => {
     setIsSearchingSchedules(true);
     setSchedulesError(null);
@@ -304,15 +350,12 @@ export default function OceanIntelligenceView() {
     const origCode = typeof originPort === 'object' ? originPort.code : originPort;
     const destCode = typeof destPort === 'object' ? destPort.code : destPort;
 
-    const carrierFilterPayload = (activeCarrier && activeCarrier !== 'ALL') ? [activeCarrier] : undefined;
-
     try {
       const res = await searchSailingSchedules({
         origin: origCode,
         destination: destCode,
         date: departDate,
-        weeks: horizonWeeks,
-        carriers: carrierFilterPayload
+        weeks: horizonWeeks
       });
 
       if (res && res.sailings) {
@@ -329,13 +372,21 @@ export default function OceanIntelligenceView() {
     }
   };
 
+  // Live count of sailings per carrier on current searched route
+  const carrierCounts = useMemo(() => {
+    if (!schedulesResult || !schedulesResult.sailings) return {};
+    const counts = {};
+    PANVAYA_CARRIERS_33.forEach(c => {
+      counts[c.scac] = schedulesResult.sailings.filter(s => matchesCarrier(s, c.scac)).length;
+    });
+    return counts;
+  }, [schedulesResult]);
+
   // Filtered Sailings Deck
   const filteredSailings = useMemo(() => {
     if (!schedulesResult || !schedulesResult.sailings) return [];
     if (!activeCarrier || activeCarrier === 'ALL') return schedulesResult.sailings;
-    return schedulesResult.sailings.filter(s =>
-      s.carrierCode === activeCarrier || (s.carrier && s.carrier.toLowerCase().includes(activeCarrier.toLowerCase()))
-    );
+    return schedulesResult.sailings.filter(s => matchesCarrier(s, activeCarrier));
   }, [schedulesResult, activeCarrier]);
 
   // Derived Summary KPIs
@@ -588,17 +639,18 @@ export default function OceanIntelligenceView() {
                   <button
                     type="button"
                     onClick={() => setActiveCarrier('ALL')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all cursor-pointer border ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer border ${
                       activeCarrier === 'ALL'
                         ? 'bg-cyan-600 text-white border-cyan-700 ring-2 ring-cyan-400/40 shadow-xs'
                         : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <span>All Carriers ({PANVAYA_CARRIERS_33.length})</span>
+                    <span>All Carriers ({schedulesResult?.sailings?.length ?? PANVAYA_CARRIERS_33.length})</span>
                   </button>
 
                   {PANVAYA_CARRIERS_33.map((c) => {
                     const isSel = c.scac === activeCarrier;
+                    const count = carrierCounts[c.scac] ?? 0;
                     return (
                       <button
                         key={c.scac}
@@ -606,15 +658,21 @@ export default function OceanIntelligenceView() {
                         onClick={() => setActiveCarrier(c.scac)}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-bold shrink-0 transition-all cursor-pointer border ${
                           isSel
-                            ? 'bg-cyan-50 text-cyan-950 border-cyan-300 ring-2 ring-cyan-400/40 shadow-xs'
-                            : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
+                            ? 'bg-cyan-50 text-cyan-950 border-cyan-400 ring-2 ring-cyan-400/40 shadow-xs'
+                            : count > 0
+                            ? 'bg-white text-slate-800 hover:bg-slate-50 border-slate-300 font-extrabold shadow-2xs'
+                            : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border-slate-200 opacity-60'
                         }`}
                       >
                         <span className={`w-5 h-5 rounded-full ${c.color} text-white font-black text-[10px] flex items-center justify-center shrink-0`}>
                           {c.name.charAt(0)}
                         </span>
                         <span>{c.name}</span>
-                        <span className="font-mono text-[10px] text-slate-400">({c.scac})</span>
+                        <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full ${
+                          count > 0 ? 'bg-cyan-100 text-cyan-900 font-black' : 'bg-slate-200/60 text-slate-500'
+                        }`}>
+                          {count > 0 ? count : c.scac}
+                        </span>
                       </button>
                     );
                   })}
@@ -676,6 +734,37 @@ export default function OceanIntelligenceView() {
                 <AlertTriangle className="w-6 h-6 text-amber-600 mx-auto" />
                 <h4 className="text-sm font-bold text-amber-900">{schedulesError}</h4>
                 <p className="text-xs text-amber-700">Try adjusting the horizon weeks or selecting a different carrier.</p>
+              </div>
+            )}
+
+            {!isSearchingSchedules && !schedulesError && filteredSailings.length === 0 && (
+              <div className="bg-white border border-slate-200 p-8 rounded-3xl text-center space-y-4 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-extrabold text-slate-900">
+                    {activeCarrier !== 'ALL'
+                      ? `No scheduled departures found for ${PANVAYA_CARRIERS_33.find(c => c.scac === activeCarrier)?.name || activeCarrier}`
+                      : `No sailings found for ${origObj.name} (${origObj.code}) ➔ ${destObj.name} (${destObj.code})`}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                    {activeCarrier !== 'ALL' && schedulesResult?.sailings?.length > 0
+                      ? `This carrier does not operate on this specific route, but there are ${schedulesResult.sailings.length} other live sailings available from other shipping lines!`
+                      : 'Please check your port selection or increase the search horizon to 8 or 12 weeks.'}
+                  </p>
+                </div>
+
+                {activeCarrier !== 'ALL' && schedulesResult?.sailings?.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveCarrier('ALL')}
+                    className="px-5 py-2.5 bg-[#1282a2] hover:bg-[#0e6983] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>View All {schedulesResult.sailings.length} Live Sailings on this Route</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -1099,7 +1188,9 @@ export default function OceanIntelligenceView() {
                     className={`p-4 rounded-2xl border text-left flex items-start justify-between gap-3 transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-cyan-50 border-cyan-400 ring-2 ring-cyan-500/30'
-                        : 'bg-white hover:bg-slate-50 border-slate-200'
+                        : (carrierCounts[c.scac] ?? 0) > 0
+                        ? 'bg-white hover:bg-slate-50 border-slate-300 font-extrabold shadow-2xs'
+                        : 'bg-slate-50/70 hover:bg-slate-100 border-slate-200 opacity-60'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -1108,7 +1199,14 @@ export default function OceanIntelligenceView() {
                       </div>
 
                       <div>
-                        <div className="font-extrabold text-xs text-slate-900">{c.name}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-extrabold text-xs text-slate-900">{c.name}</span>
+                          {(carrierCounts[c.scac] ?? 0) > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-900 text-[9px] font-black">
+                              {carrierCounts[c.scac]} sailings
+                            </span>
+                          )}
+                        </div>
                         <div className="font-mono text-[10px] text-slate-400">{c.scac}</div>
                         <div className="text-[10px] text-slate-500 mt-1">{c.tag}</div>
                       </div>
