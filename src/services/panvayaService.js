@@ -65,6 +65,25 @@ async function requestPanvaya(endpoint, options = {}) {
   return data;
 }
 
+/**
+ * Live Public Location Autocomplete Search (No API Key Required)
+ * URL: https://api.panvaya.com/api/public/locations/search?q={query}&type=port&limit=30
+ */
+export async function searchPortLocations(query, type = 'port', limit = 30) {
+  if (!query || !query.trim()) return [];
+  try {
+    const url = `https://api.panvaya.com/api/public/locations/search?q=${encodeURIComponent(query.trim())}&type=${type}&limit=${limit}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (err) {
+    console.warn('Live Panvaya Location Search error:', err);
+  }
+  return [];
+}
+
 // 1. Sea Tracking (POST /track/ocean)
 export async function trackOceanContainer({ container, bol, bk, shippingLineScac, includeRouteData = true }) {
   const payload = {
