@@ -275,6 +275,22 @@ function InteractiveSeaRouteMap({ origin, destination, legs, vesselName, voyageN
       map.fitBounds(bounds, { padding: [45, 45] });
     } catch (e) {}
 
+    setTimeout(() => {
+      try {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      } catch (e) {}
+    }, 150);
+
+    setTimeout(() => {
+      try {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      } catch (e) {}
+    }, 400);
+
     mapInstanceRef.current = map;
 
     return () => {

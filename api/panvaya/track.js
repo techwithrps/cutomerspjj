@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const apiKey = req.headers['x-api-key'] || process.env.PANVAYA_API_KEY || 'pv_live_0AXCMLfCcPCHAsJMx4uPVmPZEPTH4oS4';
+  const apiKey = req.headers['x-api-key'] || process.env.PANVAYA_API_KEY || 'pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ';
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
