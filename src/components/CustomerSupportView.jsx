@@ -52,6 +52,7 @@ export default function CustomerSupportView({ customer }) {
         </span>
       </div>
 
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         
         {/* Dedicated RM Direct Box */}

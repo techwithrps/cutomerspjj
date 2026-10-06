@@ -410,11 +410,10 @@ export default function CustomerTrackingView({
               <div
                 key={gr.grNo}
                 onClick={() => setSelectedGRIndex(idx)}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                  selectedGRIndex === idx
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${selectedGRIndex === idx
                     ? 'bg-amber-50/80 border-amber-500 shadow-sm ring-2 ring-amber-400/40'
                     : 'bg-white border-slate-200 hover:border-amber-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <span className="font-mono font-bold text-xs text-slate-900">{gr.grNo}</span>
@@ -475,7 +474,7 @@ export default function CustomerTrackingView({
   // -------------------------------------------------------------
   return (
     <div className="space-y-5 animate-fade-in p-2 sm:p-4 max-w-[1600px] mx-auto">
-      
+
       {/* 1. HERO SEARCH CONSOLE */}
       <div className="bg-gradient-to-br from-[#0b1329] via-[#0f172a] to-[#1e293b] rounded-3xl p-5 sm:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden">
         {/* Glow Accents */}
@@ -544,11 +543,10 @@ export default function CustomerTrackingView({
                   setSearchInput(cNum);
                   triggerTrackingAnimation(cNum);
                 }}
-                className={`font-mono text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                  trackedContainer === cNum
+                className={`font-mono text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${trackedContainer === cNum
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold ring-1 ring-cyan-400/40'
                     : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                }`}
+                  }`}
               >
                 {cNum}
               </button>
@@ -642,10 +640,10 @@ export default function CustomerTrackingView({
       {/* 4. TRACKED RESULT STATE: MATCHING USER SCREENSHOT 1 (HEADER BANNER) AND SCREENSHOT 2 (VERTICAL PIPELINE) */}
       {trackedContainer && !isScanning && (
         <div className="space-y-6 animate-fade-in">
-          
+
           {/* SCREENSHOT 1: DARK NAVY CONTAINER STATUS & ROUTE BANNER */}
           <div className="bg-[#0b1329] border border-slate-800 text-slate-100 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-            
+
             {/* Top Row: Stage Capsule Pill Badge & Party Inv */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-3 flex-wrap">
@@ -721,7 +719,7 @@ export default function CustomerTrackingView({
 
             {/* Bottom Row: 5-Column Detailed Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-4 border-t border-slate-800/80 text-xs">
-              
+
               {/* Col 1: EMPTY PICKUP */}
               <div className="space-y-0.5">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
@@ -811,13 +809,12 @@ export default function CustomerTrackingView({
                 return (
                   <div
                     key={m.id}
-                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between min-h-[64px] ${
-                      isCur
+                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between min-h-[64px] ${isCur
                         ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
                         : isDone
-                        ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
-                        : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
-                    }`}
+                          ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
+                          : 'bg-slate-50 text-slate-400 border-slate-200 opacity-60'
+                      }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
                       <span className={`text-[8px] font-black px-1 rounded ${isCur ? 'bg-white/20 text-white' : isDone ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-600'}`}>
@@ -836,7 +833,7 @@ export default function CustomerTrackingView({
 
           {/* SCREENSHOT 2: MULTIMODAL LIFECYCLE MILESTONES (TRACK & TRACE) VERTICAL PIPELINE */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-card p-6 sm:p-8 space-y-6">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5">
               <div>
@@ -847,7 +844,7 @@ export default function CustomerTrackingView({
                   Synchronized with SPJ CFS Gate, Western DFC Railhead & Gateway Port EDI Portals
                 </p>
               </div>
-              
+
               <div className="shrink-0">
                 <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
                   Stage {milestones.filter(m => m.status === 'completed').length} of {milestones.length} Completed
@@ -868,11 +865,10 @@ export default function CustomerTrackingView({
                 return (
                   <div
                     key={m.id}
-                    className={`relative flex items-start gap-3 sm:gap-5 transition-all p-3 sm:p-4 rounded-2xl ${
-                      isCur
+                    className={`relative flex items-start gap-3 sm:gap-5 transition-all p-3 sm:p-4 rounded-2xl ${isCur
                         ? 'bg-blue-50/70 border border-blue-200/80 shadow-xs'
                         : 'hover:bg-slate-50/60'
-                    }`}
+                      }`}
                   >
                     {/* Left Node Circle Icon */}
                     <div className="relative z-10 shrink-0 mt-0.5">
