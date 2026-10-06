@@ -212,7 +212,7 @@ function InteractiveSeaRouteMap({ origin, destination, legs, vesselName, voyageN
     });
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CARTO &copy; OpenStreetMap | Panvaya AIS Radar',
+      attribution: '&copy; CARTO &copy; OpenStreetMap | SPJ AIS Radar',
       subdomains: 'abcd',
       maxZoom: 19
     }).addTo(map);
@@ -676,9 +676,9 @@ function matchesCarrier(sailing, scac) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Panvaya Ocean Intelligence Hub</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">SPJ Ocean Intelligence Hub</h1>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300">
-                Panvaya v3.0 Live
+                SPJ v3.0 Live
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -929,7 +929,7 @@ function matchesCarrier(sailing, scac) {
             {isSearchingSchedules && (
               <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
                 <RefreshCw className="w-8 h-8 text-cyan-600 animate-spin mx-auto" />
-                <p className="text-sm font-bold text-slate-700">Querying Panvaya Ocean Schedules API for {origObj.code} ➔ {destObj.code}...</p>
+                <p className="text-sm font-bold text-slate-700">Querying SPJ Ocean Schedules API for {origObj.code} ➔ {destObj.code}...</p>
               </div>
             )}
 
@@ -1623,8 +1623,8 @@ function matchesCarrier(sailing, scac) {
       {apiKeyModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
-            <h3 className="font-black text-base text-slate-900">Configure Panvaya API Key</h3>
-            <p className="text-xs text-slate-500">Enter your live Panvaya REST API Key (prefixed with `pv_live_` or `pv_test_`).</p>
+            <h3 className="font-black text-base text-slate-900">Configure SPJ Ocean API Key</h3>
+            <p className="text-xs text-slate-500">Enter your live Ocean Intelligence API Key (prefixed with `pv_live_` or `pv_test_`).</p>
             <input
               type="text"
               value={customKey}
