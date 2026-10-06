@@ -20,10 +20,14 @@ export function setPanvayaApiKey(key) {
   } catch (e) {}
 }
 
+const RENDER_BACKEND = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL)
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : 'https://spj-backend.onrender.com';
+
 async function requestPanvaya(endpoint, options = {}) {
   const apiKey = getPanvayaApiKey();
 
-  // 1. Try Vercel / Express Backend Proxy FIRST
+  // 1. Try Vercel Serverless Function Proxy (/api/panvaya...)
   try {
     const backendUrl = `/api/panvaya${endpoint}`;
     const res = await fetch(backendUrl, {
@@ -40,10 +44,30 @@ async function requestPanvaya(endpoint, options = {}) {
       return data;
     }
   } catch (err) {
+    // Fall through to Render backend
+  }
+
+  // 2. Try Render Express Backend Proxy (${RENDER_BACKEND}/api/panvaya...)
+  try {
+    const renderUrl = `${RENDER_BACKEND}/api/panvaya${endpoint}`;
+    const res = await fetch(renderUrl, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+        ...(options.headers || {})
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (renderErr) {
     // Fall through to direct API
   }
 
-  // 2. Fallback to Direct Panvaya API
+  // 3. Fallback to Direct Panvaya API
   const directUrl = `${PANVAYA_DIRECT_BASE}${endpoint}`;
   const response = await fetch(directUrl, {
     ...options,
