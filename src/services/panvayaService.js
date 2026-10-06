@@ -94,14 +94,22 @@ export async function getOceanCarriers() {
  * 3. Point-to-Point Sailing Schedules (POST /schedules/search)
  * Directly queries Panvaya REST API for live ocean schedules
  */
-export async function searchSailingSchedules({ origin, destination, date, weeks = 4, carriers }) {
+export async function searchSailingSchedules({ origin, destination, date, carriers }) {
   const payload = {
     origin: origin.trim().toUpperCase(),
-    destination: destination.trim().toUpperCase(),
-    weeks: Number(weeks) || 4
+    destination: destination.trim().toUpperCase()
   };
-  if (date) payload.date = date;
-  if (carriers && carriers.length > 0) payload.carriers = carriers;
+  if (date) {
+    let cleanDate = String(date).trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleanDate)) {
+      const [m, day, y] = cleanDate.split('/');
+      cleanDate = `${y}-${m}-${day}`;
+    }
+    payload.date = cleanDate;
+  }
+  if (carriers && Array.isArray(carriers) && carriers.length > 0) {
+    payload.carriers = carriers;
+  }
 
   // 1. Query Vercel Serverless Function Proxy (/api/panvaya/schedules)
   try {
