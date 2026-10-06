@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/panvaya/schedules", "destination": "/api/panvaya/schedules" },
+    { "source": "/api/panvaya/track", "destination": "/api/panvaya/track" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
