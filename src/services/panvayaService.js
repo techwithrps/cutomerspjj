@@ -3,12 +3,17 @@
  * Standardized DCSA Track & Trace, Vessel AIS, Schedules, and Port Congestion
  */
 
-const DEFAULT_PANVAYA_KEY = 'pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ';
+const DEFAULT_PANVAYA_KEY = 'pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse';
 const PANVAYA_DIRECT_BASE = 'https://api.panvaya.com/api/v1';
 
 export function getPanvayaApiKey() {
   try {
-    return localStorage.getItem('spj_panvaya_key') || DEFAULT_PANVAYA_KEY;
+    const key = localStorage.getItem("spj_panvaya_key");
+    if (!key || key === "pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ" || key === "pv_live_0AXCMLfCcPCHAsJMx4uPVmPZEPTH4oS4") {
+      localStorage.setItem("spj_panvaya_key", DEFAULT_PANVAYA_KEY);
+      return DEFAULT_PANVAYA_KEY;
+    }
+    return key;
   } catch (e) {
     return DEFAULT_PANVAYA_KEY;
   }
