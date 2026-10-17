@@ -255,32 +255,9 @@ export async function fetchCustomerInvoices(inputKey) {
 
     for (const host of CANDIDATE_HOSTS) {
       try {
-        // If no session token is present, auto-authenticate guest customer session
-        if (!token) {
-          try {
-            let cleanUser = (account.code || key || 'MARHABA').toLowerCase();
-            if (cleanUser.includes('marhaba')) cleanUser = 'marhaba';
-            else if (cleanUser.includes('fair')) cleanUser = 'fair';
-            else if (cleanUser.includes('iff')) cleanUser = 'iff';
-            else if (cleanUser.includes('rustam')) cleanUser = 'rustam';
-            else if (cleanUser.includes('ammar')) cleanUser = 'alammar';
-            else if (cleanUser.includes('albys')) cleanUser = 'albys';
-
-            const authRes = await fetch(`${host}/api/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username: cleanUser, password: `${cleanUser}@123` })
-            });
-            if (authRes.ok) {
-              const authData = await authRes.json();
-              if (authData.token) {
-                token = authData.token;
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.setItem('spj_customer_jwt', token);
-                }
-              }
-            }
-          } catch (e) {}
+        // Read authenticated customer session token
+        if (!token && typeof localStorage !== 'undefined') {
+          token = localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token');
         }
 
         const controller = new AbortController();
