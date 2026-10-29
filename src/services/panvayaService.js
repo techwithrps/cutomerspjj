@@ -3,13 +3,14 @@
  * Standardized DCSA Track & Trace, Vessel AIS, Schedules, and Port Congestion
  */
 
-const DEFAULT_PANVAYA_KEY = 'pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse';
+const PANVAYA_API_KEYS = ['pv_live_zEl1Qp4N0numSqxybM9hGmUReRlJufah', 'pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse'];
+const DEFAULT_PANVAYA_KEY = PANVAYA_API_KEYS[0];
 const PANVAYA_DIRECT_BASE = 'https://api.panvaya.com/api/v1';
 
 export function getPanvayaApiKey() {
   try {
     const key = localStorage.getItem("spj_panvaya_key");
-    if (!key || key === "pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ" || key === "pv_live_0AXCMLfCcPCHAsJMx4uPVmPZEPTH4oS4") {
+    if (!key || key === "pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ" || key === "pv_live_0AXCMLfCcPCHAsJMx4uPVmPZEPTH4oS4" || key === "pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse") {
       localStorage.setItem("spj_panvaya_key", DEFAULT_PANVAYA_KEY);
       return DEFAULT_PANVAYA_KEY;
     }
@@ -72,27 +73,31 @@ async function requestPanvaya(endpoint, options = {}) {
     // Fall through to direct API
   }
 
-  // 3. Fallback to Direct Panvaya API
-  const directUrl = `${PANVAYA_DIRECT_BASE}${endpoint}`;
-  const response = await fetch(directUrl, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': apiKey,
-      ...(options.headers || {})
+  // 3. Fallback to Direct Panvaya API with multi-key pool failover
+  const keysToTry = [apiKey, ...PANVAYA_API_KEYS.filter(k => k !== apiKey)];
+  let lastErr = null;
+  for (const k of keysToTry) {
+    try {
+      const directUrl = `${PANVAYA_DIRECT_BASE}${endpoint}`;
+      const response = await fetch(directUrl, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': k,
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json();
+      if (response.ok) return data;
+      if (response.status !== 401 && response.status !== 403 && response.status !== 429) {
+        throw new Error(data?.errors?.[0]?.detail || data?.errors?.[0]?.title || `Request failed with HTTP ${response.status}`);
+      }
+    } catch (err) {
+      lastErr = err;
     }
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    const errorMsg = data?.errors?.[0]?.detail || data?.errors?.[0]?.title || `Request failed with HTTP ${response.status}`;
-    const err = new Error(errorMsg);
-    err.code = data?.errors?.[0]?.code || 'API_ERROR';
-    err.details = data;
-    throw err;
   }
-
-  return data;
+  if (lastErr) throw lastErr;
+  throw new Error("Direct Panvaya API failed with all keys");
 }
 
 /**
@@ -160,32 +165,35 @@ export async function searchSailingSchedules({ origin, destination, date, carrie
     console.error('[Panvaya Proxy Error]:', err.message);
   }
 
-  // 2. Direct Panvaya REST API fallback
-  try {
-    const apiKey = getPanvayaApiKey();
-    const directRes = await fetch(`${PANVAYA_DIRECT_BASE}/schedules/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
-      },
-      body: JSON.stringify(payload)
-    });
+  // 2. Direct Panvaya REST API fallback with multi-key pool failover
+  const activeKey = getPanvayaApiKey();
+  const keysToTry = [activeKey, ...PANVAYA_API_KEYS.filter(k => k !== activeKey)];
+  for (const k of keysToTry) {
+    try {
+      const directRes = await fetch(`${PANVAYA_DIRECT_BASE}/schedules/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': k
+        },
+        body: JSON.stringify(payload)
+      });
 
-    if (directRes.ok) {
-      const data = await directRes.json();
-      if (data && data.sailings && Array.isArray(data.sailings)) {
-        return {
-          sailings: data.sailings,
-          origin: data.origin,
-          destination: data.destination,
-          successfulCarriers: data.successfulCarriers || [],
-          savedAt: new Date().toISOString()
-        };
+      if (directRes.ok) {
+        const data = await directRes.json();
+        if (data && data.sailings && Array.isArray(data.sailings)) {
+          return {
+            sailings: data.sailings,
+            origin: data.origin,
+            destination: data.destination,
+            successfulCarriers: data.successfulCarriers || [],
+            savedAt: new Date().toISOString()
+          };
+        }
       }
+    } catch (directErr) {
+      console.error('[Panvaya Direct Error]:', directErr.message);
     }
-  } catch (directErr) {
-    console.error('[Panvaya Direct Error]:', directErr.message);
   }
 
   // Return empty list if no active sailings found (NO FAKE GENERATOR)

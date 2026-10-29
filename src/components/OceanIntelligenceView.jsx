@@ -453,7 +453,14 @@ export default function OceanIntelligenceView() {
   // Vessel Schedules Route Builder State
   const [originPort, setOriginPort] = useState({ code: 'USPEF', name: 'Port Everglades', country: 'United States', flag: '🇺🇸' });
   const [destPort, setDestPort] = useState({ code: 'FRFOS', name: 'Fos-Sur-Mer', country: 'France', flag: '🇫🇷' });
-  const [departDate, setDepartDate] = useState('2026-10-10');
+  const getTodayDateStr = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  const [departDate, setDepartDate] = useState(getTodayDateStr);
   const [horizonWeeks, setHorizonWeeks] = useState(4);
   const [activeCarrier, setActiveCarrier] = useState('ALL');
 
