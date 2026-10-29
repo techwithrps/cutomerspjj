@@ -249,6 +249,7 @@ export async function fetchCustomerInvoices(inputKey) {
     let token = typeof localStorage !== 'undefined' ? (localStorage.getItem('spj_customer_jwt') || localStorage.getItem('spj_auth_token')) : null;
 
     const CANDIDATE_HOSTS = [
+      'https://spj-backend.onrender.com',
       'https://spjjbackend.onrender.com',
       'http://localhost:5001'
     ];
@@ -278,9 +279,23 @@ export async function fetchCustomerInvoices(inputKey) {
           const records = data.records || data.rows || [];
           if (records.length > 0) {
             const normalized = records.map((item, idx) => normalizeInvoiceRecord(item, idx, account));
-            normalized.kpis = data.kpis;
-            normalized.totalRecords = data.totalRecords || data.total || data.kpis?.containerCount || records.length;
-            normalized.totalInvoices = data.kpis?.invoiceCount || records.length;
+            const exact = account?.exactStats;
+            if (!data.kpis || !data.kpis.totalGrossAmount || data.kpis.totalGrossAmount === 0) {
+              normalized.kpis = exact ? {
+                totalGrossAmount: exact.grossRevenue,
+                grossRevenue: exact.grossRevenue,
+                netRevenue: exact.grossRevenue,
+                totalBillAmount: exact.netBilledAmount,
+                totalTax: exact.taxAmount,
+                invoiceCount: exact.invoiceCount,
+                containerCount: exact.containerCount || exact.activeContainersCount || exact.invoiceCount,
+                totalRecords: exact.containerCount || exact.invoiceCount
+              } : data.kpis;
+            } else {
+              normalized.kpis = data.kpis;
+            }
+            normalized.totalRecords = normalized.kpis?.containerCount || exact?.containerCount || data.totalRecords || records.length;
+            normalized.totalInvoices = normalized.kpis?.invoiceCount || exact?.invoiceCount || records.length;
             INVOICES_CACHE[key] = normalized;
             try {
               if (typeof localStorage !== 'undefined') {
