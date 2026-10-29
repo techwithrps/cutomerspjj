@@ -3,14 +3,14 @@
  * Standardized DCSA Track & Trace, Vessel AIS, Schedules, and Port Congestion
  */
 
-const PANVAYA_API_KEYS = ['pv_live_zEl1Qp4N0numSqxybM9hGmUReRlJufah', 'pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse'];
+const PANVAYA_API_KEYS = ['pv_live_D916qZZfEaB0vHZIr4AhwuCi-mCW1CZz', 'pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse'];
 const DEFAULT_PANVAYA_KEY = PANVAYA_API_KEYS[0];
 const PANVAYA_DIRECT_BASE = 'https://api.panvaya.com/api/v1';
 
 export function getPanvayaApiKey() {
   try {
     const key = localStorage.getItem("spj_panvaya_key");
-    if (!key || key === "pv_live_vl0c1h6iAcCAx9895LIouCDNtmW3BjQJ" || key === "pv_live_0AXCMLfCcPCHAsJMx4uPVmPZEPTH4oS4" || key === "pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse") {
+    if (!key || key !== "pv_live_D916qZZfEaB0vHZIr4AhwuCi-mCW1CZz") {
       localStorage.setItem("spj_panvaya_key", DEFAULT_PANVAYA_KEY);
       return DEFAULT_PANVAYA_KEY;
     }

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const KEY_POOL = [
     req.headers["x-api-key"],
     process.env.PANVAYA_API_KEY,
-    "pv_live_zEl1Qp4N0numSqxybM9hGmUReRlJufah", // Fresh 100 credits
+    "pv_live_D916qZZfEaB0vHZIr4AhwuCi-mCW1CZz", // Fresh 100 credits
     "pv_live_-Pve3LVsqFSuwHgHjSjn9Yzncz_DlWse"   // Backup 58 credits
   ].filter(Boolean);
 
